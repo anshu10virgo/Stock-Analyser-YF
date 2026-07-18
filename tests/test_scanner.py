@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import unittest
 from unittest.mock import patch
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import json
 
 import pandas as pd
 
@@ -16,6 +19,8 @@ from core.scoring import ScoringEngine
 from models.scan_config import ScanConfig
 from providers.yahoo_finance import YahooFinanceHistoryProvider
 from services.scan_service import ScanService
+from services.stock_universe import StockUniverse
+from scripts.refresh_stock_universe import build_candidates
 
 
 class StockScannerTests(unittest.TestCase):
@@ -336,3 +341,31 @@ class StockScannerTests(unittest.TestCase):
         self.assertEqual(sum(breakdown.values()), ScoringEngine.MAX_SCORE)
         self.assertEqual(breakdown["score_cross"], 20)
         self.assertEqual(breakdown["score_slope"], 20)
+
+    def test_manifest_selects_the_active_validated_universe(self) -> None:
+        """The app must use the explicit manifest target, never a filename guess."""
+        with TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            validated = root / "validated"
+            validated.mkdir()
+            active_file = validated / "yahoo_nse_2026-07-18.csv"
+            active_file.write_text("Symbol\nTEST.NS\n", encoding="utf-8")
+            (root / "manifest.json").write_text(
+                json.dumps({"active_universe": "validated/yahoo_nse_2026-07-18.csv"}),
+                encoding="utf-8",
+            )
+
+            universe = StockUniverse(root, root / "legacy.csv")
+            self.assertEqual(universe.active_file(), active_file.resolve())
+
+    def test_refresh_parser_normalizes_nse_whitespace_headers(self) -> None:
+        """NSE's spaced CSV headers must still produce Yahoo NSE tickers."""
+        raw_source = (
+            b"SYMBOL,NAME OF COMPANY, SERIES, ISIN NUMBER\n"
+            b"TESTCO,Test Company,EQ,INE000A01001\n"
+        )
+
+        candidates = build_candidates(raw_source, "EQ")
+
+        self.assertEqual(candidates.loc[0, "Symbol"], "TESTCO.NS")
+        self.assertEqual(candidates.loc[0, "NSE Symbol"], "TESTCO")

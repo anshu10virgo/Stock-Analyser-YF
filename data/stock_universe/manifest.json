@@ -1,0 +1,8 @@
+{
+  "active_universe": "validated/yahoo_nse_2026-07-18.csv",
+  "source_snapshot": "snapshots/nse_equity_2026-07-18.csv",
+  "refresh_report": "refresh_reports/2026-07-18.json",
+  "refreshed_at": "2026-07-18",
+  "validated_symbol_count": 2056,
+  "sha256": "2e6377a5d81e23bf6963191d58fc8bb66ea4514c409eb075c85736bda93b6ccc"
+}

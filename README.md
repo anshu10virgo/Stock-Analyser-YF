@@ -18,6 +18,38 @@ python -m streamlit run app.py
 - Formatted results, scan timestamps, and one-year interactive charts.
 - GitHub-backed Streamlit Community Cloud deployment.
 
+## Manual stock-universe refresh
+
+The app does not refresh its stock list automatically. Approximately every six
+months, run the following maintenance command locally:
+
+```powershell
+python scripts/refresh_stock_universe.py
+```
+
+The command downloads NSE's official listed-equities source, keeps the selected
+NSE `EQ` series, converts symbols to Yahoo Finance NSE format (`.NS`), and
+validates that Yahoo provides usable price history. It then writes:
+
+```text
+data/stock_universe/
+  manifest.json
+  snapshots/nse_equity_YYYY-MM-DD.csv
+  validated/yahoo_nse_YYYY-MM-DD.csv
+  refresh_reports/YYYY-MM-DD.json
+```
+
+The app reads `manifest.json`, which explicitly identifies the active validated
+universe. Review the generated refresh report before committing all generated
+files together in a PR, for example:
+
+```text
+Refresh NSE Yahoo stock universe — YYYY-MM-DD
+```
+
+The script is intentionally not exposed in Streamlit, so a user cannot change
+the production universe accidentally.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)

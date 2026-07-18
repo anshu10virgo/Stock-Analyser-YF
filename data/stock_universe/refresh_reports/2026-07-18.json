@@ -1,0 +1,15 @@
+{
+  "refreshed_at": "2026-07-18",
+  "source_url": "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",
+  "candidate_symbol_count": 2056,
+  "validated_symbol_count": 2056,
+  "rejected_symbol_count": 0,
+  "provider_metrics": {
+    "requests": 21,
+    "cache_hits": 0,
+    "cache_misses": 21,
+    "retries": 0,
+    "failures": 0
+  },
+  "rejected_symbols": []
+}
