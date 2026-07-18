@@ -19,6 +19,7 @@
 - Included `stock_symbols.csv` universe
 - Configurable number of symbols to analyse
 - Adjustable or actual-price market data selection
+- Formatted scan results with a scan timestamp
 
 ## Charts
 

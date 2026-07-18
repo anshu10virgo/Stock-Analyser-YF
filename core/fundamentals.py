@@ -16,6 +16,10 @@ class Fundamentals:
 
             return {
 
+                "company_name":
+                    info.get("longName")
+                    or info.get("shortName"),
+
                 "market_cap":
                     info.get("marketCap"),
 
@@ -45,6 +49,7 @@ class Fundamentals:
         except Exception:
 
             return {
+                "company_name": None,
                 "market_cap": None,
                 "pe": None,
                 "forward_pe": None,

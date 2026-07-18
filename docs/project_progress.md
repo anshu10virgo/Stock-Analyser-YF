@@ -32,7 +32,7 @@ Status: Completed
 - Upload CSV
 - Included stock universe with configurable scan size
 - Adjusted or unadjusted price selection
-- Results page
+- Formatted results page with latest scan timestamp
 - Stock Detail page
 - Candlestick chart
 - Moving Average overlays

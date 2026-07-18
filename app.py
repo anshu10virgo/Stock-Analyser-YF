@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from pathlib import Path
 
 from core.data_loader import DataLoader
@@ -87,4 +88,4 @@ if st.button("Run Scan"):
             ),
         )
 
-    render_results(scan_result["passed"])
+    render_results(scan_result["passed"], datetime.now())

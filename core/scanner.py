@@ -206,6 +206,8 @@ class StockScanner:
 
                     "symbol": symbol,
 
+                    "company_name": fundamentals["company_name"],
+
                     "close":
                         round(
                             latest["Close"],
