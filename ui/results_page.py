@@ -12,6 +12,12 @@ DISPLAY_COLUMNS = {
     "sector": "Sector",
     "industry": "Industry",
     "score": "Score",
+    "score_cross": "Cross Score",
+    "score_slope": "Trend Score",
+    "score_distance": "Price Position Score",
+    "score_pe": "PE Score",
+    "score_eps": "EPS Score",
+    "score_market_cap": "Market Cap Score",
     "market_cap": "Market Cap",
     "close": "Close",
     "pe": "PE",
@@ -75,7 +81,10 @@ def render_results(df, scan_time, settings):
     left.metric("Qualified stocks", len(results))
     right.metric("Average score", f"{results['Score'].mean():.1f}")
 
-    st.caption("Click a stock row to view its one-year chart.")
+    st.caption(
+        "Score is out of 85. Each score column shows the points contributed "
+        "by that factor. Click a stock row to view its one-year chart."
+    )
     selection = st.dataframe(
         results,
         use_container_width=True,
@@ -84,6 +93,12 @@ def render_results(df, scan_time, settings):
         selection_mode="single-row",
         column_config={
             "Score": st.column_config.NumberColumn(format="%d"),
+            "Cross Score": st.column_config.NumberColumn(format="%d"),
+            "Trend Score": st.column_config.NumberColumn(format="%d"),
+            "Price Position Score": st.column_config.NumberColumn(format="%d"),
+            "PE Score": st.column_config.NumberColumn(format="%d"),
+            "EPS Score": st.column_config.NumberColumn(format="%d"),
+            "Market Cap Score": st.column_config.NumberColumn(format="%d"),
             "Market Cap": st.column_config.TextColumn(),
             "Close": st.column_config.NumberColumn(format="%.2f"),
             "PE": st.column_config.NumberColumn(format="%.2f"),

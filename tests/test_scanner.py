@@ -12,6 +12,7 @@ from core.fundamentals import Fundamentals
 from core.golden_cross import GoldenCrossDetector
 from core.indicators import Indicators
 from core.scanner import StockScanner
+from core.scoring import ScoringEngine
 from models.scan_config import ScanConfig
 from providers.yahoo_finance import YahooFinanceHistoryProvider
 from services.scan_service import ScanService
@@ -318,3 +319,20 @@ class StockScannerTests(unittest.TestCase):
         self.assertEqual(download.call_count, 1)
         self.assertFalse(first is second)
         self.assertEqual(provider.metrics()["cache_hits"], 1)
+
+    def test_score_breakdown_matches_the_total_score(self) -> None:
+        """Every visible score component must reconcile to the 85-point total."""
+        breakdown = ScoringEngine.score_breakdown(
+            days_since_cross=5,
+            slope_label="STRONG_POSITIVE",
+            distance=1,
+            fundamentals={
+                "pe": 15,
+                "eps": 1,
+                "market_cap": 250_000_000_000,
+            },
+        )
+
+        self.assertEqual(sum(breakdown.values()), ScoringEngine.MAX_SCORE)
+        self.assertEqual(breakdown["score_cross"], 20)
+        self.assertEqual(breakdown["score_slope"], 20)
