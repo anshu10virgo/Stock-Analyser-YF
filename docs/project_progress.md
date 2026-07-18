@@ -13,7 +13,7 @@ Status: Active Development
 
 ### Technical Analysis
 
-- Moving averages and Golden Cross validation
+- Moving averages, Golden Cross validation, and Golden Cross price validation
 - Golden Cross age and pre-cross validation
 - Trough detection, slope calculation, price-distance checks, and ranking
 

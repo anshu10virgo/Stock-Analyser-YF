@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from core.data_loader import DataLoader
@@ -11,7 +12,7 @@ DISPLAY_COLUMNS = {
     "sector": "Sector",
     "industry": "Industry",
     "score": "Score",
-    "market_cap": "Market Cap (M)",
+    "market_cap": "Market Cap",
     "close": "Close",
     "pe": "PE",
     "eps": "EPS",
@@ -29,7 +30,9 @@ def prepare_results(df):
     results["Company Name"] = results["Company Name"].fillna(
         results["Symbol"].str.removesuffix(".NS")
     )
-    results["Market Cap (M)"] = results["Market Cap (M)"].div(1_000_000)
+    results["Market Cap"] = results["Market Cap"].div(1_000_000).map(
+        lambda value: f"{value:,.0f} M" if pd.notna(value) else None
+    )
 
     return results
 
@@ -81,7 +84,7 @@ def render_results(df, scan_time, settings):
         selection_mode="single-row",
         column_config={
             "Score": st.column_config.NumberColumn(format="%d"),
-            "Market Cap (M)": st.column_config.NumberColumn(format="%.2f"),
+            "Market Cap": st.column_config.TextColumn(),
             "Close": st.column_config.NumberColumn(format="%.2f"),
             "PE": st.column_config.NumberColumn(format="%.2f"),
             "EPS": st.column_config.NumberColumn(format="%.2f"),

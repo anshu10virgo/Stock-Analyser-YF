@@ -8,6 +8,7 @@
 - Pre-cross Validation
 - Long MA Trend Change
 - Price Above Long MA
+- Close At or Above Golden Cross Price
 - Trough Detection
 - 52 Week Distance
 

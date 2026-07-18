@@ -104,6 +104,15 @@ class StockScanner:
 
                 latest = df.iloc[-1]
 
+                cross_close = df.loc[cross["cross_date"], "Close"]
+                if latest["Close"] < cross_close:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Price Validation",
+                        "reason": "Close price is below Golden Cross close",
+                    })
+                    continue
+
                 distance = (
                     Indicators
                     .distance_from_ma(
