@@ -100,6 +100,7 @@ class StockScanner:
                         "symbol": symbol,
                         "reason": "Golden Cross validation failed"
                     })
+                    continue
 
                 latest = df.iloc[-1]
 

@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+import pandas as pd
 import streamlit as st
 
 
@@ -40,7 +41,7 @@ def render_stock_detail(
         )
     )
 
-    if cross_date:
+    if cross_date is not None and pd.notna(cross_date):
 
         fig.add_vline(
             x=cross_date,
