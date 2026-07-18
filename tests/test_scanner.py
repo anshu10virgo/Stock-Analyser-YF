@@ -12,6 +12,9 @@ from core.fundamentals import Fundamentals
 from core.golden_cross import GoldenCrossDetector
 from core.indicators import Indicators
 from core.scanner import StockScanner
+from models.scan_config import ScanConfig
+from providers.yahoo_finance import YahooFinanceHistoryProvider
+from services.scan_service import ScanService
 
 
 class StockScannerTests(unittest.TestCase):
@@ -277,3 +280,41 @@ class StockScannerTests(unittest.TestCase):
             result = self._scan_history(history, cross)
 
         self.assertEqual(len(result["passed"]), 1)
+
+    def test_invalid_scan_configuration_fails_fast(self) -> None:
+        """Impossible MA settings must be rejected before a data download."""
+        config = ScanConfig(
+            short_ma=200,
+            long_ma=50,
+            max_cross_age=60,
+            pre_cross_days=20,
+            slope_lookback=20,
+            max_distance=5,
+        )
+
+        with self.assertRaises(ValueError):
+            ScanService(config)
+
+    def test_batch_download_failure_is_reported_for_every_symbol(self) -> None:
+        """Provider outages must become visible structured failures."""
+        config = ScanConfig(50, 200, 60, 20, 20, 5)
+        with patch.object(DataLoader, "download_batch", side_effect=RuntimeError):
+            result = ScanService(config).scan(["ONE.NS", "TWO.NS"])
+
+        frames = result.as_dataframes()
+        self.assertTrue(frames["passed"].empty)
+        self.assertEqual(len(frames["failed"]), 2)
+        self.assertTrue((frames["failed"]["stage"] == "Market Data").all())
+
+    def test_history_provider_reuses_cached_batch_data(self) -> None:
+        """Repeated scans should not re-download an unchanged price batch."""
+        provider = YahooFinanceHistoryProvider()
+        downloaded = pd.DataFrame({"Close": [100.0]})
+
+        with patch("providers.yahoo_finance.yf.download", return_value=downloaded) as download:
+            first = provider.download_batch(["TEST.NS"])
+            second = provider.download_batch(["TEST.NS"])
+
+        self.assertEqual(download.call_count, 1)
+        self.assertFalse(first is second)
+        self.assertEqual(provider.metrics()["cache_hits"], 1)

@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+"""Structured rejection and processing-failure records."""
+
+from dataclasses import asdict, dataclass
 
 
 @dataclass
@@ -9,3 +11,8 @@ class FailureResult:
     stage: str
 
     reason: str
+
+    check_type: str = "mandatory"
+
+    def as_dict(self) -> dict:
+        return asdict(self)
