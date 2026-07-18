@@ -34,6 +34,7 @@ Status: Completed
 - Adjusted or unadjusted price selection
 - Formatted results page with latest scan timestamp
 - Interactive stock detail chart for selected results
+- Retried and cached Yahoo fundamental-data retrieval
 
 ### Reporting
 

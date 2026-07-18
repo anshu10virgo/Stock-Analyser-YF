@@ -21,6 +21,7 @@
 - Adjustable or actual-price market data selection
 - Formatted scan results with a scan timestamp
 - Clickable result rows with one-year stock charts
+- Retried and cached Yahoo fundamental-data retrieval
 
 ## Charts
 
