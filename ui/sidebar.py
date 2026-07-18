@@ -1,81 +1,62 @@
 import streamlit as st
 
 
-def render_sidebar():
+def render_scan_configuration():
 
-    st.sidebar.header("Scanner Configuration")
+    st.subheader("Mandatory checks")
+    st.caption("These checks are always applied to every scan.")
+    left, right = st.columns(2)
 
-    short_ma = st.sidebar.number_input(
-        "Short MA",
+    short_ma = left.number_input(
+        "Short-term moving average (days)",
         min_value=10,
         max_value=100,
         value=50,
         help="Short-term moving average used for Golden Cross detection."
     )
 
-    long_ma = st.sidebar.number_input(
-        "Long MA",
+    long_ma = right.number_input(
+        "Long-term moving average (days)",
         min_value=50,
         max_value=400,
         value=200,
         help="Long-term moving average used as trend reference."
     )
 
-    cross_age = st.sidebar.slider(
-        "Golden Cross Age",
+    cross_age = left.slider(
+        "Golden Cross must have happened within the last (days)",
         min_value=1,
         max_value=180,
         value=60,
-        help="Maximum age of Golden Cross signal in days."
+        help=(
+            "For example, 60 means the Golden Cross must have occurred in "
+            "the last 60 calendar days."
+        )
     )
 
-    max_distance = st.sidebar.slider(
-        "Price Distance %",
+    max_distance = right.slider(
+        "Maximum difference between price and long-term average (%)",
         min_value=0,
         max_value=20,
         value=5,
-        help="Maximum distance of current price from Long MA."
+        help=(
+            "For example, 5 means the current price can be up to 5% above "
+            "or below the long-term moving average."
+        )
     )
 
-    pre_cross_days = st.sidebar.slider(
-        "Pre-Cross Validation Days",
+    pre_cross_days = left.slider(
+        "Pre-cross confirmation window (days)",
         min_value=5,
         max_value=100,
         value=20,
-        help="Days Short MA must remain below Long MA before crossover."
+        help=(
+            "Days Short MA must remain below Long MA before crossover, and "
+            "the window in which a trough must occur before the cross."
+        )
     )
 
-    trough_lookback = st.sidebar.slider(
-        "Trough Lookback",
-        min_value=30,
-        max_value=250,
-        value=120,
-        help="Historical window used for trough detection."
-    )
-
-    min_troughs = st.sidebar.slider(
-        "Minimum Trough Count",
-        min_value=1,
-        max_value=10,
-        value=2,
-        help="Minimum trough count required to qualify."
-    )
-
-    slope_lookback = st.sidebar.slider(
-        "MA Slope Lookback",
-        min_value=5,
-        max_value=100,
-        value=20,
-        help="Days used to calculate Long MA trend slope."
-    )
-
-    require_higher_low = st.sidebar.checkbox(
-        "Require Higher Low",
-        value=True,
-        help="Latest trough must be higher than previous trough."
-    )
-
-    adjusted_prices = st.sidebar.checkbox(
+    adjusted_prices = right.checkbox(
         "Use adjusted prices",
         value=False,
         help=(
@@ -84,15 +65,50 @@ def render_sidebar():
         ),
     )
 
+    st.divider()
+    st.subheader("Optional checks")
+    st.caption("Select only the additional filters you want to enforce.")
+    optional_left, optional_right = st.columns(2)
+
+    require_pre_cross_trough = optional_left.checkbox(
+        "Require a price trough before the Golden Cross",
+        value=False,
+        help="Requires a validated local price low in the pre-cross window.",
+    )
+    require_pre_cross_decline = optional_left.checkbox(
+        "Require the long-term trend to decline before the cross",
+        value=False,
+    )
+    require_post_cross_sessions = optional_right.checkbox(
+        "Require at least 10 trading sessions after the cross",
+        value=False,
+    )
+    require_post_cross_increase = optional_right.checkbox(
+        "Require the long-term trend to rise after the cross",
+        value=False,
+    )
+
+    slope_lookback = st.number_input(
+        "Long-term trend evaluation window (days)",
+        min_value=5,
+        max_value=100,
+        value=20,
+        help=(
+            "Sessions used to confirm that the Long MA declined before and "
+            "rose after the Golden Cross."
+        )
+    )
+
     return {
         "short_ma": short_ma,
         "long_ma": long_ma,
         "cross_age": cross_age,
         "max_distance": max_distance,
         "pre_cross_days": pre_cross_days,
-        "trough_lookback": trough_lookback,
-        "min_troughs": min_troughs,
         "slope_lookback": slope_lookback,
-        "require_higher_low": require_higher_low,
+        "require_pre_cross_trough": require_pre_cross_trough,
+        "require_pre_cross_decline": require_pre_cross_decline,
+        "require_post_cross_sessions": require_post_cross_sessions,
+        "require_post_cross_increase": require_post_cross_increase,
         "adjusted_prices": adjusted_prices,
     }

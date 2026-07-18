@@ -4,7 +4,8 @@
 
 - Structured failure results for every symbol and scanner stage.
 - Dashboard view for failed stocks and aggregated failure counts.
-- Enforce price-above-long-MA, higher-low, slope, and other enabled rules.
+- Enforce any future optional scanner rules consistently and expose structured
+  rejection reasons.
 - Derive minimum history requirements from the configured moving averages.
 - Automated tests for data loading, scanner rules, and failure handling.
 

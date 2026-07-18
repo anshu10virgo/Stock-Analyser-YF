@@ -18,8 +18,6 @@ class ScanResult:
 
     distance_from_ma: float
 
-    trough_count: int
-
     slope_value: float
     slope_label: str
 
