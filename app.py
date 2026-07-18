@@ -88,4 +88,13 @@ if st.button("Run Scan"):
             ),
         )
 
-    render_results(scan_result["passed"], datetime.now())
+    st.session_state["scan_results"] = scan_result["passed"]
+    st.session_state["scan_time"] = datetime.now()
+    st.session_state["scan_settings"] = settings
+
+if "scan_results" in st.session_state:
+    render_results(
+        st.session_state["scan_results"],
+        st.session_state["scan_time"],
+        st.session_state["scan_settings"],
+    )

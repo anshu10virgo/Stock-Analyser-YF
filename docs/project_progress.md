@@ -33,10 +33,7 @@ Status: Completed
 - Included stock universe with configurable scan size
 - Adjusted or unadjusted price selection
 - Formatted results page with latest scan timestamp
-- Stock Detail page
-- Candlestick chart
-- Moving Average overlays
-- Golden Cross marker
+- Interactive stock detail chart for selected results
 
 ### Reporting
 

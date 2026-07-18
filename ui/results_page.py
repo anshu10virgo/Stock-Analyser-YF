@@ -1,5 +1,9 @@
 import streamlit as st
 
+from core.data_loader import DataLoader
+from core.indicators import Indicators
+from ui.stock_detail import render_stock_detail
+
 
 DISPLAY_COLUMNS = {
     "symbol": "Symbol",
@@ -30,7 +34,31 @@ def prepare_results(df):
     return results
 
 
-def render_results(df, scan_time):
+def render_selected_stock(result, settings):
+    """Download and render one year of chart data for a selected result."""
+    symbol = result["symbol"]
+
+    with st.spinner(f"Loading one-year chart for {symbol}..."):
+        batch_data = DataLoader.download_batch(
+            [symbol],
+            years=1,
+            adjusted_prices=settings["adjusted_prices"],
+        )
+        history = DataLoader.get_symbol_history(batch_data, symbol)
+
+    if history.empty:
+        st.error(f"Could not load one-year price history for {symbol}.")
+        return
+
+    chart_data = Indicators.add_moving_averages(
+        history,
+        settings["short_ma"],
+        settings["long_ma"],
+    )
+    render_stock_detail(symbol, chart_data, result["cross_date"])
+
+
+def render_results(df, scan_time, settings):
     """Render formatted qualified-stock results for a completed scan."""
     st.subheader("Qualified Stocks")
     st.caption(f"Latest scan: {scan_time:%d %b %Y, %I:%M %p}")
@@ -44,10 +72,13 @@ def render_results(df, scan_time):
     left.metric("Qualified stocks", len(results))
     right.metric("Average score", f"{results['Score'].mean():.1f}")
 
-    st.dataframe(
+    st.caption("Click a stock row to view its one-year chart.")
+    selection = st.dataframe(
         results,
         use_container_width=True,
         hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
         column_config={
             "Score": st.column_config.NumberColumn(format="%d"),
             "Market Cap (M)": st.column_config.NumberColumn(format="%.2f"),
@@ -59,3 +90,9 @@ def render_results(df, scan_time):
             "Cross Date": st.column_config.DatetimeColumn(format="DD MMM YYYY"),
         },
     )
+
+    selected_rows = selection.selection.rows
+    if selected_rows:
+        selected_result = df.iloc[selected_rows[0]]
+        st.divider()
+        render_selected_stock(selected_result, settings)
