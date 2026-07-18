@@ -2,38 +2,32 @@
 
 ## Purpose
 
-Build a configurable stock scanner using Yahoo Finance data to validate the technical screening logic before investing in a production-grade data platform.
-
-This project serves as a Proof of Concept (PoC) for the screening engine and Streamlit dashboard.
-
----
+Build a dependable, configurable stock-analysis application for NSE securities.
+The product must provide transparent technical screening, reliable source-data
+presentation, actionable failure reporting, and a responsive Streamlit
+experience for desktop and mobile users.
 
 ## Objectives
 
-- Validate Golden Cross logic.
-- Build a configurable Streamlit scanner.
-- Display stock charts with indicators.
-- Export screening results to Excel.
-- Experiment with ranking algorithms.
-- Gather requirements for the production platform.
-
----
+- Provide configurable, repeatable technical scans.
+- Make every pass, rejection, data-quality issue, and provider failure
+  traceable to a reason.
+- Display responsive stock charts with the same settings used by the scan.
+- Support shareable deployment and controlled releases through GitHub.
+- Improve performance through safe caching and efficient batch retrieval.
+- Maintain automated tests for critical scanner and data-provider behavior.
 
 ## Data Source
 
-Yahoo Finance
-
----
+Yahoo Finance is the current market-data provider.
 
 ## Scope
 
-Technical Analysis Only
+- Moving averages and Golden Cross detection
+- Trough, trend, distance, and ranking analysis
+- Fundamental context where Yahoo Finance provides it
+- Interactive Streamlit reporting
 
-- Moving Averages
-- Golden Cross
-- Trough Detection
-- 52 Week Distance
-- Ranking
-
-No database is used.
-Historical data is downloaded on demand.
+Historical data is currently downloaded on demand. The architecture must remain
+ready for persistent market-data storage and additional providers when scale or
+reliability requires them.

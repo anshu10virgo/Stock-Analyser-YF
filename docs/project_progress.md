@@ -1,50 +1,38 @@
 # Project Progress
 
-Status: Completed
+Status: Active Development
 
----
-
-## Completed Features
+## Implemented Features
 
 ### Data
 
-- Yahoo Finance integration
-- Configurable history download
+- Yahoo Finance batch price retrieval
+- Configurable adjusted or unadjusted price basis
+- Retried and cached fundamental-data retrieval
+- Included `stock_symbols.csv` universe and optional file upload
 
 ### Technical Analysis
 
-- Moving Average calculation
-- Golden Cross detection
-- Golden Cross age filter
-- Pre-cross validation
-- Long MA slope validation
-- Trough detection
-- Price distance from MA
-
-### Scanner
-
-- Configurable parameters
-- Stock ranking
-- Failure reason tracking
+- Moving averages and Golden Cross validation
+- Golden Cross age and pre-cross validation
+- Trough detection, slope calculation, price-distance checks, and ranking
 
 ### Dashboard
 
-- Upload CSV
-- Included stock universe with configurable scan size
-- Adjusted or unadjusted price selection
-- Formatted results page with latest scan timestamp
-- Interactive stock detail chart for selected results
-- Retried and cached Yahoo fundamental-data retrieval
+- Configurable scanner controls and scan-size selection
+- Formatted qualified-stock table with latest scan timestamp
+- Interactive one-year selected-stock chart
+- Golden Cross date marker on charts
 
-### Reporting
+## Current Hardening Work
 
-- Excel export
+- Full per-symbol failure reporting and failure visibility in the dashboard.
+- Enforce every enabled scanner rule consistently.
+- Cache historical and chart data with an appropriate expiry policy.
+- Add automated tests for scanner rules, provider failures, and UI formatting.
 
----
+## Current Risks
 
-## Known Limitations
-
-- Yahoo Finance dependency
-- No local historical storage
-- Slower scanning for large universes
-- Fundamentals limited by Yahoo Finance
+- Yahoo Finance availability and field coverage vary by symbol.
+- No persistent historical market-data store exists yet.
+- Large universes require additional caching, throttling, and observability.

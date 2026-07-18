@@ -1,24 +1,33 @@
 # Architecture
 
-```
-CSV Upload
-      ↓
-Yahoo Finance
-      ↓
-Pandas
-      ↓
-Technical Indicators
-      ↓
-Scanner
-      ↓
-Ranking
-      ↓
-Streamlit Dashboard
+Stock Analyser YF is organized as a production-oriented layered application.
+
+```text
+Streamlit UI
+    ↓
+Scan Application Service
+    ↓
+Scanner Rules and Scoring
+    ↓
+Market Data and Fundamentals Providers
+    ↓
+Yahoo Finance, Cache, and Observability
 ```
 
-## Components
+## Current Components
 
-- Streamlit
-- Yahoo Finance
-- Pandas
-- Plotly
+- `ui/`: Streamlit pages, formatted results, and interactive charts.
+- `core/data_loader.py`: symbol-universe loading and batch price retrieval.
+- `core/scanner.py`: scan orchestration, rule execution, and ranking.
+- Technical-analysis modules: indicators, Golden Cross, trough, and slope.
+- `core/fundamentals.py`: retried and cached fundamental-data retrieval.
+- `models/`: typed scan and failure-result contracts.
+
+## Target Reliability Boundaries
+
+- The UI must not contain market-data or scanner business logic.
+- Every external request must have an observable success or failure outcome.
+- Every scanned symbol must finish as either a qualified result or a structured
+  failure result.
+- Caches are an optimization only; results must identify their scan time and
+  selected settings.
