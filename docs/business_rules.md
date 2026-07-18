@@ -69,7 +69,7 @@ interactive charts, and shareable Streamlit deployment.
 
 - Current close must be greater than or equal to the close on the Golden Cross
   date.
-- When enabled, current close must be above the long MA.
+- Current close must be greater than or equal to the short MA.
 - Current close must be within the configured distance from the long MA.
 - Any 52-week distance filter must be configurable, enforced, and reported in
   the failure reason.

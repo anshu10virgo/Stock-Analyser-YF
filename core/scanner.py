@@ -113,6 +113,14 @@ class StockScanner:
                     })
                     continue
 
+                if latest["Close"] < latest["MA_SHORT"]:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Price Validation",
+                        "reason": "Close price is below Short MA",
+                    })
+                    continue
+
                 distance = (
                     Indicators
                     .distance_from_ma(
