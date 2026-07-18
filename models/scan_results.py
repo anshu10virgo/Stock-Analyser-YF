@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+"""Typed qualified-stock record used by the scan service and UI."""
+
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -21,6 +23,10 @@ class ScanResult:
     slope_value: float
     slope_label: str
 
+    company_name: Optional[str] = None
+    pre_cross_slope: Optional[float] = None
+    pre_cross_trough_date: Optional[datetime] = None
+
     market_cap: Optional[float] = None
     pe: Optional[float] = None
     eps: Optional[float] = None
@@ -33,3 +39,11 @@ class ScanResult:
     status: str = "PASS"
 
     failure_reason: str = ""
+
+    def as_dict(self) -> dict:
+        """Return the stable UI/dataframe contract."""
+        values = asdict(self)
+        values["slope"] = values.pop("slope_value")
+        values.pop("status")
+        values.pop("failure_reason")
+        return values

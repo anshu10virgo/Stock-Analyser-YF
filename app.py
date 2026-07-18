@@ -3,7 +3,8 @@ from datetime import datetime
 from pathlib import Path
 
 from core.data_loader import DataLoader
-from core.scanner import StockScanner
+from models.scan_config import ScanConfig
+from services.scan_service import ScanService
 
 from ui.sidebar import render_scan_configuration
 from ui.results_page import render_optional_failures, render_results
@@ -78,7 +79,7 @@ elif section == "2. Scan":
         symbols_to_scan = symbols[:stock_count]
 
         if st.button("Run Scan", type="primary"):
-            scanner = StockScanner(
+            config = ScanConfig(
                 short_ma=settings["short_ma"],
                 long_ma=settings["long_ma"],
                 max_cross_age=settings["cross_age"],
@@ -99,13 +100,13 @@ elif section == "2. Scan":
             status = st.empty()
 
             with st.spinner("Scanning stocks..."):
-                scan_result = scanner.scan(
+                scan_result = ScanService(config).scan(
                     symbols_to_scan,
                     progress_callback=lambda current, total: (
                         progress_bar.progress(current / total),
                         status.text(f"Processing {current}/{total} symbols"),
                     ),
-                )
+                ).as_dataframes()
 
             st.session_state["scan_results"] = scan_result["passed"]
             st.session_state["scan_failed_results"] = scan_result["failed"]

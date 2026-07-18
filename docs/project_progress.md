@@ -18,6 +18,10 @@ Status: Active Development
 - Golden Cross age and pre-cross validation
 - Optional long-MA decline-to-rise filters and targeted pre-cross trough,
   mandatory price-distance checks, and ranking
+- Typed scan configuration, typed scan outcomes, and a dedicated scan service
+  with structured market-data and processing failures
+- Yahoo historical-price provider with bounded retry, 15-minute batch caching,
+  and provider metrics
 
 ### Dashboard
 

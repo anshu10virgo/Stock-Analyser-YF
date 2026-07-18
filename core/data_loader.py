@@ -1,11 +1,13 @@
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-import yfinance as yf
+
+from providers.yahoo_finance import YahooFinanceHistoryProvider
 
 
 class DataLoader:
+
+    _history_provider = YahooFinanceHistoryProvider()
 
     @staticmethod
     def load_symbols(file_source, file_name=None):
@@ -40,25 +42,11 @@ class DataLoader:
 
     @staticmethod
     def download_batch(symbols, years=3, adjusted_prices=False):
-
-        end_date = datetime.today()
-
-        start_date = (
-            end_date
-            - timedelta(days=365 * years)
+        return DataLoader._history_provider.download_batch(
+            symbols,
+            years=years,
+            adjusted_prices=adjusted_prices,
         )
-
-        data = yf.download(
-            tickers=symbols,
-            start=start_date,
-            end=end_date,
-            auto_adjust=adjusted_prices,
-            group_by="ticker",
-            progress=False,
-            threads=True
-        )
-
-        return data
 
     @staticmethod
     def get_symbol_history(
@@ -66,20 +54,9 @@ class DataLoader:
         symbol
     ):
 
-        try:
+        return DataLoader._history_provider.get_symbol_history(batch_df, symbol)
 
-            if isinstance(
-                batch_df.columns,
-                pd.MultiIndex
-            ):
-                df = batch_df[symbol].copy()
-            else:
-                df = batch_df.copy()
-
-            df.dropna(inplace=True)
-
-            return df
-
-        except Exception:
-
-            return pd.DataFrame()
+    @staticmethod
+    def market_data_metrics():
+        """Return request, cache, retry, and failure counters."""
+        return DataLoader._history_provider.metrics()
