@@ -194,7 +194,8 @@ def render_selected_stock(result, settings):
     render_stock_detail(symbol, chart_data, result["cross_date"])
     cross_close = _price_at_cross(chart_data, result.get("cross_date"))
     _render_technical_status(result, chart_data, cross_close)
-    _render_score_breakdown(result)
+    if st.toggle("Show individual score details", key=f"score_details_{symbol}"):
+        _render_score_breakdown(result)
     _render_performance(chart_data, cross_close)
 
 
