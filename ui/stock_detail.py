@@ -45,7 +45,11 @@ def render_stock_detail(
         fig.add_vline(
             x=cross_date,
             line_width=2,
-            line_dash="dash"
+            line_dash="dash",
+            annotation_text=(
+                f"Golden Cross: {cross_date:%d %b %Y}"
+            ),
+            annotation_position="top left",
         )
 
     if trough_dates:
