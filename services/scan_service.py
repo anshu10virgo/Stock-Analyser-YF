@@ -16,6 +16,7 @@ from models.failure_result import FailureResult
 from models.scan_config import ScanConfig
 from models.scan_results import ScanResult
 from models.scan_run import ScanRun
+from services.industry_valuation import IndustryValuationService
 
 
 logger = logging.getLogger(__name__)
@@ -26,11 +27,18 @@ class ScanService:
 
     MIN_POST_CROSS_DAYS = 10
 
-    def __init__(self, config: ScanConfig, data_provider=DataLoader, fundamentals_provider=Fundamentals):
+    def __init__(
+        self,
+        config: ScanConfig,
+        data_provider=DataLoader,
+        fundamentals_provider=Fundamentals,
+        industry_valuation_service=None,
+    ):
         config.validate()
         self.config = config
         self.data_provider = data_provider
         self.fundamentals_provider = fundamentals_provider
+        self.industry_valuation_service = industry_valuation_service or IndustryValuationService()
 
     @staticmethod
     def _failure(symbol, stage, reason, check_type="mandatory"):
@@ -87,6 +95,8 @@ class ScanService:
     def scan(self, symbols: Iterable[str], progress_callback: Callable[[int, int], None] | None = None) -> ScanRun:
         symbols = list(symbols)
         run = ScanRun()
+        if hasattr(self.industry_valuation_service, "begin_scan"):
+            self.industry_valuation_service.begin_scan()
         if not symbols:
             return run
         try:
@@ -98,11 +108,15 @@ class ScanService:
             run.failed.extend(self._failure(symbol, "Market Data", "Unable to download market data for this scan") for symbol in symbols)
             if hasattr(self.data_provider, "market_data_metrics"):
                 run.metrics["market_data"] = self.data_provider.market_data_metrics()
+            if hasattr(self.industry_valuation_service, "metrics"):
+                run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
             return run
         for index, symbol in enumerate(symbols, start=1):
             if progress_callback:
                 progress_callback(index, len(symbols))
             self._scan_symbol(batch_data, symbol, run)
+        if hasattr(self.industry_valuation_service, "metrics"):
+            run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
         return run
 
     def _scan_symbol(self, batch_data, symbol, run):
@@ -138,6 +152,9 @@ class ScanService:
             score_slope = post_slope if post_slope is not None else SlopeAnalyzer.calculate_slope(history["MA_LONG"], self.config.slope_lookback)
             slope_label = SlopeAnalyzer.classify_slope(score_slope)
             fundamentals = self.fundamentals_provider.get_fundamentals(symbol)
+            industry_valuation = self.industry_valuation_service.valuation_for(
+                fundamentals["industry"]
+            )
             score_breakdown = self._score(cross, slope_label, distance, fundamentals)
             run.passed.append(ScanResult(
                 symbol=symbol, company_name=fundamentals["company_name"], close=round(latest["Close"], 2),
@@ -147,6 +164,7 @@ class ScanService:
                 pre_cross_slope=round(pre_slope, 4) if pre_slope is not None else None,
                 pre_cross_trough_date=trough_date, market_cap=fundamentals["market_cap"], pe=fundamentals["pe"],
                 eps=fundamentals["eps"], sector=fundamentals["sector"], industry=fundamentals["industry"],
+                **industry_valuation,
                 score=sum(score_breakdown.values()),
                 **score_breakdown,
             ))

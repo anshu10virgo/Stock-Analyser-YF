@@ -103,3 +103,40 @@ class YahooFinanceHistoryProvider:
     def clear_cache(self):
         with self._lock:
             self._cache.clear()
+
+
+class YahooFinanceIndustryProvider:
+    """Retrieve complete NSE peer groups from Yahoo's equity screener."""
+
+    PAGE_SIZE = 250
+
+    @staticmethod
+    def industry_quotes(industry):
+        """Return all Indian quotes assigned to the requested Yahoo industry."""
+        query = yf.EquityQuery(
+            "and",
+            [
+                yf.EquityQuery("eq", ["region", "in"]),
+                yf.EquityQuery("eq", ["industry", industry]),
+            ],
+        )
+        first_page = yf.screen(
+            query,
+            offset=0,
+            size=YahooFinanceIndustryProvider.PAGE_SIZE,
+            sortField="intradaymarketcap",
+            sortAsc=False,
+        )
+        quotes = first_page.get("quotes", [])
+        total = first_page.get("total", len(quotes))
+        for offset in range(YahooFinanceIndustryProvider.PAGE_SIZE, total, YahooFinanceIndustryProvider.PAGE_SIZE):
+            page = yf.screen(
+                query,
+                offset=offset,
+                size=YahooFinanceIndustryProvider.PAGE_SIZE,
+                sortField="intradaymarketcap",
+                sortAsc=False,
+            )
+            quotes.extend(page.get("quotes", []))
+
+        return list({quote["symbol"]: quote for quote in quotes if quote.get("symbol")}.values())

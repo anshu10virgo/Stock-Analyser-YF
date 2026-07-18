@@ -29,6 +29,8 @@ Yahoo Finance, Cache, and Observability
 - Technical-analysis modules: indicators, Golden Cross, targeted pre-cross
   trough validation, and long-MA slope-transition validation.
 - `core/fundamentals.py`: retried and cached fundamental-data retrieval.
+- `services/industry_valuation.py`: NSE-only weighted and median industry P/E
+  benchmarks calculated from Yahoo peer groups and cached for each scan.
 - `models/`: typed scan and failure-result contracts.
 
 ## Target Reliability Boundaries

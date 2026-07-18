@@ -1,7 +1,7 @@
 # Business Rules
 
 **Project:** Stock Analyser YF
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Active Development
 
 ## Purpose
@@ -92,6 +92,10 @@ interactive charts, and shareable Streamlit deployment.
   passing value.
 - Fundamental filters are optional and may only run when the required field is
   available.
+- For qualified stocks, the dataset includes a Yahoo-industry benchmark: a
+  market-cap-weighted P/E, median P/E, and qualifying NSE peer count. Peers
+  with missing, zero, or negative P/E are excluded. These benchmarks are
+  supplemental context and do not change qualification or score.
 
 ## 10. Ranking
 

@@ -105,7 +105,10 @@ def _render_stock_overview(result):
     st.subheader("Company overview")
     overview = pd.DataFrame(
         {
-            "Field": ("Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "EPS"),
+            "Field": (
+                "Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "EPS",
+                "Weighted Industry P/E", "Median Industry P/E", "Industry Peers",
+            ),
             "Value": (
                 result["symbol"],
                 _format_text(result.get("company_name"), result["symbol"].removesuffix(".NS")),
@@ -114,6 +117,9 @@ def _render_stock_overview(result):
                 _format_market_cap(result.get("market_cap")),
                 _format_value(result.get("pe")),
                 _format_value(result.get("eps")),
+                _format_value(result.get("industry_weighted_pe")),
+                _format_value(result.get("industry_median_pe")),
+                _format_value(result.get("industry_peer_count"), "{:.0f}"),
             ),
         }
     )

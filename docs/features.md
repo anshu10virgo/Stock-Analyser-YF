@@ -23,6 +23,7 @@
 - Formatted scan results with a scan timestamp
 - Clickable result rows with one-year stock charts
 - Retried and cached Yahoo fundamental-data retrieval
+- Selected-stock weighted and median industry P/E benchmarks with peer count
 
 ## Charts
 

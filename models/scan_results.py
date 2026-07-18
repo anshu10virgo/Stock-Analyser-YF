@@ -33,6 +33,9 @@ class ScanResult:
 
     sector: Optional[str] = None
     industry: Optional[str] = None
+    industry_weighted_pe: Optional[float] = None
+    industry_median_pe: Optional[float] = None
+    industry_peer_count: int = 0
 
     score: float = 0
 
