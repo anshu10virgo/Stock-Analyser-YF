@@ -77,14 +77,12 @@ class ScanService:
         return pre_slope, post_slope, trough_date, None
 
     def _score(self, cross, slope_label, distance, fundamentals):
-        return sum((
-            ScoringEngine.score_cross(cross["days_since_cross"]),
-            ScoringEngine.score_slope(slope_label),
-            ScoringEngine.score_distance(distance),
-            ScoringEngine.score_pe(fundamentals["pe"]),
-            ScoringEngine.score_eps(fundamentals["eps"]),
-            ScoringEngine.score_market_cap(fundamentals["market_cap"]),
-        ))
+        return ScoringEngine.score_breakdown(
+            cross["days_since_cross"],
+            slope_label,
+            distance,
+            fundamentals,
+        )
 
     def scan(self, symbols: Iterable[str], progress_callback: Callable[[int, int], None] | None = None) -> ScanRun:
         symbols = list(symbols)
@@ -140,6 +138,7 @@ class ScanService:
             score_slope = post_slope if post_slope is not None else SlopeAnalyzer.calculate_slope(history["MA_LONG"], self.config.slope_lookback)
             slope_label = SlopeAnalyzer.classify_slope(score_slope)
             fundamentals = self.fundamentals_provider.get_fundamentals(symbol)
+            score_breakdown = self._score(cross, slope_label, distance, fundamentals)
             run.passed.append(ScanResult(
                 symbol=symbol, company_name=fundamentals["company_name"], close=round(latest["Close"], 2),
                 ma_short=round(latest["MA_SHORT"], 2), ma_long=round(latest["MA_LONG"], 2),
@@ -148,7 +147,8 @@ class ScanService:
                 pre_cross_slope=round(pre_slope, 4) if pre_slope is not None else None,
                 pre_cross_trough_date=trough_date, market_cap=fundamentals["market_cap"], pe=fundamentals["pe"],
                 eps=fundamentals["eps"], sector=fundamentals["sector"], industry=fundamentals["industry"],
-                score=self._score(cross, slope_label, distance, fundamentals),
+                score=sum(score_breakdown.values()),
+                **score_breakdown,
             ))
         except Exception:
             logger.exception("Unexpected scan failure for %s", symbol)

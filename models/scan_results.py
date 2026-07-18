@@ -36,6 +36,13 @@ class ScanResult:
 
     score: float = 0
 
+    score_cross: int = 0
+    score_slope: int = 0
+    score_distance: int = 0
+    score_pe: int = 0
+    score_eps: int = 0
+    score_market_cap: int = 0
+
     status: str = "PASS"
 
     failure_reason: str = ""

@@ -7,6 +7,7 @@ from models.scan_config import ScanConfig
 from services.scan_service import ScanService
 
 from ui.sidebar import render_scan_configuration
+from ui.introduction_page import render_introduction
 from ui.results_page import render_optional_failures, render_results
 
 
@@ -25,15 +26,21 @@ st.title(
 if st.session_state.pop("open_results_after_scan", False):
     st.session_state["app_section"] = "3. Results"
 
+if st.session_state.get("app_section") == "1. Data":
+    st.session_state["app_section"] = "1. Introduction"
+
 section = st.radio(
     "Navigate",
-    options=("1. Data", "2. Scan", "3. Results"),
+    options=("1. Introduction", "2. Scan", "3. Results"),
     horizontal=True,
     label_visibility="collapsed",
     key="app_section",
 )
 
-if section == "1. Data":
+if section == "1. Introduction":
+    render_introduction()
+    st.divider()
+    st.subheader("Choose stock universe")
     source = st.radio(
         "Stock universe",
         options=("Included stock_symbols.csv", "Upload another file"),

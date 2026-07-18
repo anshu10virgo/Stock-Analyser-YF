@@ -1,5 +1,21 @@
 class ScoringEngine:
 
+    MAX_SCORE = 85
+
+    @staticmethod
+    def score_breakdown(days_since_cross, slope_label, distance, fundamentals):
+        """Return the named point contributions that make up a stock score."""
+        return {
+            "score_cross": ScoringEngine.score_cross(days_since_cross),
+            "score_slope": ScoringEngine.score_slope(slope_label),
+            "score_distance": ScoringEngine.score_distance(distance),
+            "score_pe": ScoringEngine.score_pe(fundamentals["pe"]),
+            "score_eps": ScoringEngine.score_eps(fundamentals["eps"]),
+            "score_market_cap": ScoringEngine.score_market_cap(
+                fundamentals["market_cap"]
+            ),
+        }
+
     @staticmethod
     def score_cross(
         days_since_cross
