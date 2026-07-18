@@ -5,6 +5,7 @@ from pathlib import Path
 from core.data_loader import DataLoader
 from models.scan_config import ScanConfig
 from services.scan_service import ScanService
+from services.stock_universe import StockUniverse
 
 from ui.sidebar import render_scan_configuration
 from ui.introduction_page import render_introduction
@@ -12,6 +13,10 @@ from ui.results_page import render_optional_failures, render_results
 
 
 DEFAULT_SYMBOLS_FILE = Path(__file__).with_name("stock_symbols.csv")
+STOCK_UNIVERSE = StockUniverse(
+    Path(__file__).parent / "data" / "stock_universe",
+    DEFAULT_SYMBOLS_FILE,
+)
 
 
 st.set_page_config(
@@ -29,6 +34,9 @@ if st.session_state.pop("open_results_after_scan", False):
 if st.session_state.get("app_section") == "1. Data":
     st.session_state["app_section"] = "1. Introduction"
 
+if st.session_state.get("stock_source") == "Included stock_symbols.csv":
+    st.session_state["stock_source"] = "Included validated stock universe"
+
 section = st.radio(
     "Navigate",
     options=("1. Introduction", "2. Scan", "3. Results"),
@@ -43,7 +51,7 @@ if section == "1. Introduction":
     st.subheader("Choose stock universe")
     source = st.radio(
         "Stock universe",
-        options=("Included stock_symbols.csv", "Upload another file"),
+        options=("Included validated stock universe", "Upload another file"),
         horizontal=True,
         key="stock_source",
     )
@@ -57,7 +65,7 @@ if section == "1. Introduction":
         elif uploaded_file is not None:
             symbols = DataLoader.load_symbols(uploaded_file, uploaded_file.name)
         else:
-            symbols = DataLoader.load_symbols(DEFAULT_SYMBOLS_FILE)
+            symbols = DataLoader.load_symbols(STOCK_UNIVERSE.active_file())
     except ValueError as error:
         st.error(f"Could not read the stock universe: {error}")
         symbols = []
@@ -68,6 +76,9 @@ if section == "1. Introduction":
     elif symbols:
         st.session_state["selected_symbols"] = symbols
         st.success(f"{len(symbols):,} symbols available for scanning.")
+        metadata = STOCK_UNIVERSE.metadata()
+        if metadata.get("refreshed_at"):
+            st.caption(f"Active stock universe refreshed: {metadata['refreshed_at']}")
 
 elif section == "2. Scan":
     symbols = st.session_state.get("selected_symbols", [])
