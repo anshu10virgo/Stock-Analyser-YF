@@ -99,3 +99,29 @@ def render_results(df, scan_time, settings):
         selected_result = df.iloc[selected_rows[0]]
         st.divider()
         render_selected_stock(selected_result, settings)
+
+
+def render_optional_failures(df):
+    """Show stocks rejected only because of selected optional checks."""
+    if "check_type" in df.columns:
+        optional_failures = df.loc[df["check_type"] == "optional"].copy()
+    else:
+        optional_failures = df.iloc[0:0].copy()
+
+    st.subheader("Optional-check rejections")
+    if optional_failures.empty:
+        st.success("No stocks were rejected by the selected optional checks.")
+        return
+
+    optional_failures = optional_failures.rename(
+        columns={
+            "symbol": "Symbol",
+            "stage": "Stage",
+            "reason": "Reason",
+        }
+    )
+    st.dataframe(
+        optional_failures[["Symbol", "Stage", "Reason"]],
+        use_container_width=True,
+        hide_index=True,
+    )

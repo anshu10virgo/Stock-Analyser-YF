@@ -11,16 +11,20 @@ from core.scoring import ScoringEngine
 
 class StockScanner:
 
+    MIN_POST_CROSS_DAYS = 10
+
     def __init__(
         self,
         short_ma,
         long_ma,
         max_cross_age,
         pre_cross_days,
-        trough_lookback,
-        min_troughs,
         slope_lookback,
         max_distance,
+        require_pre_cross_trough=False,
+        require_pre_cross_decline=False,
+        require_post_cross_sessions=False,
+        require_post_cross_increase=False,
         adjusted_prices=False,
     ):
 
@@ -31,15 +35,50 @@ class StockScanner:
 
         self.pre_cross_days = pre_cross_days
 
-        self.trough_lookback = trough_lookback
-
-        self.min_troughs = min_troughs
-
         self.slope_lookback = slope_lookback
 
         self.max_distance = max_distance
 
+        self.require_pre_cross_trough = require_pre_cross_trough
+        self.require_pre_cross_decline = require_pre_cross_decline
+        self.require_post_cross_sessions = require_post_cross_sessions
+        self.require_post_cross_increase = require_post_cross_increase
+
         self.adjusted_prices = adjusted_prices
+
+    def _find_pre_cross_trough(self, df, cross_date):
+        """Return a validated trough from the configured pre-cross window."""
+        cross_position = df.index.get_loc(cross_date)
+        start_position = max(0, cross_position - self.pre_cross_days)
+        pre_cross_df = df.iloc[start_position:cross_position + 1]
+        troughs = TroughDetector.detect_troughs(pre_cross_df)
+
+        dates = [date for date in troughs["dates"] if date < cross_date]
+        return dates[-1] if dates else None
+
+    def _long_ma_slopes(self, df, cross_date):
+        """Return long-MA slopes and available post-cross trading sessions."""
+        cross_position = df.index.get_loc(cross_date)
+        pre_cross_ma = df.iloc[
+            max(0, cross_position - self.slope_lookback):cross_position
+        ]["MA_LONG"]
+        post_cross_ma = df.iloc[cross_position + 1:]["MA_LONG"]
+
+        pre_cross_slope = None
+        if len(pre_cross_ma) >= self.slope_lookback:
+            pre_cross_slope = SlopeAnalyzer.calculate_slope(
+                pre_cross_ma,
+                self.slope_lookback,
+            )
+
+        post_cross_slope = None
+        if len(post_cross_ma) >= 2:
+            post_cross_slope = SlopeAnalyzer.calculate_slope(
+                post_cross_ma,
+                len(post_cross_ma),
+            )
+
+        return pre_cross_slope, post_cross_slope, len(post_cross_ma)
 
     def scan(
         self,
@@ -98,7 +137,9 @@ class StockScanner:
                 if not cross["valid"]:
                     failed_results.append({
                         "symbol": symbol,
-                        "reason": "Golden Cross validation failed"
+                        "stage": "Golden Cross Validation",
+                        "reason": "Golden Cross validation failed",
+                        "check_type": "mandatory",
                     })
                     continue
 
@@ -110,6 +151,7 @@ class StockScanner:
                         "symbol": symbol,
                         "stage": "Price Validation",
                         "reason": "Close price is below Golden Cross close",
+                        "check_type": "mandatory",
                     })
                     continue
 
@@ -118,6 +160,85 @@ class StockScanner:
                         "symbol": symbol,
                         "stage": "Price Validation",
                         "reason": "Close price is below Short MA",
+                        "check_type": "mandatory",
+                    })
+                    continue
+
+                if latest["MA_SHORT"] < latest["MA_LONG"]:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Golden Cross Validation",
+                        "reason": "Golden Cross has been invalidated by a Death Cross",
+                        "check_type": "mandatory",
+                    })
+                    continue
+
+                pre_cross_trough_date = None
+                if self.require_pre_cross_trough:
+                    pre_cross_trough_date = self._find_pre_cross_trough(
+                        df,
+                        cross["cross_date"],
+                    )
+                if self.require_pre_cross_trough and pre_cross_trough_date is None:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Trough Validation",
+                        "reason": "No trough found before Golden Cross",
+                        "check_type": "optional",
+                    })
+                    continue
+
+                pre_cross_slope, post_cross_slope, post_cross_days = (
+                    self._long_ma_slopes(
+                        df,
+                        cross["cross_date"],
+                    )
+                )
+                if self.require_pre_cross_decline and pre_cross_slope is None:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Slope Validation",
+                        "reason": "Insufficient history for pre-cross MA slope",
+                        "check_type": "optional",
+                    })
+                    continue
+
+                if self.require_pre_cross_decline and pre_cross_slope >= 0:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Slope Validation",
+                        "reason": "Long MA was not declining before Golden Cross",
+                        "check_type": "optional",
+                    })
+                    continue
+
+                if (
+                    self.require_post_cross_sessions
+                    and post_cross_days < self.MIN_POST_CROSS_DAYS
+                ):
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Slope Validation",
+                        "reason": "Golden Cross needs 10 post-cross sessions",
+                        "check_type": "optional",
+                    })
+                    continue
+
+                if self.require_post_cross_increase and post_cross_slope is None:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Slope Validation",
+                        "reason": "Insufficient post-cross history for MA slope",
+                        "check_type": "optional",
+                    })
+                    continue
+
+                if self.require_post_cross_increase and post_cross_slope <= 0:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Slope Validation",
+                        "reason": "Long MA is not increasing after Golden Cross",
+                        "check_type": "optional",
                     })
                     continue
 
@@ -130,35 +251,25 @@ class StockScanner:
                 )
 
                 if abs(distance) > self.max_distance:
+                    failed_results.append({
+                        "symbol": symbol,
+                        "stage": "Price Validation",
+                        "reason": "Close price is too far from Long MA",
+                        "check_type": "mandatory",
+                    })
                     continue
 
-                troughs = (
-                    TroughDetector
-                    .detect_troughs(
-                        df,
-                        self.trough_lookback
-                    )
-                )
-
-                if (
-                    troughs["count"]
-                    <
-                    self.min_troughs
-                ):
-                    continue
-
-                slope = (
-                    SlopeAnalyzer
-                    .calculate_slope(
+                score_slope = post_cross_slope
+                if score_slope is None:
+                    score_slope = SlopeAnalyzer.calculate_slope(
                         df["MA_LONG"],
-                        self.slope_lookback
+                        self.slope_lookback,
                     )
-                )
 
                 slope_label = (
                     SlopeAnalyzer
                     .classify_slope(
-                        slope
+                        score_slope
                     )
                 )
 
@@ -182,13 +293,6 @@ class StockScanner:
                     ScoringEngine
                     .score_slope(
                         slope_label
-                    )
-                )
-
-                score += (
-                    ScoringEngine
-                    .score_troughs(
-                        troughs["count"]
                     )
                 )
 
@@ -256,14 +360,19 @@ class StockScanner:
                             2
                         ),
 
-                    "trough_count":
-                        troughs["count"],
-
                     "slope":
                         round(
-                            slope,
+                            score_slope,
                             4
                         ),
+
+                    "pre_cross_slope":
+                        round(
+                            pre_cross_slope,
+                            4
+                        ) if pre_cross_slope is not None else None,
+
+                    "pre_cross_trough_date": pre_cross_trough_date,
 
                     "slope_label":
                         slope_label,

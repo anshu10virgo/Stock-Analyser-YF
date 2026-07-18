@@ -13,10 +13,11 @@ Status: Active Development
 
 ### Technical Analysis
 
-- Moving averages, Golden Cross validation, Golden Cross price validation, and
-  short-MA price validation
+- Moving averages, Golden Cross validation (including Death Cross
+  invalidation), Golden Cross price validation, and short-MA price validation
 - Golden Cross age and pre-cross validation
-- Trough detection, slope calculation, price-distance checks, and ranking
+- Optional long-MA decline-to-rise filters and targeted pre-cross trough,
+  mandatory price-distance checks, and ranking
 
 ### Dashboard
 

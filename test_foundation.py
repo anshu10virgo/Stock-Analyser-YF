@@ -58,8 +58,6 @@ for symbol in symbols:
         long_ma=200,
         max_cross_age=60,
         pre_cross_days=20,
-        trough_lookback=120,
-        min_troughs=2,
         slope_lookback=20,
         max_distance=5
     )

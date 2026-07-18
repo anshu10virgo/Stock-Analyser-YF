@@ -19,7 +19,8 @@ Yahoo Finance, Cache, and Observability
 - `ui/`: Streamlit pages, formatted results, and interactive charts.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: scan orchestration, rule execution, and ranking.
-- Technical-analysis modules: indicators, Golden Cross, trough, and slope.
+- Technical-analysis modules: indicators, Golden Cross, targeted pre-cross
+  trough validation, and long-MA slope-transition validation.
 - `core/fundamentals.py`: retried and cached fundamental-data retrieval.
 - `models/`: typed scan and failure-result contracts.
 

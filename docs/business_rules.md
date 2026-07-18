@@ -40,7 +40,8 @@ interactive charts, and shareable Streamlit deployment.
 
 - Indicators are calculated from the selected price basis.
 - The current indicator set includes short and long moving averages, Golden
-  Cross, MA slope, troughs, 52-week high/low support, and MA distance.
+  Cross, long-MA slope transition, a pre-cross trough, 52-week high/low
+  support, and MA distance.
 - Indicator values used in results and charts must use the same configuration.
 
 ## 5. Scanner Qualification
@@ -57,13 +58,21 @@ interactive charts, and shareable Streamlit deployment.
 - It must be within the configured age limit.
 - For the configured pre-cross period, the short MA must remain below the long
   MA.
+- The short MA must remain greater than or equal to the long MA at the latest
+  available close; a later Death Cross invalidates the Golden Cross signal.
 - A qualified result must retain the actual cross date for reporting and charts.
 
-## 7. Trend and Trough Rules
+## 7. Optional Trend and Trough Rules
 
-- Long-MA slope and higher-low/trough criteria are configurable rules.
-- When enabled, their result must be enforced, not only displayed or scored.
-- Trough detection uses the configured lookback and minimum-trough count.
+- Users may independently enable a validated pre-cross trough, negative
+  pre-cross long-MA slope, at least ten post-cross sessions, and positive
+  post-cross long-MA slope.
+- A selected pre-cross trough must occur within the configured Pre-Cross
+  Validation Days immediately before the Golden Cross.
+- A selected pre-cross slope uses the configured MA Slope Lookback.
+- A selected post-cross-session rule requires at least ten completed trading
+  sessions; a selected post-cross-slope rule requires a positive slope.
+- The application does not use a global trough-count or higher-low rule.
 
 ## 8. Price and 52-Week Rules
 
@@ -87,8 +96,8 @@ interactive charts, and shareable Streamlit deployment.
 ## 10. Ranking
 
 - Only qualified stocks receive a final ranking score.
-- Score inputs include Golden Cross freshness, MA proximity, trend, trough
-  quality, and available fundamental context.
+- Score inputs include Golden Cross freshness, MA proximity, current trend,
+  and available fundamental context.
 - Ranking must not override a failed enabled rule.
 
 ## 11. Dashboard and Reporting
@@ -97,6 +106,8 @@ interactive charts, and shareable Streamlit deployment.
   industry, score, market cap, price, MA values, fundamentals, and cross date.
 - Selecting a qualified stock shows one year of price history with short/long
   MAs and a labeled Golden Cross marker when a cross date exists.
+- When at least one optional rule is selected, users can view stocks rejected
+  by optional checks and their rejection reasons.
 - The dashboard must show both qualified and failed stocks with summary counts.
 - Exports must include scan settings, timestamps, qualified records, and
   failure reasons.

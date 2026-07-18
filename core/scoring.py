@@ -36,22 +36,6 @@ class ScoringEngine:
         )
 
     @staticmethod
-    def score_troughs(
-        count
-    ):
-
-        if count >= 3:
-            return 15
-
-        if count == 2:
-            return 10
-
-        if count == 1:
-            return 5
-
-        return 0
-
-    @staticmethod
     def score_distance(
         distance
     ):

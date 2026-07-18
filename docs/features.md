@@ -6,10 +6,10 @@
 - Golden Cross
 - Golden Cross Age
 - Pre-cross Validation
-- Long MA Trend Change
-- Price Above Long MA
+- Optional Long MA decline-to-rise transition
+- Current Close At or Above Short MA
 - Close At or Above Golden Cross Price
-- Trough Detection
+- Optional Pre-Cross Trough Validation
 - 52 Week Distance
 
 ## Dashboard
