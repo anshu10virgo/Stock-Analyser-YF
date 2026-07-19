@@ -16,12 +16,14 @@ Yahoo Finance, Cache, and Observability
 
 ## Current Components
 
-- `ui/`: Streamlit pages, formatted results, and interactive charts.
+- `ui/`: Streamlit pages, session-only scan presets, live scan insights,
+  shared visual styling, formatted results, and interactive charts.
 - `models/scan_config.py`: immutable scan configuration and validation.
 - `models/scan_run.py`: typed qualified and failed outcomes with dataframe
   adapters for the UI.
 - `services/scan_service.py`: scan orchestration with injected provider
-  dependencies and structured failures.
+  dependencies, structured failures, and optional accumulated-result callbacks
+  for batched UI progress updates.
 - `providers/yahoo_finance.py`: retrying, TTL-cached Yahoo price batches with
   observable request, cache, retry, and failure counters.
 - `providers/repository_data.py`: committed annual price partitions,
@@ -55,3 +57,5 @@ Yahoo Finance, Cache, and Observability
   failure result.
 - Caches are an optimization only; results must identify their scan time and
   selected settings.
+- User-named strategies are presentation/session state only. They must not
+  mutate code-defined defaults or be persisted to Git.

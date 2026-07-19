@@ -12,6 +12,10 @@ python -m streamlit run app.py
 
 ## Current capabilities
 
+- Guided desktop workflow with Setup, Strategy, Live Scan, and Results stages.
+- Up to five named scan strategies stored only for the active app session;
+  committed defaults are never overwritten.
+- Batched live progress, partial qualified results, and locally derived insights.
 - Configurable moving-average and Golden Cross scans.
 - Adjustable adjusted/unadjusted price basis.
 - Yahoo Finance fundamentals with retries and in-memory caching.

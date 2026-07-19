@@ -82,7 +82,7 @@ class StockScannerTests(unittest.TestCase):
             index=dates,
         )
 
-    def _scan(self, history, cross_date=None, **config_overrides):
+    def _scan(self, history, cross_date=None, result_callback=None, **config_overrides):
         cross_date = cross_date or history.index[-15]
         cross = {
             "valid": True,
@@ -99,7 +99,19 @@ class StockScannerTests(unittest.TestCase):
                 self._config(**config_overrides),
                 fundamentals_provider=StaticFundamentals,
                 industry_valuation_service=StaticIndustryValuation(),
-            ).scan(["TEST.NS"]).as_dataframes()
+            ).scan(["TEST.NS"], result_callback=result_callback).as_dataframes()
+
+    def test_result_callback_receives_accumulated_scan_outcomes(self):
+        updates = []
+
+        self._scan(
+            self._history(),
+            result_callback=lambda current, total, run: updates.append(
+                (current, total, len(run.passed), len(run.failed))
+            ),
+        )
+
+        self.assertEqual(updates, [(1, 1, 1, 0)])
 
     def test_accepts_stock_matching_all_new_mandatory_rules(self):
         """The new rule set accepts a fresh reversal near the Long MA."""

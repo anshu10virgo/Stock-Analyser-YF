@@ -12,8 +12,14 @@
 
 ## Dashboard
 
-- Scanner
-- Results
+- Guided desktop workflow: Setup, Strategy, Live Scan, and Results
+- Display identity simplified to `Stock Analyser` while the repository name remains unchanged
+- Market, universe, data-source, and Top N choices grouped in Setup
+- Up to five named scan strategies stored only in the active Streamlit session
+- Immutable code-defined scan defaults with an explicit reset action
+- Batched live progress with processed, qualified, and rejected counts
+- Locally derived scan insights without Google or other research requests
+- Results and selected-stock details
 - Stock Details
 - Included `stock_symbols.csv` universe
 - Configurable number of symbols to analyse
@@ -24,6 +30,7 @@
 - Retried and cached Yahoo fundamental-data retrieval
 - Selected-stock weighted and median industry P/E benchmarks with peer count
 - Snapshot date, PE/industry coverage, effective source, and fallback metrics
+- Colour-accented desktop visual system and reduced interface typography
 
 ## Charts
 

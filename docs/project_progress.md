@@ -31,6 +31,10 @@ Status: Active Development
 
 ### Dashboard
 
+- Four-step desktop workflow covering Setup, Strategy, Live Scan, and Results
+- Session-only named strategies that do not alter committed defaults
+- Progressive qualified-stock display and locally derived scan insights
+- Branded colour system and bull/bear market artwork
 - Configurable scanner controls and scan-size selection
 - Formatted qualified-stock table with latest scan timestamp
 - Interactive one-year selected-stock chart

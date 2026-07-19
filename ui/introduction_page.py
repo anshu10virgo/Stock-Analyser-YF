@@ -6,9 +6,9 @@ import streamlit as st
 
 def render_introduction() -> None:
     """Explain the scanner workflow and its transparent 85-point ranking."""
-    st.subheader("About Stock Analyser YF")
+    st.subheader("About Stock Analyser")
     st.write(
-        "Stock Analyser YF is a technical stock-screening tool for NSE stocks "
+        "Stock Analyser is a technical stock-screening tool for NSE stocks "
         "using Yahoo Finance market data. It identifies recent Golden Cross "
         "opportunities, applies mandatory price and trend checks, and lets you "
         "apply additional optional filters."
@@ -16,11 +16,10 @@ def render_introduction() -> None:
 
     st.subheader("How the scan works")
     st.markdown(
-        "1. Choose the included stock universe or upload a CSV/Excel file.\n"
-        "2. Select how many stocks to analyse and configure the checks.\n"
-        "3. Stocks passing all mandatory and selected optional checks appear "
-        "in Qualified Stocks.\n"
-        "4. Qualified stocks are ranked using the score below."
+        "1. Complete the market and data setup once for the session.\n"
+        "2. Load a session strategy or configure the checks.\n"
+        "3. Follow scan progress and locally derived insights as stocks are processed.\n"
+        "4. Review qualified stocks, one-year trends, and transparent score details."
     )
 
     st.subheader("How the score is calculated")
@@ -37,7 +36,7 @@ def render_introduction() -> None:
             ],
             columns=["Factor", "Points", "How points are assigned"],
         ),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 

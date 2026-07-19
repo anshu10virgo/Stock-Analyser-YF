@@ -98,7 +98,13 @@ class ScanService:
             fundamentals,
         )
 
-    def scan(self, symbols: Iterable[str], progress_callback: Callable[[int, int], None] | None = None) -> ScanRun:
+    def scan(
+        self,
+        symbols: Iterable[str],
+        progress_callback: Callable[[int, int], None] | None = None,
+        result_callback: Callable[[int, int, ScanRun], None] | None = None,
+    ) -> ScanRun:
+        """Scan symbols and optionally publish progress and accumulated results."""
         symbols = list(symbols)
         run = ScanRun()
         scan_started = time.perf_counter()
@@ -150,6 +156,8 @@ class ScanService:
             if progress_callback:
                 progress_callback(index, len(symbols))
             self._scan_symbol(batch_data, symbol, run)
+            if result_callback:
+                result_callback(index, len(symbols), run)
         if hasattr(self.industry_valuation_service, "metrics"):
             run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
         run.metrics["timing"] = {
