@@ -1,0 +1,12 @@
+{
+  "refreshed_at": "2026-07-19T11:05:50.412843+00:00",
+  "refresh_interval_days": 180,
+  "active_symbol_count": 2056,
+  "classified_symbol_count": 1987,
+  "active_symbols_sha256": "fab64d0c747bbccd37cfddb1f382fb39c285ace52c6e905845119e76ddbfd3ce",
+  "provider_metrics": {
+    "sector_requests": 11,
+    "industry_requests": 145,
+    "failures": 0
+  }
+}

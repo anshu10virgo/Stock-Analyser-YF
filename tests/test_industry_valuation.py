@@ -1,7 +1,9 @@
 """Tests for NSE-only industry P/E benchmark calculation."""
 
 import unittest
+from unittest.mock import patch
 
+from providers.yahoo_finance import YahooFinanceIndustryProvider
 from services.industry_valuation import IndustryValuationService
 
 
@@ -16,6 +18,18 @@ class FakeIndustryProvider:
 
 
 class IndustryValuationTests(unittest.TestCase):
+    @patch(
+        "providers.yahoo_finance.yf.screen",
+        return_value={"quotes": [{"symbol": "TEST.NS"}], "total": 1},
+    )
+    def test_normalizes_grouped_industry_name_for_yahoo_screener(self, screen):
+        quotes = YahooFinanceIndustryProvider.industry_quotes(
+            "Software - Application"
+        )
+
+        self.assertEqual(quotes, [{"symbol": "TEST.NS"}])
+        screen.assert_called_once()
+
     def test_calculates_weighted_and_median_pe_from_nse_peers(self):
         """BSE duplicates, loss makers, and missing values must not skew P/E."""
         provider = FakeIndustryProvider(

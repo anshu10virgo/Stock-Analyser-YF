@@ -19,16 +19,23 @@ data/market_data/
   manifest.json
   symbol_coverage.csv
   prices/
-    YYYY.parquet   # completed years
-    YYYY.csv       # current year
+    YYYY.parquet
   fundamentals/
     fundamentals.csv
+    classifications.csv
+    classification_metadata.json
     industry_valuations.csv
 ```
 
-Retention is ten calendar years. Completed years use immutable compressed
-Parquet; the current year remains CSV so incremental Git commits stay efficient.
-Raw and adjusted close are stored so either price basis can be applied locally.
+Retention is ten calendar years. Every year uses compressed Parquet sorted by
+symbol and date with bounded row groups. Bulk scans can read the complete
+snapshot, while charts use Parquet predicate filtering and load only the
+selected symbol. Raw and adjusted close are stored so either price basis can be
+applied locally.
+
+Selected-stock history is cached for 15 minutes and keyed by symbol, price
+basis, selected source, and snapshot version. Expanding score details does not
+rerun the chart data path.
 
 The manifest records schema version, universe hash, file hashes, history range,
 latest trading date, coverage, and maximum supported Long MA. It is replaced
@@ -39,12 +46,36 @@ only after the data files pass validation.
 ```powershell
 python scripts/refresh_market_data.py --mode full
 python scripts/refresh_market_data.py --mode incremental
+python scripts/refresh_market_data.py --mode classifications
+python scripts/refresh_market_data.py --mode optimize
 python scripts/refresh_market_data.py --mode validate
 ```
 
 The GitHub Actions workflow runs incremental mode at 18:00 IST on weekdays and
-can be manually started in incremental or validation-only mode. A closed-market
-run produces no data commit.
+can be manually started in incremental, classification, or validation-only
+mode. A closed-market run produces no data commit.
+
+## Fundamentals and Industry P/E
+
+Yahoo's India quote screener supplies company name, market cap, trailing PE,
+forward PE, and trailing EPS. When trailing PE is missing but price and positive
+trailing EPS exist, PE is calculated as current price divided by trailing EPS
+and its source is recorded.
+
+Sector and industry mappings are stored independently in
+`classifications.csv`. They refresh every 180 days or can be forced with
+`--mode classifications`, and daily fundamentals refreshes never overwrite
+valid mappings with blanks. A stock-universe change is detected through the
+active-symbol hash and triggers a new classification pass.
+
+For every classified industry with positive-PE, positive-market-cap peers, the
+refresh calculates:
+
+- market-cap weighted PE as total market cap divided by implied earnings;
+- median peer PE;
+- eligible peer count.
+
+Coverage counts are recorded in the manifest and displayed in Streamlit.
 
 ## Universe Reconciliation
 

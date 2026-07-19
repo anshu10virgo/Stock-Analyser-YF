@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - incremental
+          - classifications
           - validate
 
 permissions:
@@ -27,13 +28,13 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Check out main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip

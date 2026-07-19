@@ -19,6 +19,8 @@ python -m streamlit run app.py
 - GitHub-backed Streamlit Community Cloud deployment.
 - Selectable live Yahoo or committed Git-snapshot market data.
 - Ten-year Git-backed price history with scheduled incremental refresh support.
+- Filtered, cached single-symbol chart reads from symbol-grouped Parquet.
+- Semiannual Yahoo sector/industry classifications and committed industry P/E.
 
 ## Committed market-data refresh
 
@@ -31,7 +33,9 @@ python scripts/refresh_market_data.py --mode full
 The workflow `.github/workflows/refresh-market-data.yml` then runs incremental
 refreshes on weekdays after market close, validates the snapshot, and commits
 changed data to `main`. It is also manually runnable in incremental or
-validation-only mode. See [Committed Market Data](docs/market_data.md).
+classification, or validation-only mode. Sector/industry classifications are
+automatically preserved and refreshed every 180 days. See
+[Committed Market Data](docs/market_data.md).
 
 ## Manual stock-universe refresh
 

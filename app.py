@@ -91,6 +91,14 @@ if section == "1. Introduction":
             st.success(
                 f"Committed snapshot available through {snapshot['last_trading_date']}."
             )
+            coverage = snapshot.get("fundamentals_coverage", {})
+            if coverage:
+                st.caption(
+                    "Fundamentals coverage: "
+                    f"PE {coverage.get('pe', 0):,}/{snapshot.get('symbol_count', 0):,}; "
+                    f"industry {coverage.get('industry', 0):,}/{snapshot.get('symbol_count', 0):,}; "
+                    f"industry benchmarks {coverage.get('industries_with_valuations', 0):,}."
+                )
         else:
             st.warning(
                 "No committed market-data snapshot exists yet. Missing requests will use Yahoo."

@@ -21,6 +21,7 @@ class Fundamentals:
             "company_name": None,
             "market_cap": None,
             "pe": None,
+            "pe_source": None,
             "forward_pe": None,
             "eps": None,
             "sector": None,
@@ -59,6 +60,9 @@ class Fundamentals:
                     "company_name": info.get("longName") or info.get("shortName"),
                     "market_cap": market_cap,
                     "pe": info.get("trailingPE"),
+                    "pe_source": (
+                        "yahoo_trailing_pe" if info.get("trailingPE") is not None else None
+                    ),
                     "forward_pe": info.get("forwardPE"),
                     "eps": info.get("trailingEps"),
                     "sector": info.get("sector"),

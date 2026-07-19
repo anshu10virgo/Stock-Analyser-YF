@@ -66,6 +66,31 @@ class RepositoryMarketDataTests(unittest.TestCase):
 
         fallback.download_batch.assert_called_once()
 
+    def test_single_symbol_parquet_read_does_not_load_full_snapshot(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            prices = root / "prices"
+            prices.mkdir(parents=True)
+            rows = pd.concat([price_rows(), price_rows("OTHER.NS")], ignore_index=True)
+            rows["Date"] = pd.to_datetime(rows["Date"])
+            rows.sort_values(["Symbol", "Date"]).to_parquet(
+                prices / "2026.parquet", index=False, row_group_size=2
+            )
+            (root / "manifest.json").write_text(
+                json.dumps({"price_files": [{"path": "prices/2026.parquet"}]}),
+                encoding="utf-8",
+            )
+            provider = RepositoryHistoryProvider(root)
+
+            batch = provider.download_batch(["TEST.NS"], years=1)
+            history = provider.get_symbol_history(batch, "TEST.NS")
+            metrics = provider.market_data_metrics()
+
+        self.assertEqual(len(history), 2)
+        self.assertEqual(metrics["filtered_partition_reads"], 1)
+        self.assertEqual(metrics["full_snapshot_loads"], 0)
+        self.assertEqual(metrics["rows_loaded"], 2)
+
     def test_blank_stored_fundamentals_do_not_trigger_fallback(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)

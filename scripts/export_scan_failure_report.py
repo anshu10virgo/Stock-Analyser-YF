@@ -168,6 +168,7 @@ def main() -> None:
         .reset_index(name="failed_stocks")
         .sort_values("failed_stocks", ascending=False)
     )
+    fundamentals_coverage = data_services.metadata.get("fundamentals_coverage", {})
     summary = pd.DataFrame(
         [
             ("Report generated", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
@@ -178,6 +179,9 @@ def main() -> None:
             ("Market-data manifest generated", data_services.metadata.get("generated_at")),
             ("Yahoo fallback requests", service.data_provider.market_data_metrics().get("fallback_requests")),
             ("Industry Yahoo fallback requests", service.industry_valuation_service.metrics().get("fallback_requests", 0)),
+            ("Snapshot stocks with PE", fundamentals_coverage.get("pe")),
+            ("Snapshot stocks with industry", fundamentals_coverage.get("industry")),
+            ("Snapshot industry PE benchmarks", fundamentals_coverage.get("industries_with_valuations")),
             ("Symbols scanned", len(symbols)),
             ("Qualified stocks", len(results["passed"])),
             ("Failed stocks", len(failures)),

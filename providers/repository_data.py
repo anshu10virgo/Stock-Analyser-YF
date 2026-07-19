@@ -36,6 +36,8 @@ def _as_symbol_batch(batch: pd.DataFrame, symbols: list[str]) -> pd.DataFrame:
 class RepositoryHistoryProvider:
     """Read annual price partitions committed under ``data/market_data``."""
 
+    FILTERED_SYMBOL_LIMIT = 10
+
     def __init__(self, root: Path, fallback=None) -> None:
         self.root = Path(root)
         self.fallback = fallback
@@ -46,6 +48,9 @@ class RepositoryHistoryProvider:
             "snapshot_hits": 0,
             "fallback_requests": 0,
             "failures": 0,
+            "filtered_partition_reads": 0,
+            "full_snapshot_loads": 0,
+            "rows_loaded": 0,
         }
 
     def metadata(self) -> dict:
@@ -77,6 +82,42 @@ class RepositoryHistoryProvider:
         prices.sort_values(["Date", "Symbol"], inplace=True)
         prices.drop_duplicates(["Date", "Symbol"], keep="last", inplace=True)
         self._prices = prices
+        self._metrics["full_snapshot_loads"] += 1
+        self._metrics["rows_loaded"] += len(prices)
+        return prices
+
+    def _load_filtered_prices(
+        self, symbols: list[str], cutoff: pd.Timestamp
+    ) -> pd.DataFrame:
+        """Read only requested symbols from Parquet-backed partitions."""
+        frames = []
+        for path in self._price_paths():
+            if path.suffix == ".parquet":
+                symbol_filter = (
+                    ("Symbol", "==", symbols[0])
+                    if len(symbols) == 1
+                    else ("Symbol", "in", symbols)
+                )
+                frame = pd.read_parquet(
+                    path,
+                    filters=[symbol_filter, ("Date", ">=", cutoff)],
+                )
+            else:
+                frame = pd.read_csv(path)
+                frame["Date"] = pd.to_datetime(frame["Date"], errors="coerce")
+                frame = frame.loc[
+                    frame["Symbol"].isin(symbols) & frame["Date"].ge(cutoff)
+                ]
+            if not frame.empty:
+                frames.append(frame)
+        self._metrics["filtered_partition_reads"] += 1
+        if not frames:
+            return pd.DataFrame()
+        prices = pd.concat(frames, ignore_index=True)
+        prices["Date"] = pd.to_datetime(prices["Date"], errors="coerce")
+        prices.sort_values(["Date", "Symbol"], inplace=True)
+        prices.drop_duplicates(["Date", "Symbol"], keep="last", inplace=True)
+        self._metrics["rows_loaded"] += len(prices)
         return prices
 
     @staticmethod
@@ -95,8 +136,12 @@ class RepositoryHistoryProvider:
         return result
 
     def _local_batch(self, symbols: list[str], years: int, adjusted_prices: bool):
-        prices = self._load_prices()
         cutoff = pd.Timestamp.today().normalize() - pd.DateOffset(years=years)
+        prices = (
+            self._load_filtered_prices(symbols, cutoff)
+            if len(symbols) <= self.FILTERED_SYMBOL_LIMIT
+            else self._load_prices()
+        )
         selected = prices.loc[
             prices["Symbol"].isin(symbols) & prices["Date"].ge(cutoff)
         ].copy()

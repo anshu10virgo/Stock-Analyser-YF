@@ -13,6 +13,9 @@ Status: Active Development
 - Selectable Git-snapshot and live Yahoo provider sets
 - Ten-year partitioned market-data snapshot and manifest contract
 - Scheduled/manual incremental refresh workflow
+- Symbol-filtered Parquet chart access and selected-history caching
+- Semiannual sector/industry classification snapshot
+- Committed weighted/median industry PE and coverage metadata
 
 ### Technical Analysis
 
@@ -32,17 +35,18 @@ Status: Active Development
 - Formatted qualified-stock table with latest scan timestamp
 - Interactive one-year selected-stock chart
 - Golden Cross date marker on charts
+- Score details that expand without reloading chart history
+- Effective source, fallback, timing, and fundamentals coverage diagnostics
 
 ## Current Hardening Work
 
 - Full per-symbol failure reporting and failure visibility in the dashboard.
 - Enforce every enabled scanner rule consistently.
-- Build and commit the initial ten-year market-data snapshot.
 - Add automated tests for scanner rules, provider failures, and UI formatting.
 
 ## Current Risks
 
 - Yahoo Finance availability and field coverage vary by symbol.
-- The initial committed snapshot must be monitored for Git size and Yahoo
-  coverage before live mode is retired.
-- Large universes require additional caching, throttling, and observability.
+- Yahoo classifications may not cover every active NSE symbol; coverage is
+  reported explicitly and prior valid mappings are preserved on partial runs.
+- Binary Parquet changes must be monitored for repository growth over time.
