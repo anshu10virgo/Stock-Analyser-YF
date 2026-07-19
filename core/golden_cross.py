@@ -7,7 +7,6 @@ class GoldenCrossDetector:
     def find_cross(
         df,
         max_age_days,
-        pre_cross_days
     ):
 
         result = {
@@ -42,35 +41,6 @@ class GoldenCrossDetector:
         ).days
 
         if days_since > max_age_days:
-            return result
-
-        cross_position = (
-            df.index.get_loc(cross_date)
-        )
-
-        start_position = max(
-            0,
-            cross_position
-            - pre_cross_days
-        )
-
-        validation_df = (
-            df.iloc[
-                start_position:
-                cross_position
-            ]
-        )
-
-        if len(validation_df) < pre_cross_days:
-            return result
-
-        pre_cross_valid = (
-            validation_df["MA_SHORT"]
-            <
-            validation_df["MA_LONG"]
-        ).all()
-
-        if not pre_cross_valid:
             return result
 
         result["valid"] = True

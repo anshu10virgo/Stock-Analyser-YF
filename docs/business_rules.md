@@ -40,8 +40,8 @@ interactive charts, and shareable Streamlit deployment.
 
 - Indicators are calculated from the selected price basis.
 - The current indicator set includes short and long moving averages, Golden
-  Cross, long-MA slope transition, a pre-cross trough, 52-week high/low
-  support, and MA distance.
+  Cross, Long-MA 52-week high-to-trough-to-recovery, and price premium above
+  the Long MA.
 - Indicator values used in results and charts must use the same configuration.
 
 ## 5. Scanner Qualification
@@ -51,39 +51,34 @@ interactive charts, and shareable Streamlit deployment.
 - Each rejected or errored symbol must include its symbol, failed stage, and
   one or more human-readable reasons.
 
-## 6. Golden Cross
+## 6. Mandatory Reversal Rules
 
-- A Golden Cross occurs when the short MA changes from less than or equal to
-  the long MA to greater than the long MA.
-- It must be within the configured age limit.
-- For the configured pre-cross period, the short MA must remain below the long
-  MA.
-- The short MA must remain greater than or equal to the long MA at the latest
-  available close; a later Death Cross invalidates the Golden Cross signal.
-- A qualified result must retain the actual cross date for reporting and charts.
+- The Short MA must have a positive linear-regression slope across its latest
+  five trading sessions.
+- The current Short MA must be strictly greater than the current Long MA.
+- The latest Golden Cross must be within the configured age limit (80 calendar
+  days by default). A Golden Cross occurs when the Short MA changes from less
+  than or equal to the Long MA to greater than the Long MA.
+- Find the highest Long MA in the last 252 trading sessions, then the lowest
+  Long MA after that high.
+- The Long MA must have declined from that 52-week high to the trough by at
+  least the configured percentage (10% by default). The high-to-trough decline
+  must take at least the configured number of trading sessions (60 by default),
+  then the current Long MA must be above the trough with a positive Long-MA
+  slope across five post-trough trading sessions. The decline is not measured
+  from the high to today's Long MA.
+- Current Close must be strictly above the Long MA and no more than the
+  configured premium above it (10% by default).
+- A qualified result retains the cross date, Long-MA high value/date/age,
+  trough value/date, Long-MA decline, post-trough five-session slope, and
+  current price premium for auditability.
 
-## 7. Optional Trend and Trough Rules
+## 7. Optional Rule
 
-- Users may independently enable a validated pre-cross trough, negative
-  pre-cross long-MA slope, at least ten post-cross sessions, and positive
-  post-cross long-MA slope.
-- A selected pre-cross trough must occur within the configured Pre-Cross
-  Validation Days immediately before the Golden Cross.
-- A selected pre-cross slope uses the configured MA Slope Lookback.
-- A selected post-cross-session rule requires at least ten completed trading
-  sessions; a selected post-cross-slope rule requires a positive slope.
-- The application does not use a global trough-count or higher-low rule.
+- Users may require at least ten completed trading sessions after the Golden
+  Cross. This is the only optional qualification rule.
 
-## 8. Price and 52-Week Rules
-
-- Current close must be greater than or equal to the close on the Golden Cross
-  date.
-- Current close must be greater than or equal to the short MA.
-- Current close must be within the configured distance from the long MA.
-- Any 52-week distance filter must be configurable, enforced, and reported in
-  the failure reason.
-
-## 9. Fundamentals
+## 8. Fundamentals
 
 - Sector, industry, market capitalization, PE, and EPS are supplemental Yahoo
   Finance fields.
@@ -97,14 +92,14 @@ interactive charts, and shareable Streamlit deployment.
   with missing, zero, or negative P/E are excluded. These benchmarks are
   supplemental context and do not change qualification or score.
 
-## 10. Ranking
+## 9. Ranking
 
 - Only qualified stocks receive a final ranking score.
 - Score inputs include Golden Cross freshness, MA proximity, current trend,
   and available fundamental context.
 - Ranking must not override a failed enabled rule.
 
-## 11. Dashboard and Reporting
+## 10. Dashboard and Reporting
 
 - Results show meaningful labels, scan timestamp, symbol, company, sector,
   industry, score, market cap, price, MA values, fundamentals, and cross date.
@@ -116,7 +111,7 @@ interactive charts, and shareable Streamlit deployment.
 - Exports must include scan settings, timestamps, qualified records, and
   failure reasons.
 
-## 12. Operational Standards
+## 11. Operational Standards
 
 - External errors must be logged with context while avoiding sensitive data.
 - Scan duration, symbols processed, provider failures, and cache activity are
@@ -124,7 +119,7 @@ interactive charts, and shareable Streamlit deployment.
 - The application must be tested before release and deployed from the GitHub
   `main` branch through a controlled release process.
 
-## 13. Data and Investment Disclaimer
+## 12. Data and Investment Disclaimer
 
 - Yahoo Finance is an external provider; availability and field coverage vary
   by symbol and time.

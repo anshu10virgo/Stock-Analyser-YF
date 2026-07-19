@@ -26,8 +26,8 @@ Yahoo Finance, Cache, and Observability
   observable request, cache, retry, and failure counters.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: compatibility facade for legacy callers.
-- Technical-analysis modules: indicators, Golden Cross, targeted pre-cross
-  trough validation, and long-MA slope-transition validation.
+- Technical-analysis modules: indicators, Golden Cross, Short-MA direction,
+  and 52-week Long-MA high-to-trough-to-positive-slope validation.
 - `core/fundamentals.py`: retried and cached fundamental-data retrieval.
 - `services/industry_valuation.py`: NSE-only weighted and median industry P/E
   benchmarks calculated from Yahoo peer groups and cached for each scan.

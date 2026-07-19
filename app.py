@@ -89,7 +89,7 @@ elif section == "2. Scan":
             "How many stocks do you want to analyse?",
             min_value=1,
             max_value=len(symbols),
-            value=min(50, len(symbols)),
+            value=min(1500, len(symbols)),
             step=1,
             help="The scanner uses the first N symbols in the selected file.",
         )
@@ -101,16 +101,11 @@ elif section == "2. Scan":
                 short_ma=settings["short_ma"],
                 long_ma=settings["long_ma"],
                 max_cross_age=settings["cross_age"],
-                pre_cross_days=settings["pre_cross_days"],
-                slope_lookback=settings["slope_lookback"],
-                max_distance=settings["max_distance"],
-                require_pre_cross_trough=settings["require_pre_cross_trough"],
-                require_pre_cross_decline=settings["require_pre_cross_decline"],
+                min_long_ma_decline_duration=settings["min_long_ma_decline_duration"],
+                min_long_ma_decline=settings["min_long_ma_decline"],
+                max_price_premium=settings["max_price_premium"],
                 require_post_cross_sessions=settings[
                     "require_post_cross_sessions"
-                ],
-                require_post_cross_increase=settings[
-                    "require_post_cross_increase"
                 ],
                 adjusted_prices=settings["adjusted_prices"],
             )
@@ -145,10 +140,7 @@ elif section == "3. Results":
         optional_selected = any(
             st.session_state["scan_settings"][key]
             for key in (
-                "require_pre_cross_trough",
-                "require_pre_cross_decline",
                 "require_post_cross_sessions",
-                "require_post_cross_increase",
             )
         )
         if optional_selected and st.checkbox("Show stocks rejected by optional checks"):

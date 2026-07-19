@@ -27,33 +27,44 @@ def render_scan_configuration():
         "Golden Cross must have happened within the last (days)",
         min_value=1,
         max_value=180,
+        value=80,
+        help=(
+            "For example, 80 means the Golden Cross must have occurred in "
+            "the last 80 calendar days."
+        )
+    )
+
+    max_price_premium = right.slider(
+        "Maximum price above Long MA (%)",
+        min_value=0,
+        max_value=50,
+        value=10,
+        help=(
+            "For example, 10 means the current price must be above the Long "
+            "MA but no more than 10% above it."
+        )
+    )
+
+    min_long_ma_decline_duration = left.slider(
+        "Minimum decline duration from 52-week Long MA high to trough (trading sessions)",
+        min_value=1,
+        max_value=252,
         value=60,
         help=(
-            "For example, 60 means the Golden Cross must have occurred in "
-            "the last 60 calendar days."
+            "The Long MA must take at least this many trading sessions to fall "
+            "from its 52-week high to the later trough. 60 sessions is about three months."
         )
     )
 
-    max_distance = right.slider(
-        "Maximum difference between price and long-term average (%)",
+    min_long_ma_decline = right.slider(
+        "Minimum Long MA decline from 52-week high to trough (%)",
         min_value=0,
-        max_value=20,
-        value=5,
+        max_value=50,
+        value=10,
         help=(
-            "For example, 5 means the current price can be up to 5% above "
-            "or below the long-term moving average."
-        )
-    )
-
-    pre_cross_days = left.slider(
-        "Pre-cross confirmation window (days)",
-        min_value=5,
-        max_value=100,
-        value=20,
-        help=(
-            "Days Short MA must remain below Long MA before crossover, and "
-            "the window in which a trough must occur before the cross."
-        )
+            "The Long MA must have fallen at least this far from its 52-week "
+            "high to a trough before its post-trough five-session slope rises."
+        ),
     )
 
     adjusted_prices = right.checkbox(
@@ -67,48 +78,18 @@ def render_scan_configuration():
 
     st.divider()
     st.subheader("Optional checks")
-    st.caption("Select only the additional filters you want to enforce.")
-    optional_left, optional_right = st.columns(2)
-
-    require_pre_cross_trough = optional_left.checkbox(
-        "Require a price trough before the Golden Cross",
-        value=False,
-        help="Requires a validated local price low in the pre-cross window.",
-    )
-    require_pre_cross_decline = optional_left.checkbox(
-        "Require the long-term trend to decline before the cross",
-        value=False,
-    )
-    require_post_cross_sessions = optional_right.checkbox(
+    st.caption("Select only the additional filter you want to enforce.")
+    require_post_cross_sessions = st.checkbox(
         "Require at least 10 trading sessions after the cross",
         value=False,
     )
-    require_post_cross_increase = optional_right.checkbox(
-        "Require the long-term trend to rise after the cross",
-        value=False,
-    )
-
-    slope_lookback = st.number_input(
-        "Long-term trend evaluation window (days)",
-        min_value=5,
-        max_value=100,
-        value=20,
-        help=(
-            "Sessions used to confirm that the Long MA declined before and "
-            "rose after the Golden Cross."
-        )
-    )
-
     return {
         "short_ma": short_ma,
         "long_ma": long_ma,
         "cross_age": cross_age,
-        "max_distance": max_distance,
-        "pre_cross_days": pre_cross_days,
-        "slope_lookback": slope_lookback,
-        "require_pre_cross_trough": require_pre_cross_trough,
-        "require_pre_cross_decline": require_pre_cross_decline,
+        "max_price_premium": max_price_premium,
+        "min_long_ma_decline_duration": min_long_ma_decline_duration,
+        "min_long_ma_decline": min_long_ma_decline,
         "require_post_cross_sessions": require_post_cross_sessions,
-        "require_post_cross_increase": require_post_cross_increase,
         "adjusted_prices": adjusted_prices,
     }

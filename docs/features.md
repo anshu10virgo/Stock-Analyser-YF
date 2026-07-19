@@ -2,15 +2,13 @@
 
 ## Technical Filters
 
-- Price near Long MA
-- Golden Cross
-- Golden Cross Age
-- Pre-cross Validation
-- Optional Long MA decline-to-rise transition
-- Current Close At or Above Short MA
-- Close At or Above Golden Cross Price
-- Optional Pre-Cross Trough Validation
-- 52 Week Distance
+- Rising Short MA
+- Short MA strictly above Long MA
+- Configurable Golden Cross age
+- 52-week Long-MA high-to-trough-to-positive-slope validation
+- Configurable minimum Long-MA decline and high-to-trough duration
+- Configurable current-price premium above Long MA
+- Optional minimum of 10 post-Golden-Cross sessions
 
 ## Dashboard
 

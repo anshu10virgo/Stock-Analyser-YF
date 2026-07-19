@@ -11,7 +11,6 @@ from core.golden_cross import GoldenCrossDetector
 from core.indicators import Indicators
 from core.scoring import ScoringEngine
 from core.slope_analyzer import SlopeAnalyzer
-from core.trough_detector import TroughDetector
 from models.failure_result import FailureResult
 from models.scan_config import ScanConfig
 from models.scan_results import ScanResult
@@ -26,6 +25,10 @@ class ScanService:
     """Coordinates market data, technical rules, fundamentals, and ranking."""
 
     MIN_POST_CROSS_DAYS = 10
+    SHORT_MA_SLOPE_SESSIONS = 5
+    LONG_MA_52_WEEK_SESSIONS = 252
+    LONG_MA_RECOVERY_SLOPE_SESSIONS = 5
+    SCORE_SLOPE_LOOKBACK = 20
 
     def __init__(
         self,
@@ -44,45 +47,44 @@ class ScanService:
     def _failure(symbol, stage, reason, check_type="mandatory"):
         return FailureResult(symbol, stage, reason, check_type)
 
-    def _find_pre_cross_trough(self, history, cross_date):
-        position = history.index.get_loc(cross_date)
-        window = history.iloc[max(0, position - self.config.pre_cross_days):position + 1]
-        dates = [date for date in TroughDetector.detect_troughs(window)["dates"] if date < cross_date]
-        return dates[-1] if dates else None
+    def _long_ma_reversal(self, history):
+        """Return the 52-week Long-MA high, its trough, and current recovery."""
+        long_ma = history["MA_LONG"].dropna()
+        if len(long_ma) < self.LONG_MA_52_WEEK_SESSIONS:
+            return None
 
-    def _long_ma_slopes(self, history, cross_date):
-        position = history.index.get_loc(cross_date)
-        pre_ma = history.iloc[max(0, position - self.config.slope_lookback):position]["MA_LONG"]
-        post_ma = history.iloc[position + 1:]["MA_LONG"]
-        pre_slope = None
-        post_slope = None
-        if len(pre_ma) >= self.config.slope_lookback:
-            pre_slope = SlopeAnalyzer.calculate_slope(pre_ma, self.config.slope_lookback)
-        if len(post_ma) >= 2:
-            post_slope = SlopeAnalyzer.calculate_slope(post_ma, len(post_ma))
-        return pre_slope, post_slope, len(post_ma)
-
-    def _optional_failure(self, symbol, history, cross_date):
-        trough_date = None
-        if self.config.require_pre_cross_trough:
-            trough_date = self._find_pre_cross_trough(history, cross_date)
-            if trough_date is None:
-                return None, None, None, self._failure(symbol, "Trough Validation", "No trough found before Golden Cross", "optional")
-
-        pre_slope, post_slope, post_days = self._long_ma_slopes(history, cross_date)
-        if self.config.require_pre_cross_decline:
-            if pre_slope is None:
-                return None, None, trough_date, self._failure(symbol, "Slope Validation", "Insufficient history for pre-cross MA slope", "optional")
-            if pre_slope >= 0:
-                return None, None, trough_date, self._failure(symbol, "Slope Validation", "Long MA was not declining before Golden Cross", "optional")
-        if self.config.require_post_cross_sessions and post_days < self.MIN_POST_CROSS_DAYS:
-            return None, None, trough_date, self._failure(symbol, "Slope Validation", "Golden Cross needs 10 post-cross sessions", "optional")
-        if self.config.require_post_cross_increase:
-            if post_slope is None:
-                return None, None, trough_date, self._failure(symbol, "Slope Validation", "Insufficient post-cross history for MA slope", "optional")
-            if post_slope <= 0:
-                return None, None, trough_date, self._failure(symbol, "Slope Validation", "Long MA is not increasing after Golden Cross", "optional")
-        return pre_slope, post_slope, trough_date, None
+        window = long_ma.iloc[-self.LONG_MA_52_WEEK_SESSIONS:]
+        peak_value = window.max()
+        peak_date = window[window == peak_value].index[-1]
+        peak_age = len(window) - 1 - window.index.get_loc(peak_date)
+        after_peak = window.loc[peak_date:]
+        trough_value = after_peak.min()
+        trough_date = after_peak[after_peak == trough_value].index[-1]
+        decline_duration = window.index.get_loc(trough_date) - window.index.get_loc(peak_date)
+        decline_percent = ((peak_value - trough_value) / peak_value) * 100
+        post_trough = window.loc[window.index > trough_date]
+        recovery_slope = None
+        if len(post_trough) >= self.LONG_MA_RECOVERY_SLOPE_SESSIONS:
+            recovery_slope = SlopeAnalyzer.calculate_slope(
+                post_trough,
+                self.LONG_MA_RECOVERY_SLOPE_SESSIONS,
+            )
+        long_ma_recovering = (
+            window.iloc[-1] > trough_value
+            and recovery_slope is not None
+            and recovery_slope > 0
+        )
+        return (
+            peak_value,
+            peak_date,
+            peak_age,
+            trough_value,
+            trough_date,
+            decline_duration,
+            decline_percent,
+            recovery_slope,
+            long_ma_recovering,
+        )
 
     def _score(self, cross, slope_label, distance, fundamentals):
         return ScoringEngine.score_breakdown(
@@ -126,43 +128,79 @@ class ScanService:
                 run.failed.append(self._failure(symbol, "Market Data", "No complete market data was returned for the symbol"))
                 return
             history = Indicators.add_moving_averages(history, self.config.short_ma, self.config.long_ma)
-            cross = GoldenCrossDetector.find_cross(history, self.config.max_cross_age, self.config.pre_cross_days)
-            if not cross["valid"]:
-                run.failed.append(self._failure(symbol, "Golden Cross Validation", "Golden Cross validation failed"))
-                return
             latest = history.iloc[-1]
+            short_ma_slope = SlopeAnalyzer.calculate_slope(
+                history["MA_SHORT"], self.SHORT_MA_SLOPE_SESSIONS
+            )
+            if short_ma_slope <= 0:
+                run.failed.append(self._failure(symbol, "Short MA Validation", "Short MA 5-session slope is not positive"))
+                return
+            if latest["MA_SHORT"] <= latest["MA_LONG"]:
+                run.failed.append(self._failure(symbol, "Short MA Validation", "Short MA is not above Long MA"))
+                return
+
+            cross = GoldenCrossDetector.find_cross(history, self.config.max_cross_age)
+            if not cross["valid"]:
+                run.failed.append(self._failure(symbol, "Golden Cross Validation", "No Golden Cross within the configured age"))
+                return
             cross_date = cross["cross_date"]
-            if latest["Close"] < history.loc[cross_date, "Close"]:
-                run.failed.append(self._failure(symbol, "Price Validation", "Close price is below Golden Cross close"))
+            reversal = self._long_ma_reversal(history)
+            if reversal is None:
+                run.failed.append(self._failure(symbol, "Long MA Validation", "Insufficient Long MA history for 52-week high"))
                 return
-            if latest["Close"] < latest["MA_SHORT"]:
-                run.failed.append(self._failure(symbol, "Price Validation", "Close price is below Short MA"))
+            (
+                peak_value,
+                peak_date,
+                peak_age,
+                trough_value,
+                trough_date,
+                decline_duration,
+                decline_percent,
+                recovery_slope,
+                long_ma_recovering,
+            ) = reversal
+            if decline_percent < self.config.min_long_ma_decline:
+                run.failed.append(self._failure(symbol, "Long MA Validation", "Long MA decline from 52-week high to trough is below configured minimum"))
                 return
-            if latest["MA_SHORT"] < latest["MA_LONG"]:
-                run.failed.append(self._failure(symbol, "Golden Cross Validation", "Golden Cross has been invalidated by a Death Cross"))
+            if decline_duration < self.config.min_long_ma_decline_duration:
+                run.failed.append(self._failure(symbol, "Long MA Validation", "Long MA decline from 52-week high to trough is shorter than configured minimum duration"))
                 return
-            pre_slope, post_slope, trough_date, failure = self._optional_failure(symbol, history, cross_date)
-            if failure:
-                run.failed.append(failure)
+            if not long_ma_recovering:
+                run.failed.append(self._failure(symbol, "Long MA Validation", "Post-trough 5-session Long MA slope is not positive"))
                 return
-            distance = Indicators.distance_from_ma(latest["Close"], latest["MA_LONG"])
-            if abs(distance) > self.config.max_distance:
-                run.failed.append(self._failure(symbol, "Price Validation", "Close price is too far from Long MA"))
+
+            if latest["Close"] <= latest["MA_LONG"]:
+                run.failed.append(self._failure(symbol, "Price Validation", "Close price is not above Long MA"))
                 return
-            score_slope = post_slope if post_slope is not None else SlopeAnalyzer.calculate_slope(history["MA_LONG"], self.config.slope_lookback)
+            price_premium = Indicators.distance_from_ma(latest["Close"], latest["MA_LONG"])
+            if price_premium > self.config.max_price_premium:
+                run.failed.append(self._failure(symbol, "Price Validation", "Close price is too far above Long MA"))
+                return
+            post_cross_days = len(history.loc[history.index > cross_date])
+            if self.config.require_post_cross_sessions and post_cross_days < self.MIN_POST_CROSS_DAYS:
+                run.failed.append(self._failure(symbol, "Post-Cross Validation", "Golden Cross needs 10 post-cross sessions", "optional"))
+                return
+
+            score_slope = SlopeAnalyzer.calculate_slope(history["MA_LONG"], self.SCORE_SLOPE_LOOKBACK)
             slope_label = SlopeAnalyzer.classify_slope(score_slope)
             fundamentals = self.fundamentals_provider.get_fundamentals(symbol)
             industry_valuation = self.industry_valuation_service.valuation_for(
                 fundamentals["industry"]
             )
-            score_breakdown = self._score(cross, slope_label, distance, fundamentals)
+            score_breakdown = self._score(cross, slope_label, price_premium, fundamentals)
             run.passed.append(ScanResult(
                 symbol=symbol, company_name=fundamentals["company_name"], close=round(latest["Close"], 2),
                 ma_short=round(latest["MA_SHORT"], 2), ma_long=round(latest["MA_LONG"], 2),
-                cross_date=cross_date, days_since_cross=cross["days_since_cross"], distance_from_ma=round(distance, 2),
+                cross_date=cross_date, days_since_cross=cross["days_since_cross"], distance_from_ma=round(price_premium, 2),
                 slope_value=round(score_slope, 4), slope_label=slope_label,
-                pre_cross_slope=round(pre_slope, 4) if pre_slope is not None else None,
-                pre_cross_trough_date=trough_date, market_cap=fundamentals["market_cap"], pe=fundamentals["pe"],
+                short_ma_rising=True, short_ma_slope=round(short_ma_slope, 4), long_ma_52_week_peak=round(peak_value, 2),
+                long_ma_peak_date=peak_date, long_ma_peak_age=peak_age,
+                long_ma_trough=round(trough_value, 2), long_ma_trough_date=trough_date,
+                long_ma_decline_duration=decline_duration,
+                long_ma_decline_percent=round(decline_percent, 2),
+                long_ma_recovery_slope=round(recovery_slope, 4),
+                price_above_long_ma_percent=round(price_premium, 2),
+                market_cap=fundamentals["market_cap"], pe=fundamentals["pe"],
                 eps=fundamentals["eps"], sector=fundamentals["sector"], industry=fundamentals["industry"],
                 **industry_valuation,
                 score=sum(score_breakdown.values()),
