@@ -28,8 +28,9 @@ python scripts/refresh_stock_universe.py
 ```
 
 The command downloads NSE's official listed-equities source, keeps the selected
-NSE `EQ` series, converts symbols to Yahoo Finance NSE format (`.NS`), and
-validates that Yahoo provides usable price history. It then writes:
+NSE `EQ` series, converts symbols to Yahoo Finance NSE format (`.NS`),
+validates that Yahoo provides usable price history, retrieves Yahoo market caps,
+and stores the validated universe in descending market-cap order with a market-cap rank. Therefore, the app's Top N choice scans the largest N ranked companies. It then writes:
 
 ```text
 data/stock_universe/
@@ -40,7 +41,8 @@ data/stock_universe/
 ```
 
 The app reads `manifest.json`, which explicitly identifies the active validated
-universe. Review the generated refresh report before committing all generated
+universe and records the count of symbols with stored market-cap ranks. Review
+the generated refresh report before committing all generated
 files together in a PR, for example:
 
 ```text

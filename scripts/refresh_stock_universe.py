@@ -22,7 +22,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from providers.yahoo_finance import YahooFinanceHistoryProvider
+from providers.yahoo_finance import (
+    YahooFinanceHistoryProvider,
+    YahooFinanceMarketCapProvider,
+)
 
 
 NSE_EQUITY_URL = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
@@ -86,12 +89,33 @@ def validate_candidates(candidates: pd.DataFrame, chunk_size: int):
     return pd.DataFrame(accepted), rejected, provider.metrics()
 
 
+def rank_by_market_cap(validated: pd.DataFrame, market_caps: dict[str, float]) -> pd.DataFrame:
+    """Attach stored market caps and ranks, keeping unavailable values at the end."""
+    ranked = validated.copy()
+    ranked["Market Cap"] = pd.to_numeric(
+        ranked["Symbol"].map(market_caps), errors="coerce"
+    )
+    ranked.sort_values(
+        ["Market Cap", "Symbol"],
+        ascending=[False, True],
+        na_position="last",
+        kind="stable",
+        inplace=True,
+    )
+    ranked["Market Cap Rank"] = (
+        ranked["Market Cap"].rank(method="first", ascending=False).astype("Int64")
+    )
+    ranked.reset_index(drop=True, inplace=True)
+    return ranked
+
+
 def write_refresh_artifacts(
     raw_source,
     candidate_count,
     validated,
     rejected,
     metrics,
+    market_cap_metrics,
     source_url,
 ):
     refreshed_at = datetime.now(timezone.utc).date().isoformat()
@@ -113,6 +137,8 @@ def write_refresh_artifacts(
         "validated_symbol_count": len(validated),
         "rejected_symbol_count": len(rejected),
         "provider_metrics": metrics,
+        "market_cap_provider_metrics": market_cap_metrics,
+        "market_cap_ranked_symbol_count": int(validated["Market Cap"].notna().sum()),
         "rejected_symbols": rejected,
     }
     report_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -123,6 +149,8 @@ def write_refresh_artifacts(
         "refresh_report": f"refresh_reports/{refreshed_at}.json",
         "refreshed_at": refreshed_at,
         "validated_symbol_count": len(validated),
+        "market_cap_ranked_symbol_count": int(validated["Market Cap"].notna().sum()),
+        "sort_order": "market_cap_descending",
         "sha256": hashlib.sha256(validated_file.read_bytes()).hexdigest(),
     }
     manifest_file = UNIVERSE_ROOT / "manifest.json"
@@ -140,12 +168,19 @@ def main():
     if validated.empty:
         raise RuntimeError("No Yahoo symbols validated; manifest was not updated")
 
+    market_cap_provider = YahooFinanceMarketCapProvider()
+    market_caps = market_cap_provider.market_caps()
+    if not market_caps:
+        raise RuntimeError("Yahoo Finance returned no market-cap data; manifest was not updated")
+    validated = rank_by_market_cap(validated, market_caps)
+
     manifest = write_refresh_artifacts(
         raw_source,
         len(candidates),
         validated,
         rejected,
         metrics,
+        market_cap_provider.metrics(),
         arguments.source_url,
     )
     print(

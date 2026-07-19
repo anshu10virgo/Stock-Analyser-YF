@@ -86,12 +86,12 @@ elif section == "2. Scan":
         st.info("Choose a valid stock universe in the Data tab first.")
     else:
         stock_count = st.number_input(
-            "How many stocks do you want to analyse?",
+            "How many of the highest market-cap stocks do you want to analyse?",
             min_value=1,
             max_value=len(symbols),
             value=min(1500, len(symbols)),
             step=1,
-            help="The scanner uses the first N symbols in the selected file.",
+            help="For the included universe, the scanner uses the top N stored market-cap ranks. Uploaded files use their Market Cap Rank column when provided.",
         )
         settings = render_scan_configuration()
         symbols_to_scan = symbols[:stock_count]

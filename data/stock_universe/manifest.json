@@ -1,8 +1,10 @@
 {
-  "active_universe": "validated/yahoo_nse_2026-07-18.csv",
-  "source_snapshot": "snapshots/nse_equity_2026-07-18.csv",
-  "refresh_report": "refresh_reports/2026-07-18.json",
-  "refreshed_at": "2026-07-18",
+  "active_universe": "validated/yahoo_nse_2026-07-19.csv",
+  "source_snapshot": "snapshots/nse_equity_2026-07-19.csv",
+  "refresh_report": "refresh_reports/2026-07-19.json",
+  "refreshed_at": "2026-07-19",
   "validated_symbol_count": 2056,
-  "sha256": "2e6377a5d81e23bf6963191d58fc8bb66ea4514c409eb075c85736bda93b6ccc"
+  "market_cap_ranked_symbol_count": 1972,
+  "sort_order": "market_cap_descending",
+  "sha256": "9db7f51a81f20810593bdaa0c3bc7607b95aab29018369ffe2f3fca743e9462f"
 }
