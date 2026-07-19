@@ -140,3 +140,44 @@ class YahooFinanceIndustryProvider:
             quotes.extend(page.get("quotes", []))
 
         return list({quote["symbol"]: quote for quote in quotes if quote.get("symbol")}.values())
+
+
+class YahooFinanceMarketCapProvider:
+    """Retrieve Indian Yahoo Finance market caps in ranked screener pages."""
+
+    PAGE_SIZE = 250
+
+    def __init__(self) -> None:
+        self._metrics = {"requests": 0, "failures": 0}
+
+    def market_caps(self) -> dict[str, float]:
+        """Return available INR market caps keyed by Yahoo NSE symbol."""
+        query = yf.EquityQuery("eq", ["region", "in"])
+        try:
+            first_page = self._screen(query, 0)
+            quotes = first_page.get("quotes", [])
+            total = first_page.get("total", len(quotes))
+            for offset in range(self.PAGE_SIZE, total, self.PAGE_SIZE):
+                quotes.extend(self._screen(query, offset).get("quotes", []))
+        except Exception:
+            self._metrics["failures"] += 1
+            raise
+
+        return {
+            quote["symbol"]: float(quote["marketCap"])
+            for quote in quotes
+            if quote.get("symbol") and quote.get("marketCap") is not None
+        }
+
+    def _screen(self, query, offset: int) -> dict:
+        self._metrics["requests"] += 1
+        return yf.screen(
+            query,
+            offset=offset,
+            size=self.PAGE_SIZE,
+            sortField="intradaymarketcap",
+            sortAsc=False,
+        )
+
+    def metrics(self) -> dict:
+        return deepcopy(self._metrics)

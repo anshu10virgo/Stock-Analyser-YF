@@ -29,6 +29,13 @@ class DataLoader:
                 "Input file must contain Symbol column"
             )
 
+        if "Market Cap Rank" in df.columns:
+            df = df.assign(
+                _market_cap_rank=pd.to_numeric(df["Market Cap Rank"], errors="coerce")
+            ).sort_values(
+                "_market_cap_rank", na_position="last", kind="stable"
+            )
+
         symbols = (
             df["Symbol"]
             .dropna()

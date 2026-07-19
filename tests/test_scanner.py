@@ -16,7 +16,7 @@ from core.indicators import Indicators
 from core.scoring import ScoringEngine
 from models.scan_config import ScanConfig
 from providers.yahoo_finance import YahooFinanceHistoryProvider
-from scripts.refresh_stock_universe import build_candidates
+from scripts.refresh_stock_universe import build_candidates, rank_by_market_cap
 from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
 
@@ -259,6 +259,35 @@ class StockScannerTests(unittest.TestCase):
         candidates = build_candidates(raw_source, "EQ")
 
         self.assertEqual(candidates.loc[0, "Symbol"], "TESTCO.NS")
+
+    def test_market_cap_ranking_orders_the_universe_for_top_n_scans(self):
+        validated = pd.DataFrame(
+            {
+                "Symbol": ["SMALL.NS", "UNKNOWN.NS", "LARGE.NS"],
+                "Company Name": ["Small", "Unknown", "Large"],
+            }
+        )
+
+        ranked = rank_by_market_cap(
+            validated,
+            {"SMALL.NS": 50_000_000_000, "LARGE.NS": 500_000_000_000},
+        )
+
+        self.assertEqual(ranked["Symbol"].tolist(), ["LARGE.NS", "SMALL.NS", "UNKNOWN.NS"])
+        self.assertEqual(ranked["Market Cap Rank"].tolist()[:2], [1, 2])
+        self.assertTrue(pd.isna(ranked["Market Cap Rank"].iloc[2]))
+
+    def test_symbol_loader_uses_stored_market_cap_rank(self):
+        with TemporaryDirectory() as temporary_directory:
+            universe_file = Path(temporary_directory) / "universe.csv"
+            universe_file.write_text(
+                "Symbol,Market Cap Rank\nSMALL.NS,2\nLARGE.NS,1\nUNKNOWN.NS,\n",
+                encoding="utf-8",
+            )
+
+            symbols = DataLoader.load_symbols(universe_file)
+
+        self.assertEqual(symbols, ["LARGE.NS", "SMALL.NS", "UNKNOWN.NS"])
 
 
 if __name__ == "__main__":
