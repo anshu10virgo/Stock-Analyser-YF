@@ -17,6 +17,7 @@
 - Stock Details
 - Included `stock_symbols.csv` universe
 - Configurable number of symbols to analyse
+- Main-screen choice between live Yahoo and the committed Git snapshot
 - Adjustable or actual-price market data selection
 - Formatted scan results with a scan timestamp
 - Clickable result rows with one-year stock charts
@@ -33,3 +34,10 @@
 ## Export
 
 - Excel
+
+## Market Data Operations
+
+- Ten-year repository-backed OHLCV history
+- Local adjusted/unadjusted price calculation
+- Weekday incremental refresh with manual validation mode
+- New-universe-symbol backfill and inactive-symbol preservation

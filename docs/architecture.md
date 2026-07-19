@@ -24,6 +24,15 @@ Yahoo Finance, Cache, and Observability
   dependencies and structured failures.
 - `providers/yahoo_finance.py`: retrying, TTL-cached Yahoo price batches with
   observable request, cache, retry, and failure counters.
+- `providers/repository_data.py`: committed annual price partitions,
+  fundamentals, industry benchmarks, manifest metadata, and missing-data-only
+  Yahoo fallback.
+- `services/data_source.py`: constructs one consistent provider set for the
+  source selected on the main screen.
+- `scripts/refresh_market_data.py`: full backfill, incremental append, universe
+  reconciliation, coverage reporting, and atomic manifest updates.
+- `.github/workflows/refresh-market-data.yml`: scheduled and manual snapshot
+  validation and auto-commit workflow.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: compatibility facade for legacy callers.
 - Technical-analysis modules: indicators, Golden Cross, Short-MA direction,

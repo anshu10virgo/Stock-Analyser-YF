@@ -17,6 +17,21 @@ python -m streamlit run app.py
 - Yahoo Finance fundamentals with retries and in-memory caching.
 - Formatted results, scan timestamps, and one-year interactive charts.
 - GitHub-backed Streamlit Community Cloud deployment.
+- Selectable live Yahoo or committed Git-snapshot market data.
+- Ten-year Git-backed price history with scheduled incremental refresh support.
+
+## Committed market-data refresh
+
+Build the initial ten-year snapshot once:
+
+```powershell
+python scripts/refresh_market_data.py --mode full
+```
+
+The workflow `.github/workflows/refresh-market-data.yml` then runs incremental
+refreshes on weekdays after market close, validates the snapshot, and commits
+changed data to `main`. It is also manually runnable in incremental or
+validation-only mode. See [Committed Market Data](docs/market_data.md).
 
 ## Manual stock-universe refresh
 
@@ -59,3 +74,4 @@ the production universe accidentally.
 - [Roadmap](docs/roadmap.md)
 - [Current TODO](docs/todo.md)
 - [Project rules](docs/project_rules.md)
+- [Committed market data](docs/market_data.md)

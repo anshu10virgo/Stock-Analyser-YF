@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import math
+import time
 from collections.abc import Callable, Iterable
 
 from core.data_loader import DataLoader
@@ -29,6 +31,8 @@ class ScanService:
     LONG_MA_52_WEEK_SESSIONS = 252
     LONG_MA_RECOVERY_SLOPE_SESSIONS = 5
     SCORE_SLOPE_LOOKBACK = 20
+    HISTORY_SAFETY_SESSIONS = 50
+    CONSERVATIVE_TRADING_SESSIONS_PER_YEAR = 230
 
     def __init__(
         self,
@@ -97,28 +101,62 @@ class ScanService:
     def scan(self, symbols: Iterable[str], progress_callback: Callable[[int, int], None] | None = None) -> ScanRun:
         symbols = list(symbols)
         run = ScanRun()
+        scan_started = time.perf_counter()
         if hasattr(self.industry_valuation_service, "begin_scan"):
             self.industry_valuation_service.begin_scan()
         if not symbols:
+            run.metrics["timing"] = {
+                "data_load_seconds": 0.0,
+                "rule_evaluation_seconds": 0.0,
+                "total_seconds": 0.0,
+            }
             return run
+        data_load_started = time.perf_counter()
         try:
-            batch_data = self.data_provider.download_batch(symbols, adjusted_prices=self.config.adjusted_prices)
+            required_sessions = (
+                self.config.long_ma
+                + self.LONG_MA_52_WEEK_SESSIONS
+                + self.HISTORY_SAFETY_SESSIONS
+            )
+            history_years = max(
+                3,
+                math.ceil(
+                    required_sessions / self.CONSERVATIVE_TRADING_SESSIONS_PER_YEAR
+                ),
+            )
+            batch_data = self.data_provider.download_batch(
+                symbols,
+                years=history_years,
+                adjusted_prices=self.config.adjusted_prices,
+            )
             if hasattr(self.data_provider, "market_data_metrics"):
                 run.metrics["market_data"] = self.data_provider.market_data_metrics()
         except Exception:
+            data_load_finished = time.perf_counter()
             logger.exception("Batch market-data download failed")
             run.failed.extend(self._failure(symbol, "Market Data", "Unable to download market data for this scan") for symbol in symbols)
             if hasattr(self.data_provider, "market_data_metrics"):
                 run.metrics["market_data"] = self.data_provider.market_data_metrics()
             if hasattr(self.industry_valuation_service, "metrics"):
                 run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
+            run.metrics["timing"] = {
+                "data_load_seconds": data_load_finished - data_load_started,
+                "rule_evaluation_seconds": 0.0,
+                "total_seconds": time.perf_counter() - scan_started,
+            }
             return run
+        data_load_finished = time.perf_counter()
         for index, symbol in enumerate(symbols, start=1):
             if progress_callback:
                 progress_callback(index, len(symbols))
             self._scan_symbol(batch_data, symbol, run)
         if hasattr(self.industry_valuation_service, "metrics"):
             run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
+        run.metrics["timing"] = {
+            "data_load_seconds": data_load_finished - data_load_started,
+            "rule_evaluation_seconds": time.perf_counter() - data_load_finished,
+            "total_seconds": time.perf_counter() - scan_started,
+        }
         return run
 
     def _scan_symbol(self, batch_data, symbol, run):
