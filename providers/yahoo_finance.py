@@ -85,6 +85,28 @@ class YahooFinanceHistoryProvider:
             self._metrics["failures"] += 1
         raise RuntimeError("Yahoo Finance historical data is unavailable") from last_error
 
+    def download_range(self, symbols, start, end, adjusted_prices=False):
+        """Download an explicit date range for incremental snapshot refreshes."""
+        symbols = list(symbols)
+        if not symbols:
+            return pd.DataFrame()
+        with self._lock:
+            self._metrics["requests"] += 1
+        try:
+            return yf.download(
+                tickers=symbols,
+                start=start,
+                end=end,
+                auto_adjust=adjusted_prices,
+                group_by="ticker",
+                progress=False,
+                threads=True,
+            )
+        except Exception:
+            with self._lock:
+                self._metrics["failures"] += 1
+            raise
+
     @staticmethod
     def get_symbol_history(batch_df, symbol):
         try:
@@ -99,6 +121,10 @@ class YahooFinanceHistoryProvider:
     def metrics(self):
         with self._lock:
             return deepcopy(self._metrics)
+
+    def market_data_metrics(self):
+        """Expose metrics through the common scan-provider contract."""
+        return self.metrics()
 
     def clear_cache(self):
         with self._lock:
@@ -149,9 +175,12 @@ class YahooFinanceMarketCapProvider:
 
     def __init__(self) -> None:
         self._metrics = {"requests": 0, "failures": 0}
+        self._quotes = None
 
-    def market_caps(self) -> dict[str, float]:
-        """Return available INR market caps keyed by Yahoo NSE symbol."""
+    def quotes(self) -> dict[str, dict]:
+        """Return available Indian screener quotes keyed by Yahoo symbol."""
+        if self._quotes is not None:
+            return deepcopy(self._quotes)
         query = yf.EquityQuery("eq", ["region", "in"])
         try:
             first_page = self._screen(query, 0)
@@ -163,10 +192,17 @@ class YahooFinanceMarketCapProvider:
             self._metrics["failures"] += 1
             raise
 
+        self._quotes = {
+            quote["symbol"]: quote for quote in quotes if quote.get("symbol")
+        }
+        return deepcopy(self._quotes)
+
+    def market_caps(self) -> dict[str, float]:
+        """Return available INR market caps keyed by Yahoo NSE symbol."""
         return {
-            quote["symbol"]: float(quote["marketCap"])
-            for quote in quotes
-            if quote.get("symbol") and quote.get("marketCap") is not None
+            symbol: float(quote["marketCap"])
+            for symbol, quote in self.quotes().items()
+            if quote.get("marketCap") is not None
         }
 
     def _screen(self, query, offset: int) -> dict:

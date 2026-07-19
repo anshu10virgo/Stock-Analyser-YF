@@ -10,6 +10,9 @@ Status: Active Development
 - Configurable adjusted or unadjusted price basis
 - Retried and cached fundamental-data retrieval
 - Included `stock_symbols.csv` universe and optional file upload
+- Selectable Git-snapshot and live Yahoo provider sets
+- Ten-year partitioned market-data snapshot and manifest contract
+- Scheduled/manual incremental refresh workflow
 
 ### Technical Analysis
 
@@ -34,11 +37,12 @@ Status: Active Development
 
 - Full per-symbol failure reporting and failure visibility in the dashboard.
 - Enforce every enabled scanner rule consistently.
-- Cache historical and chart data with an appropriate expiry policy.
+- Build and commit the initial ten-year market-data snapshot.
 - Add automated tests for scanner rules, provider failures, and UI formatting.
 
 ## Current Risks
 
 - Yahoo Finance availability and field coverage vary by symbol.
-- No persistent historical market-data store exists yet.
+- The initial committed snapshot must be monitored for Git size and Yahoo
+  coverage before live mode is retired.
 - Large universes require additional caching, throttling, and observability.

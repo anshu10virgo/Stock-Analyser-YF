@@ -15,6 +15,7 @@ from core.slope_analyzer import SlopeAnalyzer
 from models.scan_config import ScanConfig
 from models.scan_run import ScanRun
 from services.scan_service import ScanService
+from services.data_source import SNAPSHOT_SOURCE, build_data_services
 from services.stock_universe import StockUniverse
 
 
@@ -40,7 +41,7 @@ def _date(value):
 def _metrics_row(service: ScanService, batch_data, symbol: str) -> dict:
     """Calculate audit metrics even when a stock failed an earlier rule."""
     row = {"symbol": symbol}
-    history = DataLoader.get_symbol_history(batch_data, symbol)
+    history = service.data_provider.get_symbol_history(batch_data, symbol)
     if history.empty:
         row["data_status"] = "No complete market data"
         return row
@@ -140,8 +141,16 @@ def main() -> None:
         PROJECT_ROOT / "stock_symbols.csv",
     )
     symbols = DataLoader.load_symbols(universe.active_file())[:1500]
-    service = ScanService(config)
-    batch_data = DataLoader.download_batch(symbols, adjusted_prices=False)
+    data_services = build_data_services(SNAPSHOT_SOURCE, PROJECT_ROOT)
+    service = ScanService(
+        config,
+        data_provider=data_services.history,
+        fundamentals_provider=data_services.fundamentals,
+        industry_valuation_service=data_services.industry_valuation,
+    )
+    batch_data = service.data_provider.download_batch(
+        symbols, years=3, adjusted_prices=False
+    )
     run = ScanRun()
     audit_rows = []
     for symbol in symbols:
@@ -163,6 +172,12 @@ def main() -> None:
         [
             ("Report generated", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
             ("Universe file", str(universe.active_file().relative_to(PROJECT_ROOT))),
+            ("Market-data access mode", data_services.metadata.get("access_mode")),
+            ("Market-data upstream source", data_services.metadata.get("source")),
+            ("Market-data snapshot date", data_services.metadata.get("last_trading_date")),
+            ("Market-data manifest generated", data_services.metadata.get("generated_at")),
+            ("Yahoo fallback requests", service.data_provider.market_data_metrics().get("fallback_requests")),
+            ("Industry Yahoo fallback requests", service.industry_valuation_service.metrics().get("fallback_requests", 0)),
             ("Symbols scanned", len(symbols)),
             ("Qualified stocks", len(results["passed"])),
             ("Failed stocks", len(failures)),

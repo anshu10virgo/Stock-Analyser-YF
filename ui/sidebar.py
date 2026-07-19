@@ -18,9 +18,9 @@ def render_scan_configuration():
     long_ma = right.number_input(
         "Long-term moving average (days)",
         min_value=50,
-        max_value=400,
+        max_value=2000,
         value=200,
-        help="Long-term moving average used as trend reference."
+        help="Long-term moving average used as trend reference. The Git snapshot is designed to support values up to 2,000 sessions."
     )
 
     cross_age = left.slider(

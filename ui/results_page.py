@@ -1,9 +1,10 @@
 import pandas as pd
 import streamlit as st
+from pathlib import Path
 
-from core.data_loader import DataLoader
 from core.indicators import Indicators
 from ui.stock_detail import render_stock_detail
+from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
 
 
 DISPLAY_COLUMNS = {
@@ -187,14 +188,18 @@ def _render_performance(chart_data, cross_close):
 def render_selected_stock(result, settings):
     """Download and render the selected stock's one-year details."""
     symbol = result["symbol"]
+    services = build_data_services(
+        settings.get("market_data_source", LIVE_SOURCE),
+        Path(__file__).resolve().parents[1],
+    )
 
     with st.spinner(f"Loading one-year chart for {symbol}..."):
-        batch_data = DataLoader.download_batch(
+        batch_data = services.history.download_batch(
             [symbol],
             years=1,
             adjusted_prices=settings["adjusted_prices"],
         )
-        history = DataLoader.get_symbol_history(batch_data, symbol)
+        history = services.history.get_symbol_history(batch_data, symbol)
 
     if history.empty:
         st.error(f"Could not load one-year price history for {symbol}.")
@@ -215,10 +220,73 @@ def render_selected_stock(result, settings):
     _render_performance(chart_data, cross_close)
 
 
-def render_results(df, scan_time, settings):
+def _render_data_provenance(settings, metrics):
+    """Show auditable evidence of which provider served the completed scan."""
+    requested_source = settings.get("market_data_source", LIVE_SOURCE)
+    market_metrics = metrics.get("market_data", {})
+    timing = metrics.get("timing", {})
+    snapshot_metadata = settings.get("market_data_snapshot", {})
+
+    if requested_source == SNAPSHOT_SOURCE:
+        fallback_requests = market_metrics.get("fallback_requests", 0)
+        snapshot_hits = market_metrics.get("snapshot_hits", 0)
+        if snapshot_hits and not fallback_requests:
+            effective_source = "Git snapshot only"
+            st.success("Data-source verification: price history came from the Git snapshot; Yahoo fallback was not used.")
+        elif fallback_requests:
+            effective_source = "Git snapshot + Yahoo fallback"
+            st.warning(
+                f"Data-source verification: Yahoo fallback was used for {fallback_requests} missing-data batch(es)."
+            )
+        else:
+            effective_source = "Git snapshot (no completed history request)"
+    else:
+        effective_source = "Live Yahoo Finance"
+        st.info("Data-source verification: this scan requested live Yahoo Finance history.")
+
+    yahoo_calls = (
+        market_metrics.get("requests", 0)
+        if requested_source == LIVE_SOURCE
+        else market_metrics.get("fallback_requests", 0)
+    )
+    columns = st.columns(4)
+    columns[0].metric("Effective data source", effective_source)
+    columns[1].metric(
+        "Snapshot through",
+        snapshot_metadata.get("last_trading_date", "Not applicable"),
+    )
+    columns[2].metric("Yahoo history calls", yahoo_calls)
+    columns[3].metric("Total scan time", f"{timing.get('total_seconds', 0):.1f} sec")
+
+    with st.expander("Data-source and timing details"):
+        details = pd.DataFrame(
+            {
+                "Metric": (
+                    "Selected source",
+                    "Effective source",
+                    "Local snapshot hits",
+                    "Yahoo fallback batches",
+                    "History loading time",
+                    "Rule evaluation time",
+                ),
+                "Value": (
+                    requested_source,
+                    effective_source,
+                    market_metrics.get("snapshot_hits", 0),
+                    market_metrics.get("fallback_requests", 0),
+                    f"{timing.get('data_load_seconds', 0):.2f} seconds",
+                    f"{timing.get('rule_evaluation_seconds', 0):.2f} seconds",
+                ),
+            }
+        )
+        st.dataframe(details, use_container_width=True, hide_index=True)
+
+
+def render_results(df, scan_time, settings, metrics=None):
     """Render formatted qualified-stock results for a completed scan."""
     st.subheader("Qualified Stocks")
     st.caption(f"Latest scan: {scan_time:%d %b %Y, %I:%M %p}")
+    _render_data_provenance(settings, metrics or {})
 
     if df.empty:
         st.warning("No qualifying stocks found.")
