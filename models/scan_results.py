@@ -39,6 +39,7 @@ class ScanResult:
 
     market_cap: Optional[float] = None
     pe: Optional[float] = None
+    pe_source: Optional[str] = None
     eps: Optional[float] = None
 
     sector: Optional[str] = None

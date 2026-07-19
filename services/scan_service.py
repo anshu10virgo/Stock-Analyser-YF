@@ -239,6 +239,7 @@ class ScanService:
                 long_ma_recovery_slope=round(recovery_slope, 4),
                 price_above_long_ma_percent=round(price_premium, 2),
                 market_cap=fundamentals["market_cap"], pe=fundamentals["pe"],
+                pe_source=fundamentals.get("pe_source"),
                 eps=fundamentals["eps"], sector=fundamentals["sector"], industry=fundamentals["industry"],
                 **industry_valuation,
                 score=sum(score_breakdown.values()),

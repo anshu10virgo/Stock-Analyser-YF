@@ -107,7 +107,7 @@ def _render_stock_overview(result):
     overview = pd.DataFrame(
         {
             "Field": (
-                "Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "EPS",
+                "Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "PE Source", "EPS",
                 "Weighted Industry P/E", "Median Industry P/E", "Industry Peers",
             ),
             "Value": (
@@ -117,6 +117,7 @@ def _render_stock_overview(result):
                 _format_text(result.get("industry")),
                 _format_market_cap(result.get("market_cap")),
                 _format_value(result.get("pe")),
+                _format_text(result.get("pe_source")),
                 _format_value(result.get("eps")),
                 _format_value(result.get("industry_weighted_pe")),
                 _format_value(result.get("industry_median_pe")),
@@ -185,21 +186,43 @@ def _render_performance(chart_data, cross_close):
         column.metric(label, _format_value(value, "{:+.2f}%"))
 
 
-def render_selected_stock(result, settings):
-    """Download and render the selected stock's one-year details."""
-    symbol = result["symbol"]
-    services = build_data_services(
-        settings.get("market_data_source", LIVE_SOURCE),
-        Path(__file__).resolve().parents[1],
+@st.cache_data(show_spinner=False, ttl=900, max_entries=128)
+def _load_selected_history(
+    symbol,
+    source,
+    adjusted_prices,
+    snapshot_version,
+    project_root,
+):
+    """Cache only one stock's chart rows, keyed by snapshot version."""
+    del snapshot_version  # The value participates in Streamlit's cache key.
+    services = build_data_services(source, Path(project_root))
+    batch_data = services.history.download_batch(
+        [symbol],
+        years=1,
+        adjusted_prices=adjusted_prices,
     )
+    return services.history.get_symbol_history(batch_data, symbol)
+
+
+def render_selected_stock(result, settings):
+    """Load and render the selected stock's cached one-year details."""
+    symbol = result["symbol"]
+    source = settings.get("market_data_source", LIVE_SOURCE)
+    snapshot = settings.get("market_data_snapshot", {})
+    snapshot_version = snapshot.get("generated_at") or snapshot.get(
+        "last_trading_date", "live"
+    )
+    project_root = Path(__file__).resolve().parents[1]
 
     with st.spinner(f"Loading one-year chart for {symbol}..."):
-        batch_data = services.history.download_batch(
-            [symbol],
-            years=1,
-            adjusted_prices=settings["adjusted_prices"],
+        history = _load_selected_history(
+            symbol,
+            source,
+            settings["adjusted_prices"],
+            snapshot_version,
+            str(project_root),
         )
-        history = services.history.get_symbol_history(batch_data, symbol)
 
     if history.empty:
         st.error(f"Could not load one-year price history for {symbol}.")
@@ -215,7 +238,7 @@ def render_selected_stock(result, settings):
     render_stock_detail(symbol, chart_data, result["cross_date"])
     cross_close = _price_at_cross(chart_data, result.get("cross_date"))
     _render_technical_status(result, chart_data, cross_close)
-    if st.toggle("Show individual score details", key=f"score_details_{symbol}"):
+    with st.expander("Show individual score details"):
         _render_score_breakdown(result)
     _render_performance(chart_data, cross_close)
 
@@ -226,6 +249,7 @@ def _render_data_provenance(settings, metrics):
     market_metrics = metrics.get("market_data", {})
     timing = metrics.get("timing", {})
     snapshot_metadata = settings.get("market_data_snapshot", {})
+    fundamentals_coverage = snapshot_metadata.get("fundamentals_coverage", {})
 
     if requested_source == SNAPSHOT_SOURCE:
         fallback_requests = market_metrics.get("fallback_requests", 0)
@@ -268,6 +292,9 @@ def _render_data_provenance(settings, metrics):
                     "Yahoo fallback batches",
                     "History loading time",
                     "Rule evaluation time",
+                    "Stocks with PE",
+                    "Stocks with industry classification",
+                    "Industries with PE benchmarks",
                 ),
                 "Value": (
                     requested_source,
@@ -276,6 +303,11 @@ def _render_data_provenance(settings, metrics):
                     market_metrics.get("fallback_requests", 0),
                     f"{timing.get('data_load_seconds', 0):.2f} seconds",
                     f"{timing.get('rule_evaluation_seconds', 0):.2f} seconds",
+                    fundamentals_coverage.get("pe", "Not reported"),
+                    fundamentals_coverage.get("industry", "Not reported"),
+                    fundamentals_coverage.get(
+                        "industries_with_valuations", "Not reported"
+                    ),
                 ),
             }
         )

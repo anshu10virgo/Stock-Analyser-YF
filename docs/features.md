@@ -23,6 +23,7 @@
 - Clickable result rows with one-year stock charts
 - Retried and cached Yahoo fundamental-data retrieval
 - Selected-stock weighted and median industry P/E benchmarks with peer count
+- Snapshot date, PE/industry coverage, effective source, and fallback metrics
 
 ## Charts
 
@@ -30,6 +31,7 @@
 - MA50
 - MA200
 - Golden Cross Marker
+- Cached single-symbol history reads without loading the complete snapshot
 
 ## Export
 
@@ -41,3 +43,5 @@
 - Local adjusted/unadjusted price calculation
 - Weekday incremental refresh with manual validation mode
 - New-universe-symbol backfill and inactive-symbol preservation
+- Semiannual sector/industry refresh with active-universe change detection
+- Committed weighted and median industry P/E benchmarks

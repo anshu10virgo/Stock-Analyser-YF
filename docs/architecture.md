@@ -26,11 +26,14 @@ Yahoo Finance, Cache, and Observability
   observable request, cache, retry, and failure counters.
 - `providers/repository_data.py`: committed annual price partitions,
   fundamentals, industry benchmarks, manifest metadata, and missing-data-only
-  Yahoo fallback.
+  Yahoo fallback. Small symbol requests use Parquet predicate filtering instead
+  of materializing the complete snapshot.
 - `services/data_source.py`: constructs one consistent provider set for the
   source selected on the main screen.
 - `scripts/refresh_market_data.py`: full backfill, incremental append, universe
-  reconciliation, coverage reporting, and atomic manifest updates.
+  reconciliation, symbol-grouped Parquet optimization, semiannual
+  classifications, industry P/E calculation, coverage reporting, and atomic
+  manifest updates.
 - `.github/workflows/refresh-market-data.yml`: scheduled and manual snapshot
   validation and auto-commit workflow.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
@@ -40,6 +43,8 @@ Yahoo Finance, Cache, and Observability
 - `core/fundamentals.py`: retried and cached fundamental-data retrieval.
 - `services/industry_valuation.py`: NSE-only weighted and median industry P/E
   benchmarks calculated from Yahoo peer groups and cached for each scan.
+- Committed classifications are maintained separately from daily fundamentals,
+  preventing routine refreshes from erasing sector and industry values.
 - `models/`: typed scan and failure-result contracts.
 
 ## Target Reliability Boundaries

@@ -139,11 +139,14 @@ class YahooFinanceIndustryProvider:
     @staticmethod
     def industry_quotes(industry):
         """Return all Indian quotes assigned to the requested Yahoo industry."""
+        # Yahoo domain data displays grouped industries with " - ", while the
+        # equity screener validates those same names with an em dash.
+        query_industry = industry.replace(" - ", "\u2014")
         query = yf.EquityQuery(
             "and",
             [
                 yf.EquityQuery("eq", ["region", "in"]),
-                yf.EquityQuery("eq", ["industry", industry]),
+                yf.EquityQuery("eq", ["industry", query_industry]),
             ],
         )
         first_page = yf.screen(
@@ -166,6 +169,84 @@ class YahooFinanceIndustryProvider:
             quotes.extend(page.get("quotes", []))
 
         return list({quote["symbol"]: quote for quote in quotes if quote.get("symbol")}.values())
+
+
+class YahooFinanceClassificationProvider:
+    """Build Indian symbol classifications from Yahoo sector domains."""
+
+    SECTOR_KEYS = (
+        "basic-materials",
+        "communication-services",
+        "consumer-cyclical",
+        "consumer-defensive",
+        "energy",
+        "financial-services",
+        "healthcare",
+        "industrials",
+        "real-estate",
+        "technology",
+        "utilities",
+    )
+
+    def __init__(self, sector_factory=None, industry_provider=None) -> None:
+        self.sector_factory = sector_factory or yf.Sector
+        self.industry_provider = industry_provider or YahooFinanceIndustryProvider
+        self._metrics = {
+            "sector_requests": 0,
+            "industry_requests": 0,
+            "failures": 0,
+        }
+
+    def classifications(self, symbols=None) -> pd.DataFrame:
+        """Return symbol, sector, and industry mappings for Indian equities."""
+        requested = set(symbols or [])
+        rows = []
+        for sector_key in self.SECTOR_KEYS:
+            try:
+                self._metrics["sector_requests"] += 1
+                sector = self.sector_factory(sector_key, region="IN")
+                sector_name = sector.name
+                industries = sector.industries
+            except Exception as error:
+                self._metrics["failures"] += 1
+                logger.warning("Yahoo sector classification failed for %s: %s", sector_key, error)
+                continue
+            if industries is None or industries.empty:
+                continue
+            for industry_key, industry_row in industries.iterrows():
+                industry_name = industry_row.get("name")
+                try:
+                    self._metrics["industry_requests"] += 1
+                    quotes = self.industry_provider.industry_quotes(industry_name)
+                except Exception as error:
+                    self._metrics["failures"] += 1
+                    logger.warning(
+                        "Yahoo industry classification failed for %s: %s",
+                        industry_name,
+                        error,
+                    )
+                    continue
+                for quote in quotes:
+                    symbol = quote.get("symbol")
+                    if not symbol or (requested and symbol not in requested):
+                        continue
+                    rows.append(
+                        {
+                            "symbol": symbol,
+                            "sector": sector_name,
+                            "industry": industry_name,
+                            "sector_key": sector_key,
+                            "industry_key": industry_key,
+                        }
+                    )
+        if not rows:
+            return pd.DataFrame(
+                columns=("symbol", "sector", "industry", "sector_key", "industry_key")
+            )
+        return pd.DataFrame(rows).drop_duplicates("symbol", keep="last")
+
+    def metrics(self) -> dict:
+        return deepcopy(self._metrics)
 
 
 class YahooFinanceMarketCapProvider:
