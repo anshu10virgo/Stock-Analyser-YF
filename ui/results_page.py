@@ -125,7 +125,7 @@ def _render_stock_overview(result):
             ),
         }
     )
-    st.dataframe(overview, use_container_width=True, hide_index=True)
+    st.dataframe(overview, width="stretch", hide_index=True)
 
 
 def _render_technical_status(result, chart_data, cross_close):
@@ -162,7 +162,7 @@ def _render_technical_status(result, chart_data, cross_close):
             ),
         }
     )
-    st.dataframe(status, use_container_width=True, hide_index=True)
+    st.dataframe(status, width="stretch", hide_index=True)
 
 
 def _render_score_breakdown(result):
@@ -175,7 +175,7 @@ def _render_score_breakdown(result):
     )
     total = result.get("score", 0)
     st.metric("Total Score", f"{total:.0f} / 85")
-    st.dataframe(score_data, use_container_width=True, hide_index=True)
+    st.dataframe(score_data, width="stretch", hide_index=True)
 
 
 def _render_performance(chart_data, cross_close):
@@ -311,7 +311,7 @@ def _render_data_provenance(settings, metrics):
                 ),
             }
         )
-        st.dataframe(details, use_container_width=True, hide_index=True)
+        st.dataframe(details, width="stretch", hide_index=True)
 
 
 def render_results(df, scan_time, settings, metrics=None):
@@ -335,7 +335,7 @@ def render_results(df, scan_time, settings, metrics=None):
     )
     selection = st.dataframe(
         results,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         on_select="rerun",
         selection_mode="single-row",
@@ -379,6 +379,6 @@ def render_optional_failures(df):
     )
     st.dataframe(
         optional_failures[["Symbol", "Stage", "Reason"]],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )

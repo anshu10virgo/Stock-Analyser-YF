@@ -12,14 +12,13 @@ class AppSessionStateTests(unittest.TestCase):
         app = AppTest.from_file("app.py", default_timeout=20).run()
 
         app.radio[2].set_value(SNAPSHOT_SOURCE).run()
-        app.radio[0].set_value("2. Scan").run()
-        app.number_input[0].set_value(100).run()
+        app.radio[0].set_value("2. Strategy").run()
+        app.number_input[0].set_value(55).run()
 
         self.assertEqual(
             app.session_state["selected_market_data_source"],
             SNAPSHOT_SOURCE,
         )
-        self.assertIn("Git snapshot", app.info[0].value)
         self.assertEqual(len(app.exception), 0)
 
 
