@@ -124,3 +124,29 @@ def render_app_header() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def scroll_to_top() -> None:
+    """Return the parent Streamlit page to the top after workflow navigation."""
+    st.html(
+        """
+        <script>
+        (() => {
+          const scrollTargets = [
+            document.querySelector('[data-testid="stMain"]'),
+            document.querySelector('section.main'),
+            document.querySelector('[data-testid="stAppViewContainer"]')
+          ].filter(Boolean);
+          const scroll = () => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            scrollTargets.forEach((target) =>
+              target.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+            );
+          };
+          window.requestAnimationFrame(() => window.requestAnimationFrame(scroll));
+        })();
+        </script>
+        """,
+        width="content",
+        unsafe_allow_javascript=True,
+    )

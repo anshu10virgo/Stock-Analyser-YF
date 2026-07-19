@@ -17,7 +17,7 @@ from ui.introduction_page import render_introduction
 from ui.results_page import prepare_results, render_optional_failures, render_results
 from ui.scan_insights import render_scan_insights
 from ui.sidebar import render_scan_configuration
-from ui.theme import apply_app_theme, render_app_header
+from ui.theme import apply_app_theme, render_app_header, scroll_to_top
 
 
 PROJECT_ROOT = Path(__file__).parent
@@ -240,6 +240,7 @@ def _live_update(index: int, total: int, run, placeholders: dict) -> None:
 
 def render_live_scan_page() -> None:
     """Execute a queued scan and publish progressive local information."""
+    scroll_to_top()
     pending = st.session_state.get("pending_scan")
     if not pending:
         st.subheader("Live scan")
