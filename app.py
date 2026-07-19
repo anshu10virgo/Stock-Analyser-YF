@@ -317,13 +317,14 @@ apply_app_theme()
 _initialise_session()
 render_app_header()
 
-section = st.radio(
-    "Workflow",
-    NAVIGATION_OPTIONS,
-    horizontal=True,
-    label_visibility="collapsed",
-    key="app_section",
-)
+with st.container(key="workflow_navigation"):
+    section = st.radio(
+        "Workflow",
+        NAVIGATION_OPTIONS,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="app_section",
+    )
 
 if section == "1. Setup":
     render_setup_page()
