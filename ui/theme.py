@@ -16,18 +16,20 @@ def apply_app_theme() -> None:
             --sa-teal: #0f8b8d;
             --sa-green: #1f9d68;
             --sa-amber: #e59f23;
-            --sa-surface: #f4f8fc;
+            --sa-surface: #f3f6fa;
+            --sa-raised: #f8fafc;
         }
         html, body, [class*="st-"] {
             font-size: 0.96rem;
         }
         [data-testid="stAppViewContainer"] {
+            color: var(--sa-navy);
             background:
                 radial-gradient(circle at 95% 0%, rgba(15, 139, 141, 0.10), transparent 24rem),
-                linear-gradient(180deg, #f8fbff 0%, #ffffff 24rem);
+                linear-gradient(180deg, #eef4f9 0%, var(--sa-surface) 24rem);
         }
         [data-testid="stHeader"] {
-            background: rgba(248, 251, 255, 0.92);
+            background: rgba(243, 246, 250, 0.94);
         }
         .sa-app-header {
             display: flex;
@@ -87,7 +89,7 @@ def apply_app_theme() -> None:
             padding: 0.75rem 0.9rem;
             border: 1px solid rgba(37, 99, 166, 0.16);
             border-radius: 0.65rem;
-            background: rgba(255, 255, 255, 0.82);
+            background: rgba(248, 250, 252, 0.92);
         }
         div[data-testid="stDataFrame"] {
             border: 1px solid rgba(37, 99, 166, 0.14);
@@ -103,6 +105,74 @@ def apply_app_theme() -> None:
             border-left: 4px solid var(--sa-teal);
             border-radius: 0.35rem;
             background: rgba(15, 139, 141, 0.08);
+        }
+        .st-key-workflow_navigation [role="radiogroup"] {
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.55rem;
+            margin: 0 auto 1rem;
+            border: 1px solid #cbd8e6;
+            border-radius: 0.75rem;
+            background: #e7eef5;
+        }
+        .st-key-workflow_navigation label[data-baseweb="radio"] {
+            justify-content: center;
+            min-width: 8.5rem;
+            padding: 0.55rem 0.85rem;
+            margin: 0;
+            border: 1px solid #cbd8e6;
+            border-radius: 0.55rem;
+            background: #f8fafc;
+            transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+        }
+        .st-key-workflow_navigation label[data-baseweb="radio"] > div:first-child {
+            display: none;
+        }
+        .st-key-workflow_navigation label[data-baseweb="radio"]:has(input:checked) {
+            color: white;
+            border-color: transparent;
+            background: linear-gradient(105deg, var(--sa-blue), var(--sa-teal));
+            box-shadow: 0 0.25rem 0.7rem rgba(37, 99, 166, 0.22);
+        }
+        .st-key-workflow_navigation label[data-baseweb="radio"]:has(input:checked) p {
+            color: white;
+            font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .sa-app-header {
+                flex-wrap: wrap;
+                align-items: flex-start;
+                padding: 0.7rem 0.8rem;
+            }
+            .sa-app-header h1 {
+                font-size: 1.3rem;
+            }
+            .sa-market-pill {
+                font-size: 0.78rem;
+            }
+            .sa-hero-copy {
+                padding: 0.35rem 0 0.5rem;
+            }
+            .sa-hero-copy h2 {
+                font-size: 1.35rem;
+            }
+            [data-testid="stRadio"] [role="radiogroup"] {
+                flex-wrap: wrap;
+                row-gap: 0.35rem;
+            }
+            .st-key-workflow_navigation [role="radiogroup"] {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+            .st-key-workflow_navigation label[data-baseweb="radio"] {
+                min-width: 0;
+                width: 100%;
+                padding-inline: 0.45rem;
+            }
+            [data-testid="stMetric"] {
+                padding: 0.6rem 0.7rem;
+            }
         }
         </style>
         """,
