@@ -37,8 +37,7 @@ for symbol in symbols:
     cross = (
         GoldenCrossDetector.find_cross(
             df,
-            60,
-            20
+            80,
         )
     )
 
@@ -56,10 +55,10 @@ for symbol in symbols:
     scanner = StockScanner(
         short_ma=50,
         long_ma=200,
-        max_cross_age=60,
-        pre_cross_days=20,
-        slope_lookback=20,
-        max_distance=5
+        max_cross_age=80,
+        min_long_ma_decline_duration=60,
+        min_long_ma_decline=10,
+        max_price_premium=10,
     )
 
 results = scanner.scan(symbols)

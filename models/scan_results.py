@@ -23,9 +23,19 @@ class ScanResult:
     slope_value: float
     slope_label: str
 
+    short_ma_rising: bool = False
+    short_ma_slope: Optional[float] = None
+    long_ma_52_week_peak: Optional[float] = None
+    long_ma_peak_date: Optional[datetime] = None
+    long_ma_peak_age: Optional[int] = None
+    long_ma_trough: Optional[float] = None
+    long_ma_trough_date: Optional[datetime] = None
+    long_ma_decline_duration: Optional[int] = None
+    long_ma_decline_percent: Optional[float] = None
+    long_ma_recovery_slope: Optional[float] = None
+    price_above_long_ma_percent: Optional[float] = None
+
     company_name: Optional[str] = None
-    pre_cross_slope: Optional[float] = None
-    pre_cross_trough_date: Optional[datetime] = None
 
     market_cap: Optional[float] = None
     pe: Optional[float] = None

@@ -140,13 +140,23 @@ def _render_technical_status(result, chart_data, cross_close):
     cross_text = cross_date.strftime("%d %b %Y") if pd.notna(cross_date) else "Not available"
     status = pd.DataFrame(
         {
-            "Check": ("Golden Cross Date", "Golden Cross Age", "Price vs Golden Cross", "Price vs Short MA", "Later Death Cross"),
+            "Check": (
+                "Short MA 5-Day Slope", "Golden Cross Date", "Golden Cross Age",
+                "52-Week Long MA High", "Long MA High Age", "Long MA Trough",
+                "Long MA Decline Duration", "Long MA Decline to Trough", "Post-Trough 5-Day Long MA Slope",
+                "Price Above Long MA",
+            ),
             "Status": (
+                _format_value(result.get("short_ma_slope"), "{:.4f}"),
                 cross_text,
                 f"{result.get('days_since_cross')} calendar days" if pd.notna(result.get("days_since_cross")) else "Not available",
-                "At or above cross close" if cross_close is not None and latest["Close"] >= cross_close else "Below cross close",
-                "At or above Short MA" if latest["Close"] >= latest["MA_SHORT"] else "Below Short MA",
-                "Yes" if _has_death_cross_after(chart_data, cross_date) else "No",
+                _format_value(result.get("long_ma_52_week_peak")),
+                f"{result.get('long_ma_peak_age')} trading sessions" if pd.notna(result.get("long_ma_peak_age")) else "Not available",
+                _format_value(result.get("long_ma_trough")),
+                f"{result.get('long_ma_decline_duration')} trading sessions" if pd.notna(result.get("long_ma_decline_duration")) else "Not available",
+                _format_value(result.get("long_ma_decline_percent"), "{:.2f}%"),
+                _format_value(result.get("long_ma_recovery_slope"), "{:.4f}"),
+                _format_value(result.get("price_above_long_ma_percent"), "{:.2f}%"),
             ),
         }
     )

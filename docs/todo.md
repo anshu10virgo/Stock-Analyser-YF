@@ -12,7 +12,7 @@
 - [ ] Enforce price above Long MA.
 - [ ] Apply the Require Higher Low setting.
 - [ ] Apply enabled Long MA trend validation.
-- [ ] Implement or remove unimplemented 52-week filters.
+- [x] Enforce the 52-week Long-MA high-to-trough-to-recovery validation.
 
 ## Performance
 
