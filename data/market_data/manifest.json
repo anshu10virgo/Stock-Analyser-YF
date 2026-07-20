@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-07-19T11:07:06.333126+00:00",
-  "refreshed_at": "2026-07-19T11:07:06.333126+00:00",
+  "generated_at": "2026-07-20T14:45:50.858175+00:00",
+  "refreshed_at": "2026-07-20T14:45:50.858175+00:00",
   "history_start": "2016-07-21",
-  "history_end": "2026-07-17",
-  "last_trading_date": "2026-07-17",
+  "history_end": "2026-07-20",
+  "last_trading_date": "2026-07-20",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
   "symbol_count": 2056,
@@ -68,25 +68,25 @@
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "4c60ff91c167f5b0ea83059b2468d73943ff80fda519cd3287f87780f1430411",
-      "size_bytes": 7396595
+      "sha256": "cdc21b1405f79608b1805f2d648c4090b08078986eab6852e7bf42879ccb16ad",
+      "size_bytes": 7452520
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "7ee4017e85acef7a358cfd1573a277f9f8e410d56c72dd72e0d6268c633a9b96"
+    "sha256": "d33ce7c5aaa421cd797351f4eb22e0c68b557835a6e725a5ed1d631cdcdd52ca"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "168fb347ac008642d0d971d4890a8288dfd9adf12f7401d8a6e4579392eae826"
+    "sha256": "0dd1f1b9adc38b00fe049d70f511332ce6bb13a072aee2ad4a43946abc14f9ef"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
-    "sha256": "54c3c02b76cb30aaccd409d4e0b608f91bc78dcdcf00d80f3addd6176504b643"
+    "sha256": "7cf4f06d60c05850e085f591584f00078983b401075ab415e8a53dd812a5b35b"
   },
   "classification_metadata_file": {
     "path": "fundamentals/classification_metadata.json",
-    "sha256": "257c89d784b3c94f135f83b67ec285913568b816c90e3184770599a7a0ef5ee5"
+    "sha256": "9930f9710526276003d3147b2acd795f222d647ab18a6d00fc0a15300bb2ecea"
   },
   "fundamentals_coverage": {
     "pe": 1762,
@@ -97,6 +97,6 @@
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "abc0493d50898dd5e0a6689fecc9412e94739ebb2c2a95506401292129fef280"
+    "sha256": "6192ccdde809f2f6f85499f83fcedd694295f79cfcdfd5d67f7c75d71e285d50"
   }
 }
