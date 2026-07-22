@@ -1,5 +1,17 @@
 # Roadmap
 
+## Active Sprint — Impending Golden Cross
+
+- Split strategy controls into shared, Post-Cross, and opt-in Impending-Cross
+  mandatory checks.
+- Keep Post and Impending results separate throughout live progress and final
+  reporting.
+- Remove the legacy symbol-file fallback and rely on the validated-universe
+  manifest.
+- Reduce the size of the four-step workflow navigation.
+- Add regression coverage and synchronize business, feature, progress, and
+  architecture documentation.
+
 ## Release 1.1 — Reliability and Auditability
 
 - Structured failure results for every symbol and scanner stage.

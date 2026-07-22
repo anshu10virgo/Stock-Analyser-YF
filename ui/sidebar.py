@@ -14,6 +14,9 @@ DEFAULT_SCAN_SETTINGS = {
     "max_price_premium": 10,
     "min_long_ma_decline_duration": 60,
     "min_long_ma_decline": 10,
+    "include_impending_crosses": False,
+    "impending_max_gap_pct": 3,
+    "pre_cross_validation_sessions": 20,
     "require_post_cross_sessions": False,
     "adjusted_prices": False,
 }
@@ -102,8 +105,8 @@ def render_scan_configuration() -> dict:
     """Render mandatory and optional scan checks without changing defaults."""
     _render_presets()
     st.divider()
-    st.subheader("Mandatory technical checks")
-    st.caption("These checks are always applied to every stock.")
+    st.subheader("Golden Cross — Mandatory Checks")
+    st.caption("These foundation checks are shared by both result groups.")
     left, right = st.columns(2)
 
     short_ma = left.number_input(
@@ -121,14 +124,6 @@ def render_scan_configuration() -> dict:
         value=DEFAULT_SCAN_SETTINGS["long_ma"],
         key=_widget_key("long_ma"),
         help="The trend reference used for the Golden Cross and reversal checks.",
-    )
-    cross_age = left.slider(
-        "Golden Cross maximum age (calendar days)",
-        min_value=1,
-        max_value=180,
-        value=DEFAULT_SCAN_SETTINGS["cross_age"],
-        key=_widget_key("cross_age"),
-        help="The Golden Cross must have occurred within this many calendar days.",
     )
     max_price_premium = right.slider(
         "Maximum price above Long MA (%)",
@@ -162,6 +157,60 @@ def render_scan_configuration() -> dict:
     )
 
     st.divider()
+    st.subheader("Post Golden Cross — Mandatory Checks")
+    st.caption("These checks qualify stocks whose crossover has already completed.")
+    cross_age = st.slider(
+        "Golden Cross maximum age (calendar days)",
+        min_value=1,
+        max_value=180,
+        value=DEFAULT_SCAN_SETTINGS["cross_age"],
+        key=_widget_key("cross_age"),
+        help="The Golden Cross must have occurred within this many calendar days.",
+    )
+    st.markdown(
+        "- Short MA must be strictly above Long MA.\n"
+        "- The latest five-session post-trough Long-MA slope must be positive."
+    )
+
+    st.divider()
+    st.subheader("Impending Golden Cross")
+    include_impending_crosses = st.checkbox(
+        "Do you want stocks for an Impending Golden Cross?",
+        value=DEFAULT_SCAN_SETTINGS["include_impending_crosses"],
+        key=_widget_key("include_impending_crosses"),
+        help="Adds a separate result list for stocks approaching a fresh crossover.",
+    )
+    impending_max_gap_pct = DEFAULT_SCAN_SETTINGS["impending_max_gap_pct"]
+    pre_cross_validation_sessions = DEFAULT_SCAN_SETTINGS[
+        "pre_cross_validation_sessions"
+    ]
+    if include_impending_crosses:
+        st.caption("Configure only the checks unique to an impending crossover.")
+        impending_left, impending_right = st.columns(2)
+        impending_max_gap_pct = impending_left.slider(
+            "Maximum gap between Short MA and Long MA (%)",
+            min_value=0.1,
+            max_value=10.0,
+            value=float(DEFAULT_SCAN_SETTINGS["impending_max_gap_pct"]),
+            step=0.1,
+            key=_widget_key("impending_max_gap_pct"),
+            help="Calculated as (Long MA - Short MA) / Long MA × 100.",
+        )
+        pre_cross_validation_sessions = impending_right.slider(
+            "Pre-cross validation period (trading sessions)",
+            min_value=5,
+            max_value=60,
+            value=DEFAULT_SCAN_SETTINGS["pre_cross_validation_sessions"],
+            key=_widget_key("pre_cross_validation_sessions"),
+            help="Short MA must remain strictly below Long MA during every prior session in this period.",
+        )
+        st.markdown(
+            "- Short MA must be at or below Long MA and rising faster than it.\n"
+            "- Latest five-session Long-MA slope must be non-negative.\n"
+            "- Current Close must be above both moving averages."
+        )
+
+    st.divider()
     st.subheader("Optional confirmations")
     st.caption("Only selected optional checks are enforced.")
     require_post_cross_sessions = st.checkbox(
@@ -182,6 +231,9 @@ def render_scan_configuration() -> dict:
         "max_price_premium": max_price_premium,
         "min_long_ma_decline_duration": min_long_ma_decline_duration,
         "min_long_ma_decline": min_long_ma_decline,
+        "include_impending_crosses": include_impending_crosses,
+        "impending_max_gap_pct": impending_max_gap_pct,
+        "pre_cross_validation_sessions": pre_cross_validation_sessions,
         "require_post_cross_sessions": require_post_cross_sessions,
         "adjusted_prices": adjusted_prices,
     }

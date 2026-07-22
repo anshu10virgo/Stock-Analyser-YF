@@ -3,7 +3,10 @@
 ## Technical Filters
 
 - Rising Short MA
-- Short MA strictly above Long MA
+- Separate Post and Impending Golden Cross qualification paths
+- Shared rising Short-MA and 52-week Long-MA reversal checks
+- Post-Cross Short MA above Long MA and recent crossover validation
+- Impending-Cross MA proximity, acceleration, and pre-cross validation
 - Configurable Golden Cross age
 - 52-week Long-MA high-to-trough-to-positive-slope validation
 - Configurable minimum Long-MA decline and high-to-trough duration
@@ -17,11 +20,11 @@
 - Market, universe, data-source, and Top N choices grouped in Setup
 - Up to five named scan strategies stored only in the active Streamlit session
 - Immutable code-defined scan defaults with an explicit reset action
-- Batched live progress with processed, qualified, and rejected counts
+- Batched live progress with Post-Cross, Impending-Cross, and rejected counts
 - Locally derived scan insights without Google or other research requests
 - Results and selected-stock details
 - Stock Details
-- Included `stock_symbols.csv` universe
+- Manifest-controlled, validated NSE stock universe
 - Configurable number of symbols to analyse
 - Main-screen choice between live Yahoo and the committed Git snapshot
 - Adjustable or actual-price market data selection

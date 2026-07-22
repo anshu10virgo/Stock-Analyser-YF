@@ -69,7 +69,7 @@ def file_sha256(path: Path) -> str:
 
 
 def active_universe():
-    universe = StockUniverse(UNIVERSE_ROOT, PROJECT_ROOT / "stock_symbols.csv")
+    universe = StockUniverse(UNIVERSE_ROOT)
     frame = pd.read_csv(universe.active_file())
     symbols = DataLoader.load_symbols(universe.active_file())
     return universe, frame, symbols

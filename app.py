@@ -21,7 +21,6 @@ from ui.theme import apply_app_theme, render_app_header, scroll_to_top
 
 
 PROJECT_ROOT = Path(__file__).parent
-DEFAULT_SYMBOLS_FILE = PROJECT_ROOT / "stock_symbols.csv"
 HERO_IMAGE = PROJECT_ROOT / "assets" / "stock-market-bull-bear.webp"
 MARKET_DATA_SESSION_KEY = "selected_market_data_source"
 MARKET_DATA_WIDGET_KEY = "market_data_source_selector"
@@ -33,7 +32,6 @@ NAVIGATION_OPTIONS = (
 )
 STOCK_UNIVERSE = StockUniverse(
     PROJECT_ROOT / "data" / "stock_universe",
-    DEFAULT_SYMBOLS_FILE,
 )
 
 
@@ -46,8 +44,6 @@ def _initialise_session() -> None:
     requested_section = st.session_state.pop("_next_app_section", None)
     if requested_section in NAVIGATION_OPTIONS:
         st.session_state["app_section"] = requested_section
-    if st.session_state.get("stock_source") == "Included stock_symbols.csv":
-        st.session_state["stock_source"] = "Included validated stock universe"
 
 
 def _navigate_to(section: str) -> None:
@@ -177,6 +173,9 @@ def _build_config(settings: dict) -> ScanConfig:
         min_long_ma_decline_duration=settings["min_long_ma_decline_duration"],
         min_long_ma_decline=settings["min_long_ma_decline"],
         max_price_premium=settings["max_price_premium"],
+        include_impending_crosses=settings["include_impending_crosses"],
+        impending_max_gap_pct=settings["impending_max_gap_pct"],
+        pre_cross_validation_sessions=settings["pre_cross_validation_sessions"],
         require_post_cross_sessions=settings["require_post_cross_sessions"],
         adjusted_prices=settings["adjusted_prices"],
     )
@@ -204,7 +203,10 @@ def render_strategy_page() -> None:
     review = st.columns(3)
     review[0].metric("Stocks", f"{count:,}")
     review[1].metric("Data source", "Git snapshot" if source == SNAPSHOT_SOURCE else "Live Yahoo")
-    review[2].metric("Optional checks", "1" if settings["require_post_cross_sessions"] else "None")
+    review[2].metric(
+        "Result groups",
+        "Post + Impending" if settings["include_impending_crosses"] else "Post Cross",
+    )
 
     if st.button("Run scan", type="primary"):
         st.session_state["pending_scan"] = {
@@ -219,18 +221,26 @@ def _live_update(index: int, total: int, run, placeholders: dict) -> None:
     """Refresh local results in batches to avoid slowing the scan."""
     placeholders["progress"].progress(index / total)
     placeholders["processed"].metric("Processed", f"{index:,} / {total:,}")
-    placeholders["qualified"].metric("Qualified", f"{len(run.passed):,}")
+    placeholders["qualified"].metric("Post Cross", f"{len(run.passed):,}")
+    placeholders["impending"].metric("Impending", f"{len(run.impending):,}")
     placeholders["rejected"].metric("Rejected", f"{len(run.failed):,}")
     if index % 25 and index != total:
         return
     frames = run.as_dataframes()
     with placeholders["results"].container():
-        st.subheader("Qualified stocks so far")
-        if frames["passed"].empty:
-            st.caption("No stocks have qualified in the processed batch yet.")
-        else:
+        st.subheader("Post Golden Cross stocks so far")
+        if not frames["passed"].empty:
             st.dataframe(
                 prepare_results(frames["passed"]).head(10),
+                width="stretch",
+                hide_index=True,
+            )
+        elif frames["impending"].empty:
+            st.caption("No stocks have qualified in the processed batch yet.")
+        if not frames["impending"].empty:
+            st.subheader("Impending Golden Cross stocks so far")
+            st.dataframe(
+                prepare_results(frames["impending"], impending=True).head(10),
                 width="stretch",
                 hide_index=True,
             )
@@ -255,12 +265,13 @@ def render_live_scan_page() -> None:
     st.subheader(f"Scanning {len(symbols):,} stocks")
     st.caption("Qualified stocks and locally derived insights update every 25 symbols.")
     progress = st.progress(0)
-    metric_columns = st.columns(3)
+    metric_columns = st.columns(4)
     placeholders = {
         "progress": progress,
         "processed": metric_columns[0].empty(),
         "qualified": metric_columns[1].empty(),
-        "rejected": metric_columns[2].empty(),
+        "impending": metric_columns[2].empty(),
+        "rejected": metric_columns[3].empty(),
         "results": st.empty(),
         "insights": st.empty(),
     }
@@ -283,6 +294,7 @@ def render_live_scan_page() -> None:
     )
     frames = scan_run.as_dataframes()
     st.session_state["scan_results"] = frames["passed"]
+    st.session_state["scan_impending_results"] = frames["impending"]
     st.session_state["scan_failed_results"] = frames["failed"]
     st.session_state["scan_time"] = datetime.now()
     st.session_state["scan_settings"] = settings
@@ -297,10 +309,12 @@ def render_results_page() -> None:
         st.info("Run a scan from Strategy to see results.")
         return
     results = st.session_state["scan_results"]
+    impending = st.session_state.get("scan_impending_results", pd.DataFrame())
     failed = st.session_state.get("scan_failed_results", pd.DataFrame())
     render_scan_insights(results, failed, heading="Scan highlights")
     render_results(
         results,
+        impending,
         st.session_state["scan_time"],
         st.session_state["scan_settings"],
         st.session_state.get("scan_metrics", {}),

@@ -36,6 +36,25 @@ class ResultsPageTests(unittest.TestCase):
         self.assertAlmostEqual(performance["Since Golden Cross"], 69.0)
         self.assertAlmostEqual(performance["1 Week"], (169 / 164 - 1) * 100)
 
+    def test_impending_results_use_proximity_metrics_without_post_cross_score(self):
+        results = prepare_results(
+            pd.DataFrame(
+                [{
+                    "symbol": "NEAR.NS",
+                    "score": 0,
+                    "impending_gap_percent": 1.25,
+                    "short_ma_slope": 0.6,
+                    "long_ma_slope": 0.1,
+                }]
+            ),
+            impending=True,
+        )
+
+        self.assertIn("MA Gap %", results.columns)
+        self.assertIn("Short MA 5-Day Slope", results.columns)
+        self.assertNotIn("Score", results.columns)
+        self.assertNotIn("Cross Date", results.columns)
+
 
 if __name__ == "__main__":
     unittest.main()
