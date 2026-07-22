@@ -57,7 +57,8 @@ Status: Active Development
 - Impending Golden Cross strategy and separate result presentation.
 - Removal of the legacy stock-universe fallback.
 - Reduced workflow-navigation footprint and updated rule documentation.
-- See `docs/sprints/impending_golden_cross.md` for scope and acceptance criteria.
+- Scope and acceptance criteria are maintained in the active sprint section of
+  `docs/roadmap.md`.
 
 ## Current Risks
 
