@@ -190,7 +190,7 @@ def render_scan_configuration() -> dict:
         impending_max_gap_pct = impending_left.slider(
             "Maximum gap between Short MA and Long MA (%)",
             min_value=0.1,
-            max_value=10.0,
+            max_value=20.0,
             value=float(DEFAULT_SCAN_SETTINGS["impending_max_gap_pct"]),
             step=0.1,
             key=_widget_key("impending_max_gap_pct"),
