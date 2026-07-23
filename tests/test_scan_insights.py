@@ -31,14 +31,43 @@ class ScanInsightTests(unittest.TestCase):
             ]
         )
         failed = pd.DataFrame(
-            {"stage": ["Price Validation", "Price Validation", "Market Data"]}
+            {
+                "stage": ["Short MA Validation", "Short MA Validation", "Market Data"],
+                "reason": [
+                    "Short MA 5-session slope is not positive",
+                    "Short MA 5-session slope is not positive",
+                    "No complete market data was returned for the symbol",
+                ],
+            }
         )
 
         insights = derive_scan_insights(passed, failed)
 
         self.assertEqual(insights["Highest score"], "TWO.NS · 80")
         self.assertEqual(insights["Newest Golden Cross"], "TWO.NS · 5 days")
-        self.assertIn("Price Validation", insights["Most common rejection"])
+        self.assertEqual(
+            insights["Most common rejection"],
+            "Short MA is not rising · 2 stocks",
+        )
+
+    def test_rejection_insight_counts_reasons_instead_of_broad_stages(self):
+        failed = pd.DataFrame(
+            {
+                "stage": ["Price Validation"] * 3,
+                "reason": [
+                    "Close price is not above Long MA",
+                    "Close price is too far above Long MA",
+                    "Close price is too far above Long MA",
+                ],
+            }
+        )
+
+        insights = derive_scan_insights(pd.DataFrame(), failed)
+
+        self.assertEqual(
+            insights["Most common rejection"],
+            "Current price is too far above Long MA · 2 stocks",
+        )
 
     def test_default_settings_are_returned_as_an_independent_copy(self):
         settings = default_scan_settings()

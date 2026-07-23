@@ -16,6 +16,8 @@ Status: Active Development
 - Symbol-filtered Parquet chart access and selected-history caching
 - Semiannual sector/industry classification snapshot
 - Committed weighted/median industry PE and coverage metadata
+- GitHub Actions refresh-failure email notification with secret-managed Gmail
+  authentication
 
 ### Technical Analysis
 
@@ -38,6 +40,7 @@ Status: Active Development
   opt-in Impending Golden Cross sections
 - Session-only named strategies that do not alter committed defaults
 - Progressive qualified-stock display and locally derived scan insights
+- Plain-language most-common rejection insights based on the exact failed rule
 - Branded colour system and bull/bear market artwork
 - Configurable scanner controls and scan-size selection
 - Formatted qualified-stock table with latest scan timestamp

@@ -142,6 +142,8 @@ interactive charts, and shareable Streamlit deployment.
 ## 13. Operational Standards
 
 - External errors must be logged with context while avoiding sensitive data.
+- A failed scheduled market-data refresh must attempt to notify the configured
+  operator by email without exposing SMTP credentials in code or logs.
 - Scan duration, symbols processed, provider failures, and cache activity are
   operational metrics.
 - The application must be tested before release and deployed from the GitHub

@@ -165,13 +165,20 @@ def apply_app_theme() -> None:
             }
             .st-key-workflow_navigation [role="radiogroup"] {
                 display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: repeat(4, minmax(0, 1fr));
                 width: 100%;
+                gap: 0.15rem;
+                padding: 0.2rem;
             }
             .st-key-workflow_navigation label[data-baseweb="radio"] {
                 min-width: 0;
                 width: 100%;
-                padding-inline: 0.45rem;
+                padding: 0.3rem 0.1rem;
+                border-radius: 0.4rem;
+            }
+            .st-key-workflow_navigation label[data-baseweb="radio"] p {
+                font-size: 0.68rem;
+                white-space: nowrap;
             }
             [data-testid="stMetric"] {
                 padding: 0.6rem 0.7rem;

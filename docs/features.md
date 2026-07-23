@@ -34,6 +34,7 @@
 - Selected-stock weighted and median industry P/E benchmarks with peer count
 - Snapshot date, PE/industry coverage, effective source, and fallback metrics
 - Colour-accented desktop visual system and reduced interface typography
+- Single-row compact workflow navigation on mobile screens
 
 ## Charts
 
@@ -52,6 +53,7 @@
 - Ten-year repository-backed OHLCV history
 - Local adjusted/unadjusted price calculation
 - Weekday incremental refresh with manual validation mode
+- Email notification to the configured recipient when a refresh workflow fails
 - New-universe-symbol backfill and inactive-symbol preservation
 - Semiannual sector/industry refresh with active-universe change detection
 - Committed weighted and median industry P/E benchmarks
