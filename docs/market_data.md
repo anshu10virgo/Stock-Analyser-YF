@@ -55,6 +55,32 @@ The GitHub Actions workflow runs incremental mode at 18:00 IST on weekdays and
 can be manually started in incremental, classification, or validation-only
 mode. A closed-market run produces no data commit.
 
+## Refresh Failure Email
+
+The workflow attempts to email `anshu10virgo@gmail.com` whenever any refresh,
+validation, or commit step fails. The notification includes the repository,
+commit, branch, and direct GitHub Actions run link. Notification errors do not
+replace or hide the original workflow failure.
+
+Configure this repository-level GitHub Actions secret under **Settings >
+Secrets and variables > Actions**:
+
+- `REFRESH_SMTP_APP_PASSWORD`: dedicated Google App Password for the workflow.
+
+The sender and recipient are both `anshu10virgo@gmail.com`; only the App
+Password is secret. Do not store it in the repository. Google requires 2-Step
+Verification before an App Password can be created. See the official
+[Google App Password guide](https://support.google.com/accounts/answer/185833)
+and [GitHub Actions secrets reference](https://docs.github.com/en/actions/reference/security/secrets).
+
+If the secrets are absent, the workflow records a warning that email could not
+be sent. The failed Actions run remains visible on GitHub.
+
+To verify delivery without downloading or changing market data, manually run
+the workflow with mode `notification-test`. An optional failed-run URL can be
+included in the test message. The test run fails if the SMTP secret is missing
+or Gmail rejects delivery.
+
 ## Fundamentals and Industry P/E
 
 Yahoo's India quote screener supplies company name, market cap, trailing PE,

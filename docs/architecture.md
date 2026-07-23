@@ -37,7 +37,8 @@ Yahoo Finance, Cache, and Observability
   classifications, industry P/E calculation, coverage reporting, and atomic
   manifest updates.
 - `.github/workflows/refresh-market-data.yml`: scheduled and manual snapshot
-  validation and auto-commit workflow.
+  validation and auto-commit workflow, with failure email notification through
+  repository-managed Gmail SMTP secrets.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: compatibility facade for legacy callers.
 - Technical-analysis modules: indicators, Golden Cross, Short/Long-MA
