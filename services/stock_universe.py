@@ -9,15 +9,14 @@ from pathlib import Path
 class StockUniverse:
     """Reads the manifest that selects one validated stock snapshot."""
 
-    def __init__(self, universe_root: Path, legacy_symbols_file: Path) -> None:
+    def __init__(self, universe_root: Path) -> None:
         self.universe_root = universe_root
-        self.legacy_symbols_file = legacy_symbols_file
         self.manifest_file = universe_root / "manifest.json"
 
     def active_file(self) -> Path:
-        """Return the manifest-selected file, or the legacy safe fallback."""
+        """Return the validated universe explicitly selected by the manifest."""
         if not self.manifest_file.exists():
-            return self.legacy_symbols_file
+            raise FileNotFoundError("Stock-universe manifest is missing")
 
         manifest = self.metadata()
         relative_path = manifest.get("active_universe")
@@ -33,5 +32,5 @@ class StockUniverse:
 
     def metadata(self) -> dict:
         if not self.manifest_file.exists():
-            return {"source": "legacy", "refreshed_at": None}
+            raise FileNotFoundError("Stock-universe manifest is missing")
         return json.loads(self.manifest_file.read_text(encoding="utf-8"))

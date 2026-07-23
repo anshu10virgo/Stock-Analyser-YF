@@ -34,6 +34,10 @@ class ScanResult:
     long_ma_decline_percent: Optional[float] = None
     long_ma_recovery_slope: Optional[float] = None
     price_above_long_ma_percent: Optional[float] = None
+    strategy: str = "Post Golden Cross"
+    long_ma_slope: Optional[float] = None
+    impending_gap_percent: Optional[float] = None
+    pre_cross_validation_sessions: Optional[int] = None
 
     company_name: Optional[str] = None
 

@@ -19,8 +19,8 @@ Yahoo Finance, Cache, and Observability
 - `ui/`: Streamlit pages, session-only scan presets, live scan insights,
   shared visual styling, formatted results, and interactive charts.
 - `models/scan_config.py`: immutable scan configuration and validation.
-- `models/scan_run.py`: typed qualified and failed outcomes with dataframe
-  adapters for the UI.
+- `models/scan_run.py`: typed Post-Cross, Impending-Cross, and failed outcomes
+  with dataframe adapters for the UI.
 - `services/scan_service.py`: scan orchestration with injected provider
   dependencies, structured failures, and optional accumulated-result callbacks
   for batched UI progress updates.
@@ -40,8 +40,11 @@ Yahoo Finance, Cache, and Observability
   validation and auto-commit workflow.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: compatibility facade for legacy callers.
-- Technical-analysis modules: indicators, Golden Cross, Short-MA direction,
-  and 52-week Long-MA high-to-trough-to-positive-slope validation.
+- Technical-analysis modules: indicators, Golden Cross, Short/Long-MA
+  trajectories, pre-cross proximity and validation, and 52-week Long-MA
+  high-to-trough recovery validation.
+- `services/stock_universe.py`: resolves only the manifest-selected validated
+  universe; no legacy symbol-file fallback is permitted.
 - `core/fundamentals.py`: retried and cached fundamental-data retrieval.
 - `services/industry_valuation.py`: NSE-only weighted and median industry P/E
   benchmarks calculated from Yahoo peer groups and cached for each scan.

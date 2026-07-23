@@ -45,7 +45,7 @@ class StaticIndustryValuation:
 
 
 class StockScannerTests(unittest.TestCase):
-    """Verify each mandatory reversal rule and the remaining optional check."""
+    """Verify Post-Cross, Impending-Cross, and shared scanner rules."""
 
     @staticmethod
     def _config(**overrides):
@@ -100,6 +100,17 @@ class StockScannerTests(unittest.TestCase):
                 fundamentals_provider=StaticFundamentals,
                 industry_valuation_service=StaticIndustryValuation(),
             ).scan(["TEST.NS"], result_callback=result_callback).as_dataframes()
+
+    @staticmethod
+    def _impending_history():
+        history = StockScannerTests._history()
+        recent = history.index[-21:]
+        history.loc[recent, "MA_SHORT"] = history.loc[recent, "MA_LONG"] - 2
+        history.loc[history.index[-5]:, "MA_SHORT"] = (
+            history.loc[history.index[-5]:, "MA_LONG"]
+            - [1.5, 1.2, 0.9, 0.5, 0.2]
+        )
+        return history
 
     def test_result_callback_receives_accumulated_scan_outcomes(self):
         updates = []
@@ -210,6 +221,68 @@ class StockScannerTests(unittest.TestCase):
         self.assertEqual(result["failed"].loc[0, "stage"], "Post-Cross Validation")
         self.assertEqual(result["failed"].loc[0, "check_type"], "optional")
 
+    def test_accepts_an_impending_cross_into_a_separate_result_group(self):
+        result = self._scan(
+            self._impending_history(),
+            include_impending_crosses=True,
+        )
+
+        self.assertTrue(result["passed"].empty)
+        self.assertEqual(len(result["impending"]), 1)
+        record = result["impending"].iloc[0]
+        self.assertEqual(record["strategy"], "Impending Golden Cross")
+        self.assertLessEqual(record["impending_gap_percent"], 3)
+        self.assertGreater(record["short_ma_slope"], record["long_ma_slope"])
+        self.assertTrue(pd.isna(record["cross_date"]))
+
+    def test_impending_cross_respects_the_configured_gap(self):
+        result = self._scan(
+            self._impending_history(),
+            include_impending_crosses=True,
+            impending_max_gap_pct=0.1,
+        )
+
+        self.assertEqual(
+            result["failed"].loc[0, "reason"],
+            "Short MA is farther below Long MA than the configured maximum gap",
+        )
+
+    def test_impending_cross_requires_short_ma_to_rise_faster(self):
+        history = self._impending_history()
+        history.loc[history.index[-5]:, "MA_SHORT"] = (
+            history.loc[history.index[-5]:, "MA_LONG"] - 0.5
+        )
+
+        result = self._scan(history, include_impending_crosses=True)
+
+        self.assertEqual(
+            result["failed"].loc[0, "reason"],
+            "Short MA 5-session slope is not greater than Long MA 5-session slope",
+        )
+
+    def test_impending_cross_requires_a_fresh_pre_cross_window(self):
+        history = self._impending_history()
+        history.loc[history.index[-10], "MA_SHORT"] = history.loc[
+            history.index[-10], "MA_LONG"
+        ]
+
+        result = self._scan(history, include_impending_crosses=True)
+
+        self.assertEqual(
+            result["failed"].loc[0, "reason"],
+            "Short MA was not strictly below Long MA throughout the configured pre-cross validation period",
+        )
+
+    def test_impending_cross_allows_a_flat_latest_long_ma(self):
+        history = self._impending_history()
+        history.loc[history.index[-5]:, "MA_LONG"] = 90.0
+        history.loc[history.index[-5]:, "MA_SHORT"] = [87.0, 87.5, 88.0, 89.0, 89.8]
+
+        result = self._scan(history, include_impending_crosses=True)
+
+        self.assertEqual(len(result["impending"]), 1)
+        self.assertEqual(result["impending"].loc[0, "long_ma_slope"], 0)
+
     def test_invalid_scan_configuration_fails_fast(self):
         """Impossible MA settings must be rejected before a data download."""
         with self.assertRaises(ValueError):
@@ -259,8 +332,13 @@ class StockScannerTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            universe = StockUniverse(root, root / "legacy.csv")
+            universe = StockUniverse(root)
             self.assertEqual(universe.active_file(), active_file.resolve())
+
+    def test_missing_universe_manifest_has_no_legacy_fallback(self):
+        with TemporaryDirectory() as temporary_directory:
+            with self.assertRaises(FileNotFoundError):
+                StockUniverse(Path(temporary_directory)).active_file()
 
     def test_refresh_parser_normalizes_nse_whitespace_headers(self):
         raw_source = (

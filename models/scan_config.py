@@ -13,6 +13,9 @@ class ScanConfig:
     min_long_ma_decline_duration: int
     min_long_ma_decline: float
     max_price_premium: float
+    include_impending_crosses: bool = False
+    impending_max_gap_pct: float = 3
+    pre_cross_validation_sessions: int = 20
     require_post_cross_sessions: bool = False
     adjusted_prices: bool = False
 
@@ -22,7 +25,13 @@ class ScanConfig:
             raise ValueError("Short-term moving average must be below long-term moving average")
         if self.max_cross_age < 1 or self.min_long_ma_decline_duration < 1:
             raise ValueError("Golden Cross age and Long MA decline duration must be positive")
-        if self.min_long_ma_decline < 0 or self.max_price_premium < 0:
+        if self.pre_cross_validation_sessions < 1:
+            raise ValueError("Pre-cross validation period must be positive")
+        if (
+            self.min_long_ma_decline < 0
+            or self.max_price_premium < 0
+            or self.impending_max_gap_pct < 0
+        ):
             raise ValueError("Percentage thresholds cannot be negative")
 
     @property

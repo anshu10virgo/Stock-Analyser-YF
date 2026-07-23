@@ -138,7 +138,6 @@ def main() -> None:
     )
     universe = StockUniverse(
         PROJECT_ROOT / "data" / "stock_universe",
-        PROJECT_ROOT / "stock_symbols.csv",
     )
     symbols = DataLoader.load_symbols(universe.active_file())[:1500]
     data_services = build_data_services(SNAPSHOT_SOURCE, PROJECT_ROOT)

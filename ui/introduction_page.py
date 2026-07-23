@@ -9,9 +9,10 @@ def render_introduction() -> None:
     st.subheader("About Stock Analyser")
     st.write(
         "Stock Analyser is a technical stock-screening tool for NSE stocks "
-        "using Yahoo Finance market data. It identifies recent Golden Cross "
-        "opportunities, applies mandatory price and trend checks, and lets you "
-        "apply additional optional filters."
+        "using Yahoo Finance market data. It identifies completed Post Golden "
+        "Cross opportunities and, when selected, stocks approaching an "
+        "Impending Golden Cross. Shared price and trend checks are applied "
+        "before each strategy's unique mandatory rules."
     )
 
     st.subheader("How the scan works")
@@ -19,11 +20,11 @@ def render_introduction() -> None:
         "1. Complete the market and data setup once for the session.\n"
         "2. Load a session strategy or configure the checks.\n"
         "3. Follow scan progress and locally derived insights as stocks are processed.\n"
-        "4. Review qualified stocks, one-year trends, and transparent score details."
+        "4. Review separate Post and Impending results, one-year trends, and Post-Cross score details."
     )
 
     st.subheader("How the score is calculated")
-    st.caption("Total possible score: 85 points. Score ranks qualified stocks; it does not override any failed check.")
+    st.caption("Total possible score: 85 points. The score ranks qualified Post Golden Cross stocks only; Impending results are ordered by MA proximity and trajectory.")
     st.dataframe(
         pd.DataFrame(
             [

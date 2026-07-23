@@ -23,6 +23,22 @@ DISPLAY_COLUMNS = {
     "slope_label": "Slope Label",
 }
 
+IMPENDING_DISPLAY_COLUMNS = {
+    "symbol": "Symbol",
+    "company_name": "Company Name",
+    "sector": "Sector",
+    "industry": "Industry",
+    "market_cap": "Market Cap",
+    "close": "Close",
+    "pe": "PE",
+    "eps": "EPS",
+    "ma_short": "Short MA",
+    "ma_long": "Long MA",
+    "impending_gap_percent": "MA Gap %",
+    "short_ma_slope": "Short MA 5-Day Slope",
+    "long_ma_slope": "Long MA 5-Day Slope",
+}
+
 
 SCORE_COMPONENTS = (
     ("score_cross", "Golden Cross Timing"),
@@ -34,9 +50,10 @@ SCORE_COMPONENTS = (
 )
 
 
-def prepare_results(df):
+def prepare_results(df, impending=False):
     """Return scanner results with user-friendly labels and values."""
-    results = df.reindex(columns=DISPLAY_COLUMNS).rename(columns=DISPLAY_COLUMNS)
+    columns = IMPENDING_DISPLAY_COLUMNS if impending else DISPLAY_COLUMNS
+    results = df.reindex(columns=columns).rename(columns=columns)
 
     results["Company Name"] = results["Company Name"].fillna(
         results["Symbol"].str.removesuffix(".NS")
@@ -163,6 +180,22 @@ def _render_technical_status(result, chart_data, cross_close):
         }
     )
     st.dataframe(status, width="stretch", hide_index=True)
+    if result.get("strategy") == "Impending Golden Cross":
+        impending_status = pd.DataFrame(
+            {
+                "Check": (
+                    "Current Short-to-Long MA Gap",
+                    "Latest 5-Day Long MA Slope",
+                    "Validated Pre-Cross Period",
+                ),
+                "Status": (
+                    _format_value(result.get("impending_gap_percent"), "{:.2f}%"),
+                    _format_value(result.get("long_ma_slope"), "{:.4f}"),
+                    f"{result.get('pre_cross_validation_sessions')} trading sessions",
+                ),
+            }
+        )
+        st.dataframe(impending_status, width="stretch", hide_index=True)
 
 
 def _render_score_breakdown(result):
@@ -205,7 +238,7 @@ def _load_selected_history(
     return services.history.get_symbol_history(batch_data, symbol)
 
 
-def render_selected_stock(result, settings):
+def render_selected_stock(result, settings, show_score=True):
     """Load and render the selected stock's cached one-year details."""
     symbol = result["symbol"]
     source = settings.get("market_data_source", LIVE_SOURCE)
@@ -238,8 +271,9 @@ def render_selected_stock(result, settings):
     render_stock_detail(symbol, chart_data, result["cross_date"])
     cross_close = _price_at_cross(chart_data, result.get("cross_date"))
     _render_technical_status(result, chart_data, cross_close)
-    with st.expander("Show individual score details"):
-        _render_score_breakdown(result)
+    if show_score:
+        with st.expander("Show individual score details"):
+            _render_score_breakdown(result)
     _render_performance(chart_data, cross_close)
 
 
@@ -314,24 +348,18 @@ def _render_data_provenance(settings, metrics):
         st.dataframe(details, width="stretch", hide_index=True)
 
 
-def render_results(df, scan_time, settings, metrics=None):
-    """Render formatted qualified-stock results for a completed scan."""
-    st.subheader("Qualified Stocks")
-    st.caption(f"Latest scan: {scan_time:%d %b %Y, %I:%M %p}")
-    _render_data_provenance(settings, metrics or {})
-
+def _render_impending_results(df, settings):
+    """Render the separately ranked proximity view for impending crosses."""
+    st.subheader("Impending Golden Cross")
     if df.empty:
-        st.warning("No qualifying stocks found.")
+        st.warning("No impending Golden Cross stocks found.")
         return
 
-    results = prepare_results(df)
-    left, right = st.columns(2)
-    left.metric("Qualified stocks", len(results))
-    right.metric("Average score", f"{results['Score'].mean():.1f}")
-
+    results = prepare_results(df, impending=True)
+    st.metric("Impending stocks", len(results))
     st.caption(
-        "Score is out of 85. Select a stock to view its one-year chart, "
-        "technical details, performance, and score breakdown."
+        "Ordered by the smallest moving-average gap, then the strongest "
+        "Short-MA slope. These stocks are not assigned a Post-Cross score."
     )
     selection = st.dataframe(
         results,
@@ -340,22 +368,71 @@ def render_results(df, scan_time, settings, metrics=None):
         on_select="rerun",
         selection_mode="single-row",
         column_config={
-            "Score": st.column_config.NumberColumn(format="%d"),
             "Market Cap": st.column_config.TextColumn(),
             "Close": st.column_config.NumberColumn(format="%.2f"),
             "PE": st.column_config.NumberColumn(format="%.2f"),
             "EPS": st.column_config.NumberColumn(format="%.2f"),
             "Short MA": st.column_config.NumberColumn(format="%.2f"),
             "Long MA": st.column_config.NumberColumn(format="%.2f"),
-            "Cross Date": st.column_config.DatetimeColumn(format="DD MMM YYYY"),
+            "MA Gap %": st.column_config.NumberColumn(format="%.2f%%"),
+            "Short MA 5-Day Slope": st.column_config.NumberColumn(format="%.4f"),
+            "Long MA 5-Day Slope": st.column_config.NumberColumn(format="%.4f"),
         },
+        key="impending_results_table",
     )
-
-    selected_rows = selection.selection.rows
-    if selected_rows:
-        selected_result = df.iloc[selected_rows[0]]
+    if selection.selection.rows:
         st.divider()
-        render_selected_stock(selected_result, settings)
+        render_selected_stock(
+            df.iloc[selection.selection.rows[0]], settings, show_score=False
+        )
+
+
+def render_results(df, impending_df, scan_time, settings, metrics=None):
+    """Render formatted qualified-stock results for a completed scan."""
+    st.subheader("Scan Results")
+    st.caption(f"Latest scan: {scan_time:%d %b %Y, %I:%M %p}")
+    _render_data_provenance(settings, metrics or {})
+
+    st.subheader("Post Golden Cross")
+    if df.empty:
+        st.warning("No Post Golden Cross stocks found.")
+    else:
+        results = prepare_results(df)
+        left, right = st.columns(2)
+        left.metric("Post-Cross stocks", len(results))
+        right.metric("Average score", f"{results['Score'].mean():.1f}")
+
+        st.caption(
+            "Score is out of 85. Select a stock to view its one-year chart, "
+            "technical details, performance, and score breakdown."
+        )
+        selection = st.dataframe(
+            results,
+            width="stretch",
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="single-row",
+            column_config={
+                "Score": st.column_config.NumberColumn(format="%d"),
+                "Market Cap": st.column_config.TextColumn(),
+                "Close": st.column_config.NumberColumn(format="%.2f"),
+                "PE": st.column_config.NumberColumn(format="%.2f"),
+                "EPS": st.column_config.NumberColumn(format="%.2f"),
+                "Short MA": st.column_config.NumberColumn(format="%.2f"),
+                "Long MA": st.column_config.NumberColumn(format="%.2f"),
+                "Cross Date": st.column_config.DatetimeColumn(format="DD MMM YYYY"),
+            },
+            key="post_cross_results_table",
+        )
+
+        if selection.selection.rows:
+            selected_result = df.iloc[selection.selection.rows[0]]
+            st.divider()
+            render_selected_stock(selected_result, settings)
+
+    if settings.get("include_impending_crosses"):
+        st.divider()
+        _render_impending_results(impending_df, settings)
 
 
 def render_optional_failures(df):

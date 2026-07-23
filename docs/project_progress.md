@@ -9,7 +9,7 @@ Status: Active Development
 - Yahoo Finance batch price retrieval
 - Configurable adjusted or unadjusted price basis
 - Retried and cached fundamental-data retrieval
-- Included `stock_symbols.csv` universe and optional file upload
+- Manifest-controlled validated NSE universe and optional file upload
 - Selectable Git-snapshot and live Yahoo provider sets
 - Ten-year partitioned market-data snapshot and manifest contract
 - Scheduled/manual incremental refresh workflow
@@ -28,10 +28,14 @@ Status: Active Development
   with structured market-data and processing failures
 - Yahoo historical-price provider with bounded retry, 15-minute batch caching,
   and provider metrics
+- Separate Post Golden Cross and opt-in Impending Golden Cross qualification
+  paths with shared reversal calculations and distinct results
 
 ### Dashboard
 
 - Four-step desktop workflow covering Setup, Strategy, Live Scan, and Results
+- Strategy controls grouped into common Golden Cross, Post Golden Cross, and
+  opt-in Impending Golden Cross sections
 - Session-only named strategies that do not alter committed defaults
 - Progressive qualified-stock display and locally derived scan insights
 - Branded colour system and bull/bear market artwork
@@ -47,6 +51,14 @@ Status: Active Development
 - Full per-symbol failure reporting and failure visibility in the dashboard.
 - Enforce every enabled scanner rule consistently.
 - Add automated tests for scanner rules, provider failures, and UI formatting.
+
+## Current Sprint
+
+- Impending Golden Cross strategy and separate result presentation.
+- Removal of the legacy stock-universe fallback.
+- Reduced workflow-navigation footprint and updated rule documentation.
+- Scope and acceptance criteria are maintained in the active sprint section of
+  `docs/roadmap.md`.
 
 ## Current Risks
 

@@ -178,18 +178,50 @@ class ScanService:
             short_ma_slope = SlopeAnalyzer.calculate_slope(
                 history["MA_SHORT"], self.SHORT_MA_SLOPE_SESSIONS
             )
+            long_ma_slope = SlopeAnalyzer.calculate_slope(
+                history["MA_LONG"], self.LONG_MA_RECOVERY_SLOPE_SESSIONS
+            )
             if short_ma_slope <= 0:
                 run.failed.append(self._failure(symbol, "Short MA Validation", "Short MA 5-session slope is not positive"))
                 return
-            if latest["MA_SHORT"] <= latest["MA_LONG"]:
-                run.failed.append(self._failure(symbol, "Short MA Validation", "Short MA is not above Long MA"))
-                return
-
-            cross = GoldenCrossDetector.find_cross(history, self.config.max_cross_age)
-            if not cross["valid"]:
-                run.failed.append(self._failure(symbol, "Golden Cross Validation", "No Golden Cross within the configured age"))
-                return
-            cross_date = cross["cross_date"]
+            is_post_cross = latest["MA_SHORT"] > latest["MA_LONG"]
+            if is_post_cross:
+                cross = GoldenCrossDetector.find_cross(history, self.config.max_cross_age)
+                if not cross["valid"]:
+                    run.failed.append(self._failure(symbol, "Post Golden Cross Validation", "No Golden Cross within the configured age"))
+                    return
+                cross_date = cross["cross_date"]
+                strategy = "Post Golden Cross"
+            else:
+                if not self.config.include_impending_crosses:
+                    run.failed.append(self._failure(symbol, "Post Golden Cross Validation", "Short MA is not above Long MA"))
+                    return
+                gap_percent = (
+                    (latest["MA_LONG"] - latest["MA_SHORT"])
+                    / latest["MA_LONG"]
+                ) * 100
+                if gap_percent > self.config.impending_max_gap_pct:
+                    run.failed.append(self._failure(symbol, "Impending Golden Cross Validation", "Short MA is farther below Long MA than the configured maximum gap"))
+                    return
+                if short_ma_slope <= long_ma_slope:
+                    run.failed.append(self._failure(symbol, "Impending Golden Cross Validation", "Short MA 5-session slope is not greater than Long MA 5-session slope"))
+                    return
+                validation = history[["MA_SHORT", "MA_LONG"]].dropna().iloc[
+                    -(self.config.pre_cross_validation_sessions + 1):-1
+                ]
+                if (
+                    len(validation) < self.config.pre_cross_validation_sessions
+                    or not (validation["MA_SHORT"] < validation["MA_LONG"]).all()
+                ):
+                    run.failed.append(self._failure(symbol, "Impending Golden Cross Validation", "Short MA was not strictly below Long MA throughout the configured pre-cross validation period"))
+                    return
+                cross = {
+                    "valid": False,
+                    "cross_date": None,
+                    "days_since_cross": None,
+                }
+                cross_date = None
+                strategy = "Impending Golden Cross"
             reversal = self._long_ma_reversal(history)
             if reversal is None:
                 run.failed.append(self._failure(symbol, "Long MA Validation", "Insufficient Long MA history for 52-week high"))
@@ -211,8 +243,12 @@ class ScanService:
             if decline_duration < self.config.min_long_ma_decline_duration:
                 run.failed.append(self._failure(symbol, "Long MA Validation", "Long MA decline from 52-week high to trough is shorter than configured minimum duration"))
                 return
-            if not long_ma_recovering:
-                run.failed.append(self._failure(symbol, "Long MA Validation", "Post-trough 5-session Long MA slope is not positive"))
+            if is_post_cross:
+                if not long_ma_recovering:
+                    run.failed.append(self._failure(symbol, "Long MA Validation", "Post-trough 5-session Long MA slope is not positive"))
+                    return
+            elif latest["MA_LONG"] < trough_value or long_ma_slope < 0:
+                run.failed.append(self._failure(symbol, "Impending Golden Cross Validation", "Long MA is below its trough or its latest 5-session slope is negative"))
                 return
 
             if latest["Close"] <= latest["MA_LONG"]:
@@ -222,8 +258,14 @@ class ScanService:
             if price_premium > self.config.max_price_premium:
                 run.failed.append(self._failure(symbol, "Price Validation", "Close price is too far above Long MA"))
                 return
-            post_cross_days = len(history.loc[history.index > cross_date])
-            if self.config.require_post_cross_sessions and post_cross_days < self.MIN_POST_CROSS_DAYS:
+            post_cross_days = (
+                len(history.loc[history.index > cross_date]) if is_post_cross else None
+            )
+            if (
+                is_post_cross
+                and self.config.require_post_cross_sessions
+                and post_cross_days < self.MIN_POST_CROSS_DAYS
+            ):
                 run.failed.append(self._failure(symbol, "Post-Cross Validation", "Golden Cross needs 10 post-cross sessions", "optional"))
                 return
 
@@ -233,8 +275,12 @@ class ScanService:
             industry_valuation = self.industry_valuation_service.valuation_for(
                 fundamentals["industry"]
             )
-            score_breakdown = self._score(cross, slope_label, price_premium, fundamentals)
-            run.passed.append(ScanResult(
+            score_breakdown = (
+                self._score(cross, slope_label, price_premium, fundamentals)
+                if is_post_cross
+                else {}
+            )
+            result = ScanResult(
                 symbol=symbol, company_name=fundamentals["company_name"], close=round(latest["Close"], 2),
                 ma_short=round(latest["MA_SHORT"], 2), ma_long=round(latest["MA_LONG"], 2),
                 cross_date=cross_date, days_since_cross=cross["days_since_cross"], distance_from_ma=round(price_premium, 2),
@@ -244,15 +290,33 @@ class ScanService:
                 long_ma_trough=round(trough_value, 2), long_ma_trough_date=trough_date,
                 long_ma_decline_duration=decline_duration,
                 long_ma_decline_percent=round(decline_percent, 2),
-                long_ma_recovery_slope=round(recovery_slope, 4),
+                long_ma_recovery_slope=(
+                    round(recovery_slope, 4)
+                    if recovery_slope is not None
+                    else None
+                ),
+                long_ma_slope=round(long_ma_slope, 4),
                 price_above_long_ma_percent=round(price_premium, 2),
+                strategy=strategy,
+                impending_gap_percent=(
+                    round(gap_percent, 2) if not is_post_cross else None
+                ),
+                pre_cross_validation_sessions=(
+                    self.config.pre_cross_validation_sessions
+                    if not is_post_cross
+                    else None
+                ),
                 market_cap=fundamentals["market_cap"], pe=fundamentals["pe"],
                 pe_source=fundamentals.get("pe_source"),
                 eps=fundamentals["eps"], sector=fundamentals["sector"], industry=fundamentals["industry"],
                 **industry_valuation,
                 score=sum(score_breakdown.values()),
                 **score_breakdown,
-            ))
+            )
+            if is_post_cross:
+                run.passed.append(result)
+            else:
+                run.impending.append(result)
         except Exception:
             logger.exception("Unexpected scan failure for %s", symbol)
             run.failed.append(self._failure(symbol, "Processing", "Unexpected error while evaluating the symbol"))

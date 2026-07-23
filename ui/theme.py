@@ -108,22 +108,25 @@ def apply_app_theme() -> None:
         }
         .st-key-workflow_navigation [role="radiogroup"] {
             justify-content: center;
-            gap: 0.5rem;
-            padding: 0.55rem;
-            margin: 0 auto 1rem;
+            gap: 0.35rem;
+            padding: 0.35rem;
+            margin: 0 auto 0.75rem;
             border: 1px solid #cbd8e6;
             border-radius: 0.75rem;
             background: #e7eef5;
         }
         .st-key-workflow_navigation label[data-baseweb="radio"] {
             justify-content: center;
-            min-width: 8.5rem;
-            padding: 0.55rem 0.85rem;
+            min-width: 7.25rem;
+            padding: 0.38rem 0.65rem;
             margin: 0;
             border: 1px solid #cbd8e6;
             border-radius: 0.55rem;
             background: #f8fafc;
             transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+        }
+        .st-key-workflow_navigation label[data-baseweb="radio"] p {
+            font-size: 0.84rem;
         }
         .st-key-workflow_navigation label[data-baseweb="radio"] > div:first-child {
             display: none;
