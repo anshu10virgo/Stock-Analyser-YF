@@ -21,6 +21,8 @@ class RefreshFailureEmailTests(unittest.TestCase):
             "GITHUB_SERVER_URL": "https://github.com",
             "GITHUB_REF_NAME": "main",
             "GITHUB_SHA": "abc123",
+            "REFRESH_ALERT_IS_TEST": "true",
+            "REFRESH_ALERT_REFERENCE_RUN_URL": "https://github.com/example/actions/runs/999",
         }
 
     def test_message_contains_recipient_and_run_link(self):
@@ -29,6 +31,11 @@ class RefreshFailureEmailTests(unittest.TestCase):
         self.assertEqual(message["To"], "anshu10virgo@gmail.com")
         self.assertIn(
             "https://github.com/anshu10virgo/Stock-Analyser-YF/actions/runs/12345",
+            message.get_content(),
+        )
+        self.assertIn("refresh alert test", message["Subject"])
+        self.assertIn(
+            "Referenced failed run: https://github.com/example/actions/runs/999",
             message.get_content(),
         )
 

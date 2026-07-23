@@ -76,6 +76,11 @@ and [GitHub Actions secrets reference](https://docs.github.com/en/actions/refere
 If the secrets are absent, the workflow records a warning that email could not
 be sent. The failed Actions run remains visible on GitHub.
 
+To verify delivery without downloading or changing market data, manually run
+the workflow with mode `notification-test`. An optional failed-run URL can be
+included in the test message. The test run fails if the SMTP secret is missing
+or Gmail rejects delivery.
+
 ## Fundamentals and Industry P/E
 
 Yahoo's India quote screener supplies company name, market cap, trailing PE,

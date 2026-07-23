@@ -21,18 +21,33 @@ def build_message(environment: dict[str, str]) -> EmailMessage:
     run_url = f"{server_url}/{repository}/actions/runs/{run_id}"
     recipient = environment.get("REFRESH_ALERT_RECIPIENT", DEFAULT_RECIPIENT)
     sender = environment["REFRESH_SMTP_USERNAME"]
+    is_test = environment.get("REFRESH_ALERT_IS_TEST", "false").lower() == "true"
+    reference_run_url = environment.get("REFRESH_ALERT_REFERENCE_RUN_URL", "").strip()
 
     message = EmailMessage()
-    message["Subject"] = f"Stock Analyser market-data refresh failed ({run_id})"
+    message["Subject"] = (
+        f"Stock Analyser refresh alert test ({run_id})"
+        if is_test
+        else f"Stock Analyser market-data refresh failed ({run_id})"
+    )
     message["From"] = sender
     message["To"] = recipient
+    opening = (
+        "This is a test of the Stock Analyser market-data failure alert."
+        if is_test
+        else "The scheduled Stock Analyser market-data refresh failed."
+    )
+    reference = (
+        f"Referenced failed run: {reference_run_url}\n" if reference_run_url else ""
+    )
     message.set_content(
-        "The scheduled Stock Analyser market-data refresh failed.\n\n"
+        f"{opening}\n\n"
         f"Repository: {repository}\n"
         f"Workflow: {workflow}\n"
         f"Branch/ref: {environment.get('GITHUB_REF_NAME', 'unknown')}\n"
         f"Commit: {environment.get('GITHUB_SHA', 'unknown')}\n"
-        f"Run: {run_url}\n\n"
+        f"Notification run: {run_url}\n"
+        f"{reference}\n"
         "Open the run link to review the failed step and logs."
     )
     return message
@@ -60,4 +75,5 @@ def send_failure_email(environment: dict[str, str] | None = None) -> bool:
 
 
 if __name__ == "__main__":
-    send_failure_email()
+    if not send_failure_email():
+        raise SystemExit(1)
