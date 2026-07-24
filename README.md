@@ -25,6 +25,8 @@ python -m streamlit run app.py
 - Ten-year Git-backed price history with scheduled incremental refresh support.
 - Filtered, cached single-symbol chart reads from symbol-grouped Parquet.
 - Semiannual Yahoo sector/industry classifications and committed industry P/E.
+- Committed Screener historical valuation and long-term fundamental snapshots.
+- Selected-stock P/E versus TTM EPS chart with 1M through 10Y periods.
 
 ## Committed market-data refresh
 
@@ -40,6 +42,29 @@ changed data to `main`. It is also manually runnable in incremental or
 classification, or validation-only mode. Sector/industry classifications are
 automatically preserved and refreshed every 180 days. See
 [Committed Market Data](docs/market_data.md).
+
+## Screener fundamentals refresh
+
+Screener-derived history and long-term fundamentals use one separate,
+resumable refresh:
+
+```powershell
+python scripts/refresh_screener_fundamentals.py --mode refresh
+python scripts/refresh_screener_fundamentals.py --mode validate
+```
+
+The refresh processes 10 stocks per batch and waits five seconds between
+batches by default. It stores historical P/E and TTM EPS for the selected-stock
+chart. Long-term P/E averages/medians, sales growth, profit growth, EPS growth,
+debt-to-equity, ROE, and latest OPM are committed as backend data. The daily
+Yahoo refresh combines its refreshed P/E with stored Screener 3-year profit
+growth to calculate PEG. These fields do not currently change scan
+qualification or appear in results.
+
+The monthly workflow
+`.github/workflows/refresh-screener-fundamentals.yml` refreshes and validates
+the complete dataset, then commits it to `main`. Normal scans and chart
+expansion never make a live Screener request.
 
 ## Manual stock-universe refresh
 

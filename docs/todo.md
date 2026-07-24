@@ -25,3 +25,10 @@
 - [ ] Add automated tests for scanner rules and provider failures.
 - [ ] Add CI checks for tests and linting.
 - [ ] Add release notes and deployment-health guidance.
+
+## Future Optional Fundamentals Sprint
+
+- [ ] Add opt-in current P/E versus historical average/median filters.
+- [ ] Add opt-in long-term sales, profit, and EPS growth filters.
+- [ ] Add an opt-in maximum debt-to-equity filter.
+- [ ] Define missing-fundamental behaviour before enabling each filter.

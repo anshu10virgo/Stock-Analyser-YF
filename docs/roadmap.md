@@ -1,43 +1,42 @@
 # Roadmap
 
-## Active Sprint — Impending Golden Cross
+## Active Sprint — Historical Valuation Foundation
 
 ### Goal
 
-Extend the existing Post Golden Cross scanner with an opt-in Impending Golden
-Cross path while keeping qualification results separate and reusing shared
-technical calculations.
+Add reproducible historical valuation and long-term fundamental data without
+changing current scan qualification or result columns.
 
 ### Scope
 
-- Split strategy controls into shared, Post-Cross, and opt-in Impending-Cross
-  mandatory checks.
-- Keep Post and Impending results separate throughout live progress and final
-  reporting.
-- Add a configurable MA-proximity threshold with a 3% default and a 20% upper
-  selection limit, plus a 20-session pre-cross validation default.
-- Require the Short-MA five-session slope to exceed the Long-MA slope for an
-  impending result.
-- Permit a non-negative five-session Long-MA slope for Impending stocks while
-  retaining strict positive recovery for Post-Cross stocks.
-- Keep the existing 85-point score exclusive to Post Golden Cross results.
-- Remove the legacy symbol-file fallback and rely on the validated-universe
-  manifest.
-- Reduce the size of the four-step workflow navigation.
-- Add regression coverage and synchronize business, feature, progress, and
-  architecture documentation.
+- Add one bounded-retry Screener provider.
+- Add one resumable refresh for historical P/E/TTM EPS, long-term growth,
+  P/E averages/medians, debt-to-equity, ROE, and OPM.
+- Calculate PEG in the daily Yahoo refresh using stored Screener 3-year profit
+  growth.
+- Process 10 stocks per batch and wait five seconds between batches by default.
+- Publish Git-backed, versioned Screener snapshots through an atomic manifest.
+- Show historical P/E and TTM EPS only in the selected-stock chart.
+- Keep growth, debt, ROE, OPM, daily PEG, and historical P/E summary fields
+  backend-only.
+- Preserve all existing mandatory/optional rules, ranking, and result columns.
 
 ### Acceptance Criteria
 
-- Impending scanning is disabled by default and does not alter Post Golden
-  Cross qualification when enabled.
-- Results remain mutually exclusive Post and Impending groups.
-- Every Impending result satisfies all shared and unique mandatory rules.
-- Session strategies retain the new settings without changing system defaults
-  or writing user presets to Git.
-- A missing universe manifest fails explicitly without a legacy-file fallback.
-- Automated tests cover proximity, acceleration, pre-cross history, flat
-  Long-MA acceptance, result separation, and manifest-only universe selection.
+- Normal scans and chart expansion make no live Screener requests.
+- Every universe symbol ends as a successful record or an audited failure.
+- Interrupted refreshes resume after the last completed batch.
+- The chart supports 1M, 6M, 1Y, 3Y, 5Y, and 10Y periods.
+- No new Screener field affects qualification, score, exports, or main results.
+- Automated tests cover parsing, calculations, throttling, retry, resume,
+  storage validation, repository reads, and chart layers.
+
+## Next Sprint — Optional Fundamental Filters
+
+- Add opt-in filters backed by the committed Screener summary dataset.
+- Candidate filters include current P/E below historical average/median,
+  minimum sales/profit/EPS growth, and maximum debt-to-equity.
+- Define missing-data behaviour and UI labels before changing scanner rules.
 
 ## Release 1.1 — Reliability and Auditability
 

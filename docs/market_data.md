@@ -25,6 +25,12 @@ data/market_data/
     classifications.csv
     classification_metadata.json
     industry_valuations.csv
+  screener/
+    manifest.json
+    snapshots/
+      fundamental_metrics_TIMESTAMP.csv
+      historical_valuation_TIMESTAMP.parquet
+      coverage_TIMESTAMP.csv
 ```
 
 Retention is ten calendar years. Every year uses compressed Parquet sorted by
@@ -41,6 +47,13 @@ The manifest records schema version, universe hash, file hashes, history range,
 latest trading date, coverage, and maximum supported Long MA. It is replaced
 only after the data files pass validation.
 
+The Screener directory has its own manifest and lifecycle. Its summary file
+stores 3Y/5Y/10Y P/E averages and medians, sales/profit/EPS growth,
+debt-to-equity, ROE, and latest OPM. Those fields are backend-only in the
+current sprint. Its
+Parquet file stores historical P/E and TTM EPS observations used exclusively
+by the selected-stock valuation chart.
+
 ## Commands
 
 ```powershell
@@ -49,11 +62,24 @@ python scripts/refresh_market_data.py --mode incremental
 python scripts/refresh_market_data.py --mode classifications
 python scripts/refresh_market_data.py --mode optimize
 python scripts/refresh_market_data.py --mode validate
+python scripts/refresh_screener_fundamentals.py --mode refresh
+python scripts/refresh_screener_fundamentals.py --mode validate
 ```
 
 The GitHub Actions workflow runs incremental mode at 18:00 IST on weekdays and
 can be manually started in incremental, classification, or validation-only
 mode. A closed-market run produces no data commit.
+
+The separate Screener workflow runs monthly and can also be started manually.
+It uses one unified refresh for all Screener fields. The default batch contains
+10 stocks, followed by a five-second pause. Completed batches are checkpointed
+under an ignored staging directory, so an interrupted run resumes without
+requesting completed symbols again. Versioned output files are activated only
+after schema and coverage validation and an atomic manifest replacement.
+Both data workflows share one concurrency group, so Yahoo and Screener
+refreshes cannot commit simultaneously. The Yahoo workflow stages only its
+parent manifest, prices, fundamentals, and symbol-coverage file; the Screener
+workflow stages only `data/market_data/screener/`.
 
 ## Refresh Failure Email
 
@@ -102,6 +128,30 @@ refresh calculates:
 - eligible peer count.
 
 Coverage counts are recorded in the manifest and displayed in Streamlit.
+
+## Historical Valuation and Long-Term Fundamentals
+
+Screener historical chart observations provide the P/E line and reported TTM
+EPS bars for 1M through 10Y selected-stock views. The chart calculates its
+median reference from the selected period. No live Screener request occurs
+when a user expands stock details.
+
+The unified refresh also stores:
+
+- average and median P/E for 3Y, 5Y, and 10Y;
+- compounded sales and profit growth for 3Y, 5Y, and 10Y;
+- calculated annual EPS CAGR for 3Y, 5Y, and 10Y;
+- debt-to-equity calculated from Screener borrowings and shareholder equity;
+- current ROE from Screener's top-ratio cards;
+- latest annual/TTM OPM from the Profit & Loss table.
+
+The daily Yahoo fundamentals file stores PEG as refreshed Yahoo P/E divided by
+the active Screener snapshot's positive 3-year compounded profit growth. The
+P/E uses Yahoo `trailingPE`, with the existing market-price/trailing-EPS
+fallback. PEG remains blank until both sources are available.
+
+These summary fields are intentionally not shown in current results or charts.
+They are data foundations for a later optional-filter sprint.
 
 ## Universe Reconciliation
 

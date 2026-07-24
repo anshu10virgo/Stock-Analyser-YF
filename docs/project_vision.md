@@ -17,9 +17,11 @@ experience for desktop and mobile users.
 - Improve performance through safe caching and efficient batch retrieval.
 - Maintain automated tests for critical scanner and data-provider behavior.
 
-## Data Source
+## Data Sources
 
-Yahoo Finance is the current market-data provider.
+Yahoo Finance provides market prices, current fundamentals, classifications,
+and industry benchmarks. A separately refreshed Git-backed Screener snapshot
+provides supplemental historical valuation and long-term fundamentals.
 
 ## Scope
 
@@ -28,6 +30,6 @@ Yahoo Finance is the current market-data provider.
 - Fundamental context where Yahoo Finance provides it
 - Interactive Streamlit reporting
 
-Historical data is currently downloaded on demand. The architecture must remain
-ready for persistent market-data storage and additional providers when scale or
-reliability requires them.
+Price and supplemental fundamental history are committed through validated
+manifest-controlled snapshots. Normal scans and chart expansion must remain
+independent of live Screener availability.

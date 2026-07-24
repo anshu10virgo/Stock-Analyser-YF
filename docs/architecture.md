@@ -11,7 +11,7 @@ Scanner Rules and Scoring
     ↓
 Market Data and Fundamentals Providers
     ↓
-Yahoo Finance, Cache, and Observability
+Yahoo Finance, Screener Snapshots, Cache, and Observability
 ```
 
 ## Current Components
@@ -28,17 +28,27 @@ Yahoo Finance, Cache, and Observability
   observable request, cache, retry, and failure counters.
 - `providers/repository_data.py`: committed annual price partitions,
   fundamentals, industry benchmarks, manifest metadata, and missing-data-only
-  Yahoo fallback. Small symbol requests use Parquet predicate filtering instead
-  of materializing the complete snapshot.
+  Yahoo fallback. It also reads committed Screener summary/history snapshots.
+  Small symbol requests use Parquet predicate filtering instead of
+  materializing the complete snapshot.
+- `providers/screener.py`: bounded-retry parser for Screener company pages and
+  ten-year P/E/TTM-EPS chart data. It calculates backend-only long-term
+  valuation, growth, debt-to-equity, ROE, and latest OPM fields.
 - `services/data_source.py`: constructs one consistent provider set for the
   source selected on the main screen.
 - `scripts/refresh_market_data.py`: full backfill, incremental append, universe
   reconciliation, symbol-grouped Parquet optimization, semiannual
   classifications, industry P/E calculation, coverage reporting, and atomic
-  manifest updates.
+  manifest updates. It calculates backend-only PEG from refreshed Yahoo P/E
+  and committed Screener 3-year profit growth.
 - `.github/workflows/refresh-market-data.yml`: scheduled and manual snapshot
   validation and auto-commit workflow, with failure email notification through
   repository-managed Gmail SMTP secrets.
+- `scripts/refresh_screener_fundamentals.py`: one throttled, resumable,
+  batch-checkpointed refresh for every Screener-derived field and chart
+  observation. It publishes versioned files through an atomic manifest.
+- `.github/workflows/refresh-screener-fundamentals.yml`: monthly/manual
+  Screener refresh, validation, commit, and failure-alert workflow.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: compatibility facade for legacy callers.
 - Technical-analysis modules: indicators, Golden Cross, Short/Long-MA
@@ -56,6 +66,8 @@ Yahoo Finance, Cache, and Observability
 ## Target Reliability Boundaries
 
 - The UI must not contain market-data or scanner business logic.
+- Normal scans and selected-stock chart expansion must not call Screener live;
+  both read only the committed Screener snapshot.
 - Every external request must have an observable success or failure outcome.
 - Every scanned symbol must finish as either a qualified result or a structured
   failure result.

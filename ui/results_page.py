@@ -3,7 +3,8 @@ import streamlit as st
 from pathlib import Path
 
 from core.indicators import Indicators
-from ui.stock_detail import render_stock_detail
+from providers.repository_data import SnapshotUnavailableError
+from ui.stock_detail import render_pe_eps_chart, render_stock_detail
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
 
 
@@ -238,6 +239,23 @@ def _load_selected_history(
     return services.history.get_symbol_history(batch_data, symbol)
 
 
+@st.cache_data(show_spinner=False, max_entries=128)
+def _load_selected_valuation(
+    symbol,
+    screener_snapshot_version,
+    project_root,
+):
+    """Load one symbol from the committed Screener snapshot only."""
+    del screener_snapshot_version  # The value participates in the cache key.
+    services = build_data_services(LIVE_SOURCE, Path(project_root))
+    history = services.screener.valuation_history(symbol)
+    summary = services.screener.fundamental_metrics(symbol)
+    return history, {
+        "source_url": summary.get("source_url"),
+        "refreshed_at": summary.get("refreshed_at"),
+    }
+
+
 def render_selected_stock(result, settings, show_score=True):
     """Load and render the selected stock's cached one-year details."""
     symbol = result["symbol"]
@@ -269,6 +287,25 @@ def render_selected_stock(result, settings, show_score=True):
     _render_stock_overview(result)
     st.subheader("One-year price and moving averages")
     render_stock_detail(symbol, chart_data, result["cross_date"])
+    screener_services = build_data_services(LIVE_SOURCE, project_root)
+    screener_metadata = screener_services.screener.metadata()
+    try:
+        valuation_history, valuation_metadata = _load_selected_valuation(
+            symbol,
+            screener_metadata.get("generated_at", "missing"),
+            str(project_root),
+        )
+        render_pe_eps_chart(
+            symbol,
+            valuation_history,
+            valuation_metadata.get("source_url"),
+            valuation_metadata.get("refreshed_at"),
+        )
+    except SnapshotUnavailableError:
+        st.info(
+            "Historical P/E and TTM EPS will appear after the committed "
+            "Screener fundamentals snapshot is refreshed."
+        )
     cross_close = _price_at_cross(chart_data, result.get("cross_date"))
     _render_technical_status(result, chart_data, cross_close)
     if show_score:
