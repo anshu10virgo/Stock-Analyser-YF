@@ -281,3 +281,76 @@ class RepositoryIndustryValuationService:
         self._metrics = {"requests": 0, "snapshot_hits": 0, "fallback_requests": 0, "failures": 0}
         if self.fallback is not None and hasattr(self.fallback, "begin_scan"):
             self.fallback.begin_scan()
+
+
+class RepositoryScreenerProvider:
+    """Read committed Screener summary and historical valuation datasets."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = Path(root)
+        self.manifest_file = self.root / "manifest.json"
+        self._summary = None
+
+    def metadata(self) -> dict:
+        if not self.manifest_file.is_file():
+            return {}
+        return json.loads(self.manifest_file.read_text(encoding="utf-8"))
+
+    def _manifest_path(self, key: str) -> Path:
+        manifest = self.metadata()
+        entry = manifest.get(key, {})
+        relative_path = entry.get("path")
+        if not relative_path:
+            raise SnapshotUnavailableError(
+                f"Committed Screener manifest has no {key}"
+            )
+        path = (self.root / relative_path).resolve()
+        if self.root.resolve() not in path.parents or not path.is_file():
+            raise SnapshotUnavailableError(
+                f"Committed Screener {key} is missing"
+            )
+        return path
+
+    def _load_summary(self) -> pd.DataFrame:
+        if self._summary is None:
+            path = self._manifest_path("summary_file")
+            self._summary = (
+                pd.read_parquet(path)
+                if path.suffix == ".parquet"
+                else pd.read_csv(path)
+            )
+            if "symbol" not in self._summary.columns:
+                raise SnapshotUnavailableError(
+                    "Committed Screener summary schema is invalid"
+                )
+        return self._summary
+
+    def fundamental_metrics(self, symbol: str) -> dict:
+        matches = self._load_summary().loc[
+            lambda frame: frame["symbol"].eq(symbol)
+        ]
+        if matches.empty:
+            raise SnapshotUnavailableError(
+                f"No committed Screener fundamentals for {symbol}"
+            )
+        return _clean_record(matches.iloc[-1].to_dict())
+
+    def valuation_history(self, symbol: str) -> pd.DataFrame:
+        path = self._manifest_path("history_file")
+        if path.suffix == ".parquet":
+            frame = pd.read_parquet(path, filters=[("symbol", "==", symbol)])
+        else:
+            frame = pd.read_csv(path)
+            frame = frame.loc[frame["symbol"].eq(symbol)]
+        required = {"symbol", "date", "pe", "ttm_eps"}
+        if not required.issubset(frame.columns):
+            raise SnapshotUnavailableError(
+                "Committed Screener history schema is invalid"
+            )
+        frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+        return (
+            frame.dropna(subset=["date"])
+            .sort_values("date")
+            .drop_duplicates(["symbol", "date"], keep="last")
+            .reset_index(drop=True)
+        )

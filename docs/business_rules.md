@@ -1,7 +1,7 @@
 # Business Rules
 
 **Project:** Stock Analyser YF
-**Version:** 1.2
+**Version:** 1.3
 **Status:** Active Development
 
 ## Purpose
@@ -21,7 +21,10 @@ interactive charts, and shareable Streamlit deployment.
 
 ## 2. Market Data
 
-- Yahoo Finance is the current market-data provider.
+- Yahoo Finance is the current price, current-fundamentals, classification, and
+  industry-valuation provider.
+- Screener supplies a separately refreshed committed snapshot for historical
+  P/E, historical TTM EPS, and backend-only long-term fundamentals.
 - Users can choose adjusted or unadjusted prices. Unadjusted closing prices are
   the default for technical signals.
 - Market-data, chart-data, and fundamental-data failures must be observable and
@@ -117,6 +120,22 @@ interactive charts, and shareable Streamlit deployment.
   market-cap-weighted P/E, median P/E, and qualifying NSE peer count. Peers
   with missing, zero, or negative P/E are excluded. These benchmarks are
   supplemental context and do not change qualification or score.
+- Screener-derived P/E averages/medians, sales growth, profit growth, EPS
+  growth, debt-to-equity, ROE, and latest OPM are stored for future optional
+  filters. They do not currently affect qualification, ranking, exports,
+  charts, or result columns.
+- Debt-to-equity is calculated from Screener balance-sheet values as
+  `Borrowings / (Equity Capital + Reserves)`. It is a financial-reporting
+  metric, not a daily market metric.
+- ROE is read from Screener's current top-ratio card. OPM is the latest
+  available value in Screener's annual/TTM Profit & Loss table.
+- PEG is recalculated in the daily Yahoo snapshot as
+  `refreshed Yahoo P/E / stored Screener 3-year compounded profit growth`.
+  The P/E uses Yahoo `trailingPE`, with the existing
+  `market price / trailing EPS` fallback when necessary.
+  It is left blank when the active Screener snapshot has no positive 3-year
+  growth value or the refreshed Yahoo P/E is unavailable or non-positive.
+- EPS CAGR is unavailable when either endpoint is missing, zero, or negative.
 
 ## 11. Ranking
 
@@ -133,6 +152,9 @@ interactive charts, and shareable Streamlit deployment.
   industry, score, market cap, price, MA values, fundamentals, and cross date.
 - Selecting a qualified stock shows one year of price history with short/long
   MAs and a labeled Golden Cross marker when a cross date exists.
+- Selecting a qualified stock also shows committed historical P/E and TTM EPS
+  only in the dedicated valuation chart. It does not expose the backend-only
+  long-term growth or debt fields.
 - When at least one optional rule is selected, users can view stocks rejected
   by optional checks and their rejection reasons.
 - The dashboard must show both qualified and failed stocks with summary counts.
@@ -142,6 +164,10 @@ interactive charts, and shareable Streamlit deployment.
 ## 13. Operational Standards
 
 - External errors must be logged with context while avoiding sensitive data.
+- The unified Screener refresh processes configurable batches (10 stocks by
+  default), waits five seconds between batches, records per-symbol failures,
+  and resumes from its latest completed batch.
+- Normal scans and chart interactions must not make live Screener requests.
 - A failed scheduled market-data refresh must attempt to notify the configured
   operator by email without exposing SMTP credentials in code or logs.
 - Scan duration, symbols processed, provider failures, and cache activity are

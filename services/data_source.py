@@ -10,6 +10,7 @@ from providers.repository_data import (
     RepositoryFundamentalsProvider,
     RepositoryHistoryProvider,
     RepositoryIndustryValuationService,
+    RepositoryScreenerProvider,
 )
 from providers.yahoo_finance import YahooFinanceHistoryProvider
 from services.industry_valuation import IndustryValuationService
@@ -24,21 +25,24 @@ class DataServices:
     history: object
     fundamentals: object
     industry_valuation: object
+    screener: object
     metadata: dict
 
 
 def build_data_services(source: str, project_root: Path) -> DataServices:
     """Return providers that all use the selected source policy."""
+    market_root = Path(project_root) / "data" / "market_data"
+    screener = RepositoryScreenerProvider(market_root / "screener")
     if source == LIVE_SOURCE:
         history = YahooFinanceHistoryProvider()
         return DataServices(
             history=history,
             fundamentals=Fundamentals,
             industry_valuation=IndustryValuationService(),
+            screener=screener,
             metadata={"source": "yahoo_live"},
         )
 
-    market_root = Path(project_root) / "data" / "market_data"
     live_history = YahooFinanceHistoryProvider()
     live_industry = IndustryValuationService()
     history = RepositoryHistoryProvider(market_root, fallback=live_history)
@@ -48,5 +52,6 @@ def build_data_services(source: str, project_root: Path) -> DataServices:
         industry_valuation=RepositoryIndustryValuationService(
             market_root, fallback=live_industry
         ),
+        screener=screener,
         metadata={**history.metadata(), "access_mode": "git_snapshot"},
     )

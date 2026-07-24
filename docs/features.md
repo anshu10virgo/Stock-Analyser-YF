@@ -32,6 +32,8 @@
 - Clickable result rows with one-year stock charts
 - Retried and cached Yahoo fundamental-data retrieval
 - Selected-stock weighted and median industry P/E benchmarks with peer count
+- Selected-stock historical P/E and TTM EPS chart sourced only from the
+  committed Screener snapshot
 - Snapshot date, PE/industry coverage, effective source, and fallback metrics
 - Colour-accented desktop visual system and reduced interface typography
 - Single-row compact workflow navigation on mobile screens
@@ -42,6 +44,8 @@
 - MA50
 - MA200
 - Golden Cross Marker
+- Historical P/E line, selected-period median P/E, and reported TTM EPS bars
+- 1M, 6M, 1Y, 3Y, 5Y, and 10Y valuation periods
 - Cached single-symbol history reads without loading the complete snapshot
 
 ## Export
@@ -57,3 +61,8 @@
 - New-universe-symbol backfill and inactive-symbol preservation
 - Semiannual sector/industry refresh with active-universe change detection
 - Committed weighted and median industry P/E benchmarks
+- Monthly/manual unified Screener fundamentals refresh with resumable batches
+- Backend-only 3Y/5Y/10Y P/E average/median, sales growth, profit growth, EPS
+  growth, debt-to-equity, ROE, and latest OPM from Screener
+- Backend-only PEG refreshed from daily Yahoo P/E and stored Screener 3-year
+  profit growth

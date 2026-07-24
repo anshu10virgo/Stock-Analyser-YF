@@ -1,5 +1,6 @@
 """Tests for fundamentals enrichment and snapshot refresh policies."""
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -36,6 +37,34 @@ class FakeQuoteProvider:
 
 
 class MarketDataRefreshTests(unittest.TestCase):
+    def test_loads_profit_growth_from_active_screener_snapshot(self):
+        with TemporaryDirectory() as directory, patch.object(
+            refresh_market_data, "MARKET_ROOT", Path(directory)
+        ):
+            root = Path(directory) / "screener"
+            snapshots = root / "snapshots"
+            snapshots.mkdir(parents=True)
+            pd.DataFrame(
+                {
+                    "symbol": ["POSITIVE.NS", "ZERO.NS"],
+                    "profit_growth_3y": [5.0, 0.0],
+                }
+            ).to_csv(snapshots / "fundamentals.csv", index=False)
+            (root / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "summary_file": {
+                            "path": "snapshots/fundamentals.csv"
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = refresh_market_data.load_screener_profit_growth()
+
+        self.assertEqual(result, {"POSITIVE.NS": 5.0})
+
     def test_classification_refresh_preserves_existing_data_on_empty_response(self):
         with TemporaryDirectory() as directory, patch.object(
             refresh_market_data, "MARKET_ROOT", Path(directory)
@@ -65,12 +94,31 @@ class MarketDataRefreshTests(unittest.TestCase):
             return_value=FakeQuoteProvider(),
         ):
             result = refresh_market_data.build_fundamentals(
-                universe, classifications
+                universe,
+                classifications,
+                profit_growth_3y_by_symbol={"TEST.NS": 5.0},
             ).iloc[0]
 
         self.assertEqual(result["pe"], 20)
         self.assertEqual(result["pe_source"], "price_divided_by_trailing_eps")
+        self.assertEqual(result["peg_ratio"], 4)
         self.assertEqual(result["industry"], "Software")
+
+    def test_build_fundamentals_leaves_peg_blank_without_positive_growth(self):
+        universe = pd.DataFrame(
+            {"Symbol": ["TEST.NS"], "Company Name": ["Test Company"]}
+        )
+        with patch.object(
+            refresh_market_data,
+            "YahooFinanceMarketCapProvider",
+            return_value=FakeQuoteProvider(),
+        ):
+            result = refresh_market_data.build_fundamentals(
+                universe,
+                profit_growth_3y_by_symbol={"TEST.NS": 0.0},
+            ).iloc[0]
+
+        self.assertTrue(pd.isna(result["peg_ratio"]))
 
     def test_industry_valuation_uses_market_cap_implied_earnings(self):
         fundamentals = pd.DataFrame(

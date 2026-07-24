@@ -207,6 +207,34 @@ def active_symbols_sha256(symbols) -> str:
     return hashlib.sha256("\n".join(sorted(symbols)).encode("utf-8")).hexdigest()
 
 
+def load_screener_profit_growth() -> dict[str, float]:
+    """Read positive 3Y profit growth from the active committed Screener snapshot."""
+    root = MARKET_ROOT / "screener"
+    manifest_file = root / "manifest.json"
+    if not manifest_file.is_file():
+        return {}
+    try:
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        relative_path = manifest["summary_file"]["path"]
+        summary_file = (root / relative_path).resolve()
+        summary_file.relative_to(root.resolve())
+        summary = pd.read_csv(summary_file, usecols=["symbol", "profit_growth_3y"])
+        summary["profit_growth_3y"] = pd.to_numeric(
+            summary["profit_growth_3y"], errors="coerce"
+        )
+        summary = summary.dropna(subset=["symbol", "profit_growth_3y"])
+        summary = summary.loc[summary["profit_growth_3y"].gt(0)]
+        return summary.set_index("symbol")["profit_growth_3y"].to_dict()
+    except (
+        KeyError,
+        ValueError,
+        TypeError,
+        OSError,
+        json.JSONDecodeError,
+    ):
+        return {}
+
+
 def classifications_due(symbols, force=False) -> bool:
     if force:
         return True
@@ -267,9 +295,15 @@ def refresh_classifications(symbols, force=False, provider=None) -> pd.DataFrame
 def build_fundamentals(
     universe_frame: pd.DataFrame,
     classifications: pd.DataFrame | None = None,
+    profit_growth_3y_by_symbol: dict[str, float] | None = None,
 ) -> pd.DataFrame:
     """Build a batch fundamentals snapshot from Yahoo's India screener."""
     quotes = YahooFinanceMarketCapProvider().quotes()
+    profit_growth_3y_by_symbol = (
+        load_screener_profit_growth()
+        if profit_growth_3y_by_symbol is None
+        else profit_growth_3y_by_symbol
+    )
     company_names = universe_frame.set_index("Symbol").get("Company Name", pd.Series(dtype=object))
     classification_records = (
         classifications.set_index("symbol").to_dict("index")
@@ -287,6 +321,15 @@ def build_fundamentals(
         if pe is None and eps is not None and eps > 0 and market_price is not None:
             pe = market_price / eps
             pe_source = "price_divided_by_trailing_eps"
+        profit_growth_3y = profit_growth_3y_by_symbol.get(symbol)
+        peg_ratio = (
+            pe / profit_growth_3y
+            if pe is not None
+            and pe > 0
+            and profit_growth_3y is not None
+            and profit_growth_3y > 0
+            else None
+        )
         rows.append(
             {
                 "symbol": symbol,
@@ -294,6 +337,7 @@ def build_fundamentals(
                 "market_cap": quote.get("marketCap"),
                 "pe": pe,
                 "pe_source": pe_source,
+                "peg_ratio": peg_ratio,
                 "forward_pe": quote.get("forwardPE"),
                 "eps": eps,
                 "sector": classification.get("sector"),
@@ -453,6 +497,14 @@ def write_manifest(prices, price_files, support_files, universe, active_symbols)
         },
         "fundamentals_coverage": {
             "pe": int(fundamentals["pe"].notna().sum()),
+            "peg_ratio": int(
+                fundamentals.get(
+                    "peg_ratio",
+                    pd.Series(index=fundamentals.index, dtype=float),
+                )
+                .notna()
+                .sum()
+            ),
             "eps": int(fundamentals["eps"].notna().sum()),
             "sector": int(fundamentals["sector"].notna().sum()),
             "industry": int(fundamentals["industry"].notna().sum()),

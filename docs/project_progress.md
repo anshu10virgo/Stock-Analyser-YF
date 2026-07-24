@@ -18,6 +18,8 @@ Status: Active Development
 - Committed weighted/median industry PE and coverage metadata
 - GitHub Actions refresh-failure email notification with secret-managed Gmail
   authentication
+- Unified, resumable Screener fundamentals refresh with batch throttling
+- Git-backed Screener summary and historical valuation snapshot contracts
 
 ### Technical Analysis
 
@@ -48,6 +50,7 @@ Status: Active Development
 - Golden Cross date marker on charts
 - Score details that expand without reloading chart history
 - Effective source, fallback, timing, and fundamentals coverage diagnostics
+- Selected-stock historical P/E and TTM EPS chart with six time periods
 
 ## Current Hardening Work
 
@@ -57,11 +60,12 @@ Status: Active Development
 
 ## Current Sprint
 
-- Impending Golden Cross strategy and separate result presentation.
-- Removal of the legacy stock-universe fallback.
-- Reduced workflow-navigation footprint and updated rule documentation.
-- Scope and acceptance criteria are maintained in the active sprint section of
-  `docs/roadmap.md`.
+- Historical P/E and TTM EPS chart from committed Screener data.
+- Backend-only long-term valuation, growth, debt, ROE, and OPM metrics, plus
+  daily Yahoo-P/E-based PEG.
+- Monthly/manual resumable Screener refresh with controlled throttling.
+- Current scan rules and results remain unchanged.
+- Optional fundamental filters are deferred to the next sprint.
 
 ## Current Risks
 
@@ -69,3 +73,5 @@ Status: Active Development
 - Yahoo classifications may not cover every active NSE symbol; coverage is
   reported explicitly and prior valid mappings are preserved on partial runs.
 - Binary Parquet changes must be monitored for repository growth over time.
+- Screener's public page/chart contracts are external and may change; schema
+  validation and audited failures protect the active snapshot.
