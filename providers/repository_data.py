@@ -326,14 +326,25 @@ class RepositoryScreenerProvider:
         return self._summary
 
     def fundamental_metrics(self, symbol: str) -> dict:
-        matches = self._load_summary().loc[
-            lambda frame: frame["symbol"].eq(symbol)
-        ]
-        if matches.empty:
+        record = self.fundamental_metrics_batch((symbol,)).get(symbol)
+        if record is None:
             raise SnapshotUnavailableError(
                 f"No committed Screener fundamentals for {symbol}"
             )
-        return _clean_record(matches.iloc[-1].to_dict())
+        return record
+
+    def fundamental_metrics_batch(
+        self, symbols: tuple[str, ...] | list[str] | None = None
+    ) -> dict[str, dict]:
+        """Load the summary once and return the latest row indexed by symbol."""
+        summary = self._load_summary()
+        if symbols is not None:
+            summary = summary.loc[summary["symbol"].isin(symbols)]
+        latest = summary.drop_duplicates("symbol", keep="last")
+        return {
+            symbol: _clean_record(record)
+            for symbol, record in latest.set_index("symbol").to_dict("index").items()
+        }
 
     def valuation_history(self, symbol: str) -> pd.DataFrame:
         path = self._manifest_path("history_file")

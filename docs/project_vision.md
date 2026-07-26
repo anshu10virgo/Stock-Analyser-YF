@@ -27,9 +27,11 @@ provides supplemental historical valuation and long-term fundamentals.
 
 - Moving averages and Golden Cross detection
 - Trough, trend, distance, and ranking analysis
-- Fundamental context where Yahoo Finance provides it
+- Empty-by-default optional fundamental screening from committed Yahoo and
+  Screener snapshots
 - Interactive Streamlit reporting
 
 Price and supplemental fundamental history are committed through validated
 manifest-controlled snapshots. Normal scans and chart expansion must remain
-independent of live Screener availability.
+independent of live Screener availability. Missing optional-filter data must
+remain visible without excluding an otherwise technically qualified stock.

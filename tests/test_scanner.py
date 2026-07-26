@@ -14,6 +14,7 @@ from core.data_loader import DataLoader
 from core.golden_cross import GoldenCrossDetector
 from core.indicators import Indicators
 from core.scoring import ScoringEngine
+from models.optional_filter import OptionalFilterConfig, RETURN_ON_EQUITY
 from models.scan_config import ScanConfig
 from providers.yahoo_finance import YahooFinanceHistoryProvider
 from scripts.refresh_stock_universe import build_candidates, rank_by_market_cap
@@ -42,6 +43,26 @@ class StaticIndustryValuation:
             "industry_median_pe": None,
             "industry_peer_count": 0,
         }
+
+
+class StaticScreener:
+    def __init__(self, records=None):
+        self.records = records or {}
+        self.calls = 0
+
+    def fundamental_metrics_batch(self, symbols):
+        self.calls += 1
+        return {
+            symbol: self.records[symbol]
+            for symbol in symbols
+            if symbol in self.records
+        }
+
+
+class UnavailableScreener:
+    @staticmethod
+    def fundamental_metrics_batch(symbols):
+        raise FileNotFoundError("Screener snapshot is missing")
 
 
 class StockScannerTests(unittest.TestCase):
@@ -82,7 +103,14 @@ class StockScannerTests(unittest.TestCase):
             index=dates,
         )
 
-    def _scan(self, history, cross_date=None, result_callback=None, **config_overrides):
+    def _scan(
+        self,
+        history,
+        cross_date=None,
+        result_callback=None,
+        screener_provider=None,
+        **config_overrides,
+    ):
         cross_date = cross_date or history.index[-15]
         cross = {
             "valid": True,
@@ -99,6 +127,7 @@ class StockScannerTests(unittest.TestCase):
                 self._config(**config_overrides),
                 fundamentals_provider=StaticFundamentals,
                 industry_valuation_service=StaticIndustryValuation(),
+                screener_provider=screener_provider,
             ).scan(["TEST.NS"], result_callback=result_callback).as_dataframes()
 
     @staticmethod
@@ -210,16 +239,75 @@ class StockScannerTests(unittest.TestCase):
 
         self.assertEqual(result["failed"].loc[0, "reason"], "Close price is too far above Long MA")
 
-    def test_optional_post_cross_session_check_is_enforced_only_when_selected(self):
-        history = self._history()
+    def test_optional_filter_rejects_only_when_available_data_fails(self):
         result = self._scan(
-            history,
-            cross_date=history.index[-5],
-            require_post_cross_sessions=True,
+            self._history(),
+            optional_filters=(
+                OptionalFilterConfig(RETURN_ON_EQUITY, threshold=20),
+            ),
+            screener_provider=StaticScreener(
+                {"TEST.NS": {"roe": 10}}
+            ),
         )
 
-        self.assertEqual(result["failed"].loc[0, "stage"], "Post-Cross Validation")
+        self.assertTrue(result["passed"].empty)
         self.assertEqual(result["failed"].loc[0, "check_type"], "optional")
+        self.assertIn("Return on Equity", result["failed"].loc[0, "stage"])
+
+    def test_missing_optional_data_retains_stock_with_filter_level_tag(self):
+        result = self._scan(
+            self._history(),
+            optional_filters=(
+                OptionalFilterConfig(RETURN_ON_EQUITY, threshold=20),
+            ),
+            screener_provider=StaticScreener(),
+        )
+
+        self.assertEqual(len(result["passed"]), 1)
+        self.assertEqual(
+            result["passed"].loc[0, "optional_filters_not_evaluated"],
+            ["Return on Equity (ROE)"],
+        )
+
+    def test_screener_summary_is_loaded_once_for_selected_filters(self):
+        screener = StaticScreener({"TEST.NS": {"roe": 25}})
+
+        result = self._scan(
+            self._history(),
+            optional_filters=(
+                OptionalFilterConfig(RETURN_ON_EQUITY, threshold=20),
+            ),
+            screener_provider=screener,
+        )
+
+        self.assertEqual(len(result["passed"]), 1)
+        self.assertEqual(screener.calls, 1)
+
+    def test_screener_summary_is_not_loaded_without_selected_filters(self):
+        screener = StaticScreener()
+
+        result = self._scan(
+            self._history(),
+            screener_provider=screener,
+        )
+
+        self.assertEqual(len(result["passed"]), 1)
+        self.assertEqual(screener.calls, 0)
+
+    def test_missing_screener_snapshot_retains_the_stock(self):
+        result = self._scan(
+            self._history(),
+            optional_filters=(
+                OptionalFilterConfig(RETURN_ON_EQUITY, threshold=20),
+            ),
+            screener_provider=UnavailableScreener(),
+        )
+
+        self.assertEqual(len(result["passed"]), 1)
+        self.assertEqual(
+            result["passed"].loc[0, "optional_filters_not_evaluated"],
+            ["Return on Equity (ROE)"],
+        )
 
     def test_accepts_an_impending_cross_into_a_separate_result_group(self):
         result = self._scan(

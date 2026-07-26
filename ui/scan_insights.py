@@ -24,7 +24,6 @@ REJECTION_LABELS = {
     "Long MA is below its trough or its latest 5-session slope is negative": "Long MA is still falling",
     "Close price is not above Long MA": "Current price is not above Long MA",
     "Close price is too far above Long MA": "Current price is too far above Long MA",
-    "Golden Cross needs 10 post-cross sessions": "Golden Cross has fewer than 10 completed sessions",
     "Unexpected error while evaluating the symbol": "Stock could not be evaluated",
 }
 

@@ -22,6 +22,7 @@ DISPLAY_COLUMNS = {
     "ma_long": "Long MA",
     "cross_date": "Cross Date",
     "slope_label": "Slope Label",
+    "optional_filters_not_evaluated": "Optional Data",
 }
 
 IMPENDING_DISPLAY_COLUMNS = {
@@ -38,6 +39,7 @@ IMPENDING_DISPLAY_COLUMNS = {
     "impending_gap_percent": "MA Gap %",
     "short_ma_slope": "Short MA 5-Day Slope",
     "long_ma_slope": "Long MA 5-Day Slope",
+    "optional_filters_not_evaluated": "Optional Data",
 }
 
 
@@ -62,6 +64,15 @@ def prepare_results(df, impending=False):
     results["Market Cap"] = results["Market Cap"].div(1_000_000).map(
         lambda value: f"{value:,.0f} M" if pd.notna(value) else None
     )
+    results["Optional Data"] = results["Optional Data"].map(
+        lambda filters: (
+            "Not evaluated: " + ", ".join(filters)
+            if isinstance(filters, (list, tuple)) and filters
+            else None
+        )
+    )
+    if results["Optional Data"].isna().all():
+        results.drop(columns=["Optional Data"], inplace=True)
 
     return results
 
@@ -127,6 +138,7 @@ def _render_stock_overview(result):
             "Field": (
                 "Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "PE Source", "EPS",
                 "Weighted Industry P/E", "Median Industry P/E", "Industry Peers",
+                "Optional filters not evaluated",
             ),
             "Value": (
                 result["symbol"],
@@ -140,6 +152,10 @@ def _render_stock_overview(result):
                 _format_value(result.get("industry_weighted_pe")),
                 _format_value(result.get("industry_median_pe")),
                 _format_value(result.get("industry_peer_count"), "{:.0f}"),
+                (
+                    ", ".join(result.get("optional_filters_not_evaluated", []))
+                    or "None"
+                ),
             ),
         }
     )

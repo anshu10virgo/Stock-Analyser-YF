@@ -1,6 +1,6 @@
 """Typed qualified-stock record used by the scan service and UI."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -51,6 +51,7 @@ class ScanResult:
     industry_weighted_pe: Optional[float] = None
     industry_median_pe: Optional[float] = None
     industry_peer_count: int = 0
+    optional_filters_not_evaluated: list[str] = field(default_factory=list)
 
     score: float = 0
 

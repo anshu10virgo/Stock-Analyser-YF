@@ -19,7 +19,6 @@ class StockScanner:
         min_long_ma_decline_duration=60,
         min_long_ma_decline=10,
         max_price_premium=10,
-        require_post_cross_sessions=False,
         adjusted_prices=False,
     ):
         self.config = ScanConfig(
@@ -29,7 +28,6 @@ class StockScanner:
             min_long_ma_decline_duration=min_long_ma_decline_duration,
             min_long_ma_decline=min_long_ma_decline,
             max_price_premium=max_price_premium,
-            require_post_cross_sessions=require_post_cross_sessions,
             adjusted_prices=adjusted_prices,
         )
         self._service = ScanService(self.config)

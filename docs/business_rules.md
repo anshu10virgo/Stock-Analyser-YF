@@ -1,7 +1,7 @@
 # Business Rules
 
 **Project:** Stock Analyser YF
-**Version:** 1.3
+**Version:** 1.4
 **Status:** Active Development
 
 ## Purpose
@@ -102,10 +102,43 @@ interactive charts, and shareable Streamlit deployment.
 - Impending results are ordered by the smallest MA gap and then the strongest
   Short-MA slope. They do not receive the Post-Cross scoring model.
 
-## 9. Optional Rule
+## 9. Optional Fundamental Rules
 
-- Users may require at least ten completed trading sessions after the Golden
-  Cross. This is the only optional qualification rule.
+- No optional filter is enabled by default. With an empty optional-filter
+  sequence, qualification is identical to the mandatory-only scan.
+- Selected filters use AND logic. Their display order controls audit and
+  rejection reporting, not the mathematical result.
+- The available filters are:
+  - current stock P/E below the current median Industry P/E;
+  - current stock P/E below its own available 3Y, 5Y, and 10Y average P/E;
+  - PEG at or below a configurable maximum (1.0 default, 2.0 ceiling);
+  - available 3Y, 5Y, and 10Y profit growth above a configurable minimum;
+  - available 3Y, 5Y, and 10Y EPS growth above a configurable minimum;
+  - available 3Y, 5Y, and 10Y sales growth above a configurable minimum;
+  - ROE at or above a configurable minimum;
+  - debt-to-equity at or below a configurable maximum (0.5 default, 2.0
+    ceiling);
+  - selected Indian market-cap buckets or a custom range in crore.
+- The historical P/E rule uses the stock's own average P/E benchmarks, not a
+  historical industry series. Missing individual periods are ignored. The
+  stock fails when any available period fails.
+- Growth rules use the same partial-history policy: every available period
+  must pass, while unavailable individual periods are ignored.
+- Debt-to-equity is not applied to banks and financial companies because
+  deposits and borrowing are operating inputs and ordinary corporate D/E is
+  not comparable.
+- The previous optional requirement for ten completed post-cross sessions has
+  been removed.
+- Optional filters never alter the technical score.
+
+### Missing Optional Data
+
+- Each selected filter produces `pass`, `fail`, or `not evaluated`.
+- A confirmed failure rejects the stock as an optional-check rejection.
+- `Not evaluated` retains the stock in its existing Post or Impending result
+  group and adds one filter-level availability label.
+- Missing 3Y, 5Y, or 10Y periods are not shown as separate tags.
+- No third result group is created for incomplete fundamental data.
 
 ## 10. Fundamentals
 
@@ -114,16 +147,15 @@ interactive charts, and shareable Streamlit deployment.
 - Fundamental retrieval uses bounded retries and caches successful responses.
 - A missing fundamental field remains unavailable; it must not become zero or a
   passing value.
-- Fundamental filters are optional and may only run when the required field is
-  available.
+- Fundamental filters run only when selected. Missing required data produces
+  `not evaluated` and retains the stock; it never becomes zero, pass, or fail.
 - For qualified stocks, the dataset includes a Yahoo-industry benchmark: a
   market-cap-weighted P/E, median P/E, and qualifying NSE peer count. Peers
   with missing, zero, or negative P/E are excluded. These benchmarks are
   supplemental context and do not change qualification or score.
-- Screener-derived P/E averages/medians, sales growth, profit growth, EPS
-  growth, debt-to-equity, ROE, and latest OPM are stored for future optional
-  filters. They do not currently affect qualification, ranking, exports,
-  charts, or result columns.
+- Screener-derived P/E averages, sales growth, profit growth, EPS growth,
+  debt-to-equity, and ROE support the opt-in filters. P/E medians and latest
+  OPM remain stored context and do not currently affect qualification.
 - Debt-to-equity is calculated from Screener balance-sheet values as
   `Borrowings / (Equity Capital + Reserves)`. It is a financial-reporting
   metric, not a daily market metric.
@@ -156,7 +188,9 @@ interactive charts, and shareable Streamlit deployment.
   only in the dedicated valuation chart. It does not expose the backend-only
   long-term growth or debt fields.
 - When at least one optional rule is selected, users can view stocks rejected
-  by optional checks and their rejection reasons.
+  by optional checks and their rejection reasons. Retained stocks identify
+  filters that could not be evaluated without listing missing individual
+  historical periods.
 - The dashboard must show both qualified and failed stocks with summary counts.
 - Exports must include scan settings, timestamps, qualified records, and
   failure reasons.
@@ -168,6 +202,8 @@ interactive charts, and shareable Streamlit deployment.
   default), waits five seconds between batches, records per-symbol failures,
   and resumes from its latest completed batch.
 - Normal scans and chart interactions must not make live Screener requests.
+- A scan loads and indexes the committed Screener summary at most once, and
+  only when a selected optional filter requires it.
 - A failed scheduled market-data refresh must attempt to notify the configured
   operator by email without exposing SMTP credentials in code or logs.
 - Scan duration, symbols processed, provider failures, and cache activity are

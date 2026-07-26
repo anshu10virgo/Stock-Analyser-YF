@@ -27,6 +27,10 @@ python -m streamlit run app.py
 - Semiannual Yahoo sector/industry classifications and committed industry P/E.
 - Committed Screener historical valuation and long-term fundamental snapshots.
 - Selected-stock P/E versus TTM EPS chart with 1M through 10Y periods.
+- Empty-by-default optional fundamental-filter builder with nine valuation,
+  growth, quality, leverage, and market-cap rules.
+- Lenient missing-data handling that retains stocks with a filter-level
+  availability label rather than creating another result group.
 
 ## Committed market-data refresh
 
@@ -58,8 +62,13 @@ batches by default. It stores historical P/E and TTM EPS for the selected-stock
 chart. Long-term P/E averages/medians, sales growth, profit growth, EPS growth,
 debt-to-equity, ROE, and latest OPM are committed as backend data. The daily
 Yahoo refresh combines its refreshed P/E with stored Screener 3-year profit
-growth to calculate PEG. These fields do not currently change scan
-qualification or appear in results.
+growth to calculate PEG.
+
+Selected optional filters use the committed Screener summary together with
+current Yahoo fundamentals and industry benchmarks. Missing individual
+historical periods are ignored; if an entire selected filter cannot be
+evaluated, the stock is retained with one filter-level availability label.
+Normal scans load the committed summary and never scrape Screener live.
 
 The monthly workflow
 `.github/workflows/refresh-screener-fundamentals.yml` refreshes and validates
