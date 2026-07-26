@@ -19,18 +19,25 @@ Yahoo Finance, Screener Snapshots, Cache, and Observability
 - `ui/`: Streamlit pages, session-only scan presets, live scan insights,
   shared visual styling, formatted results, and interactive charts.
 - `models/scan_config.py`: immutable scan configuration and validation.
+- `models/optional_filter.py`: immutable optional-filter definitions,
+  thresholds, market-cap ranges, and Screener dependency classification.
 - `models/scan_run.py`: typed Post-Cross, Impending-Cross, and failed outcomes
   with dataframe adapters for the UI.
 - `services/scan_service.py`: scan orchestration with injected provider
   dependencies, structured failures, and optional accumulated-result callbacks
-  for batched UI progress updates.
+  for batched UI progress updates. Mandatory technical rules run before
+  selected fundamental filters.
+- `services/fundamental_filters.py`: isolated three-state (`pass`, `fail`, or
+  `not evaluated`) evaluation for valuation, growth, quality, leverage, and
+  market-cap filters.
 - `providers/yahoo_finance.py`: retrying, TTL-cached Yahoo price batches with
   observable request, cache, retry, and failure counters.
 - `providers/repository_data.py`: committed annual price partitions,
   fundamentals, industry benchmarks, manifest metadata, and missing-data-only
   Yahoo fallback. It also reads committed Screener summary/history snapshots.
   Small symbol requests use Parquet predicate filtering instead of
-  materializing the complete snapshot.
+  materializing the complete snapshot. Screener summaries are indexed once
+  per filtered scan rather than searched separately for every stock.
 - `providers/screener.py`: bounded-retry parser for Screener company pages and
   ten-year P/E/TTM-EPS chart data. It calculates backend-only long-term
   valuation, growth, debt-to-equity, ROE, and latest OPM fields.
@@ -75,3 +82,5 @@ Yahoo Finance, Screener Snapshots, Cache, and Observability
   selected settings.
 - User-named strategies are presentation/session state only. They must not
   mutate code-defined defaults or be persisted to Git.
+- Optional filters start empty, persist through Streamlit reruns and named
+  session strategies, and never create a third result group for missing data.

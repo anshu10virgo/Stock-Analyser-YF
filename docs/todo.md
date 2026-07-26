@@ -26,9 +26,10 @@
 - [ ] Add CI checks for tests and linting.
 - [ ] Add release notes and deployment-health guidance.
 
-## Future Optional Fundamentals Sprint
+## Optional Fundamentals Sprint
 
-- [ ] Add opt-in current P/E versus historical average/median filters.
-- [ ] Add opt-in long-term sales, profit, and EPS growth filters.
-- [ ] Add an opt-in maximum debt-to-equity filter.
-- [ ] Define missing-fundamental behaviour before enabling each filter.
+- [x] Add opt-in current P/E versus Industry and own historical P/E filters.
+- [x] Add opt-in long-term sales, profit, and EPS growth filters.
+- [x] Add opt-in PEG, ROE, debt-to-equity, and market-cap filters.
+- [x] Define lenient three-state missing-fundamental behaviour.
+- [x] Keep optional filters empty by default and session-only.

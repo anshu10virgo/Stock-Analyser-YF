@@ -11,7 +11,18 @@
 - 52-week Long-MA high-to-trough-to-positive-slope validation
 - Configurable minimum Long-MA decline and high-to-trough duration
 - Configurable current-price premium above Long MA
-- Optional minimum of 10 post-Golden-Cross sessions
+
+## Optional Fundamental Filters
+
+- Empty-by-default dropdown builder with ordered add and remove actions
+- Relative Industry P/E using the current median peer benchmark
+- Current P/E below the stock's own available 3Y/5Y/10Y average P/E
+- Configurable PEG, profit growth, EPS growth, sales growth, ROE, and
+  debt-to-equity thresholds
+- Large-, mid-, small-, micro-cap, and custom market-cap ranges
+- Financial-company debt-to-equity bypass
+- Lenient missing-data handling with one filter-level `not evaluated` label
+- Confirmed optional-filter rejections without changing technical scoring
 
 ## Dashboard
 
@@ -19,6 +30,7 @@
 - Display identity simplified to `Stock Analyser` while the repository name remains unchanged
 - Market, universe, data-source, and Top N choices grouped in Setup
 - Up to five named scan strategies stored only in the active Streamlit session
+- Optional-filter selections and thresholds included in session-only strategies
 - Immutable code-defined scan defaults with an explicit reset action
 - Batched live progress with Post-Cross, Impending-Cross, and rejected counts
 - Locally derived scan insights without Google or other research requests
@@ -34,6 +46,7 @@
 - Selected-stock weighted and median industry P/E benchmarks with peer count
 - Selected-stock historical P/E and TTM EPS chart sourced only from the
   committed Screener snapshot
+- Filter-level optional-data availability in qualified results and stock details
 - Snapshot date, PE/industry coverage, effective source, and fallback metrics
 - Colour-accented desktop visual system and reduced interface typography
 - Single-row compact workflow navigation on mobile screens

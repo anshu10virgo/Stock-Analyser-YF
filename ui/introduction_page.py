@@ -12,7 +12,9 @@ def render_introduction() -> None:
         "using Yahoo Finance market data. It identifies completed Post Golden "
         "Cross opportunities and, when selected, stocks approaching an "
         "Impending Golden Cross. Shared price and trend checks are applied "
-        "before each strategy's unique mandatory rules."
+        "before each strategy's unique mandatory rules. Optional fundamental "
+        "filters start empty and can refine technically qualified stocks "
+        "without changing their technical score."
     )
 
     st.subheader("How the scan works")

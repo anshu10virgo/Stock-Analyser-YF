@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from core.data_loader import DataLoader
+from models.optional_filter import OptionalFilterConfig
 from models.scan_config import ScanConfig
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
 from services.scan_service import ScanService
@@ -176,7 +177,10 @@ def _build_config(settings: dict) -> ScanConfig:
         include_impending_crosses=settings["include_impending_crosses"],
         impending_max_gap_pct=settings["impending_max_gap_pct"],
         pre_cross_validation_sessions=settings["pre_cross_validation_sessions"],
-        require_post_cross_sessions=settings["require_post_cross_sessions"],
+        optional_filters=tuple(
+            OptionalFilterConfig.from_dict(values)
+            for values in settings.get("optional_filters", ())
+        ),
         adjusted_prices=settings["adjusted_prices"],
     )
 
@@ -209,12 +213,17 @@ def render_strategy_page() -> None:
     )
 
     if st.button("Run scan", type="primary"):
-        st.session_state["pending_scan"] = {
-            "symbols": symbols[:count],
-            "settings": settings,
-            "market_data_source": source,
-        }
-        _navigate_to("3. Live Scan")
+        try:
+            _build_config(settings).validate()
+        except ValueError as error:
+            st.error(str(error))
+        else:
+            st.session_state["pending_scan"] = {
+                "symbols": symbols[:count],
+                "settings": settings,
+                "market_data_source": source,
+            }
+            _navigate_to("3. Live Scan")
 
 
 def _live_update(index: int, total: int, run, placeholders: dict) -> None:
@@ -286,6 +295,7 @@ def render_live_scan_page() -> None:
         data_provider=data_services.history,
         fundamentals_provider=data_services.fundamentals,
         industry_valuation_service=data_services.industry_valuation,
+        screener_provider=data_services.screener,
     ).scan(
         symbols,
         result_callback=lambda current, total, run: _live_update(
@@ -319,9 +329,8 @@ def render_results_page() -> None:
         st.session_state["scan_settings"],
         st.session_state.get("scan_metrics", {}),
     )
-    if (
-        st.session_state["scan_settings"].get("require_post_cross_sessions")
-        and st.checkbox("Show stocks rejected by optional checks")
+    if st.session_state["scan_settings"].get("optional_filters") and st.checkbox(
+        "Show stocks rejected by optional checks"
     ):
         render_optional_failures(failed)
 

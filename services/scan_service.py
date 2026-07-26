@@ -17,6 +17,10 @@ from models.failure_result import FailureResult
 from models.scan_config import ScanConfig
 from models.scan_results import ScanResult
 from models.scan_run import ScanRun
+from services.fundamental_filters import (
+    EvaluationStatus,
+    FundamentalFilterEvaluator,
+)
 from services.industry_valuation import IndustryValuationService
 
 
@@ -26,7 +30,6 @@ logger = logging.getLogger(__name__)
 class ScanService:
     """Coordinates market data, technical rules, fundamentals, and ranking."""
 
-    MIN_POST_CROSS_DAYS = 10
     SHORT_MA_SLOPE_SESSIONS = 5
     LONG_MA_52_WEEK_SESSIONS = 252
     LONG_MA_RECOVERY_SLOPE_SESSIONS = 5
@@ -40,12 +43,20 @@ class ScanService:
         data_provider=DataLoader,
         fundamentals_provider=Fundamentals,
         industry_valuation_service=None,
+        screener_provider=None,
+        fundamental_filter_evaluator=None,
     ):
         config.validate()
         self.config = config
         self.data_provider = data_provider
         self.fundamentals_provider = fundamentals_provider
         self.industry_valuation_service = industry_valuation_service or IndustryValuationService()
+        self.screener_provider = screener_provider
+        self.fundamental_filter_evaluator = (
+            fundamental_filter_evaluator or FundamentalFilterEvaluator()
+        )
+        self._screener_records = {}
+        self._optional_filter_metrics = {}
 
     @staticmethod
     def _failure(symbol, stage, reason, check_type="mandatory"):
@@ -98,6 +109,74 @@ class ScanService:
             fundamentals,
         )
 
+    def _prepare_optional_filters(self, symbols: list[str]) -> None:
+        """Load selected filter data once and initialise audit counters."""
+        self._optional_filter_metrics = {
+            optional_filter.key: {
+                EvaluationStatus.PASS.value: 0,
+                EvaluationStatus.FAIL.value: 0,
+                EvaluationStatus.NOT_EVALUATED.value: 0,
+            }
+            for optional_filter in self.config.optional_filters
+        }
+        self._screener_records = {}
+        if (
+            not symbols
+            or not self.config.requires_screener_data
+            or self.screener_provider is None
+        ):
+            return
+        try:
+            self._screener_records = self.screener_provider.fundamental_metrics_batch(
+                symbols
+            )
+        except Exception:
+            logger.exception(
+                "Committed Screener summary is unavailable for optional filters"
+            )
+
+    def _evaluate_optional_filters(
+        self,
+        symbol: str,
+        fundamentals: dict,
+        industry_valuation: dict,
+        run: ScanRun,
+    ) -> list[str] | None:
+        """Return unavailable labels, or reject and return ``None`` on failure."""
+        evaluations = self.fundamental_filter_evaluator.evaluate(
+            self.config.optional_filters,
+            fundamentals,
+            industry_valuation,
+            self._screener_records.get(symbol, {}),
+        )
+        for evaluation in evaluations:
+            self._optional_filter_metrics[evaluation.key][
+                evaluation.status.value
+            ] += 1
+        failed = next(
+            (
+                evaluation
+                for evaluation in evaluations
+                if evaluation.status == EvaluationStatus.FAIL
+            ),
+            None,
+        )
+        if failed is not None:
+            run.failed.append(
+                self._failure(
+                    symbol,
+                    f"Optional Fundamentals — {failed.label}",
+                    failed.reason,
+                    "optional",
+                )
+            )
+            return None
+        return [
+            evaluation.label
+            for evaluation in evaluations
+            if evaluation.status == EvaluationStatus.NOT_EVALUATED
+        ]
+
     def scan(
         self,
         symbols: Iterable[str],
@@ -108,6 +187,7 @@ class ScanService:
         symbols = list(symbols)
         run = ScanRun()
         scan_started = time.perf_counter()
+        self._prepare_optional_filters(symbols)
         if hasattr(self.industry_valuation_service, "begin_scan"):
             self.industry_valuation_service.begin_scan()
         if not symbols:
@@ -145,6 +225,7 @@ class ScanService:
                 run.metrics["market_data"] = self.data_provider.market_data_metrics()
             if hasattr(self.industry_valuation_service, "metrics"):
                 run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
+            run.metrics["optional_filters"] = self._optional_filter_metrics
             run.metrics["timing"] = {
                 "data_load_seconds": data_load_finished - data_load_started,
                 "rule_evaluation_seconds": 0.0,
@@ -160,6 +241,7 @@ class ScanService:
                 result_callback(index, len(symbols), run)
         if hasattr(self.industry_valuation_service, "metrics"):
             run.metrics["industry_valuations"] = self.industry_valuation_service.metrics()
+        run.metrics["optional_filters"] = self._optional_filter_metrics
         run.metrics["timing"] = {
             "data_load_seconds": data_load_finished - data_load_started,
             "rule_evaluation_seconds": time.perf_counter() - data_load_finished,
@@ -258,23 +340,20 @@ class ScanService:
             if price_premium > self.config.max_price_premium:
                 run.failed.append(self._failure(symbol, "Price Validation", "Close price is too far above Long MA"))
                 return
-            post_cross_days = (
-                len(history.loc[history.index > cross_date]) if is_post_cross else None
-            )
-            if (
-                is_post_cross
-                and self.config.require_post_cross_sessions
-                and post_cross_days < self.MIN_POST_CROSS_DAYS
-            ):
-                run.failed.append(self._failure(symbol, "Post-Cross Validation", "Golden Cross needs 10 post-cross sessions", "optional"))
-                return
-
             score_slope = SlopeAnalyzer.calculate_slope(history["MA_LONG"], self.SCORE_SLOPE_LOOKBACK)
             slope_label = SlopeAnalyzer.classify_slope(score_slope)
             fundamentals = self.fundamentals_provider.get_fundamentals(symbol)
             industry_valuation = self.industry_valuation_service.valuation_for(
                 fundamentals["industry"]
             )
+            unavailable_optional_filters = self._evaluate_optional_filters(
+                symbol,
+                fundamentals,
+                industry_valuation,
+                run,
+            )
+            if unavailable_optional_filters is None:
+                return
             score_breakdown = (
                 self._score(cross, slope_label, price_premium, fundamentals)
                 if is_post_cross
@@ -310,6 +389,7 @@ class ScanService:
                 pe_source=fundamentals.get("pe_source"),
                 eps=fundamentals["eps"], sector=fundamentals["sector"], industry=fundamentals["industry"],
                 **industry_valuation,
+                optional_filters_not_evaluated=unavailable_optional_filters,
                 score=sum(score_breakdown.values()),
                 **score_breakdown,
             )

@@ -1,6 +1,6 @@
 # Roadmap
 
-## Active Sprint — Historical Valuation Foundation
+## Completed — Historical Valuation Foundation
 
 ### Goal
 
@@ -31,12 +31,37 @@ changing current scan qualification or result columns.
 - Automated tests cover parsing, calculations, throttling, retry, resume,
   storage validation, repository reads, and chart layers.
 
-## Next Sprint — Optional Fundamental Filters
+## Active Sprint — Optional Fundamental Filters
 
-- Add opt-in filters backed by the committed Screener summary dataset.
-- Candidate filters include current P/E below historical average/median,
-  minimum sales/profit/EPS growth, and maximum debt-to-equity.
-- Define missing-data behaviour and UI labels before changing scanner rules.
+### Goal
+
+Add empty-by-default fundamental screening without changing mandatory
+technical qualification, technical scoring, or the two result groups.
+
+### Scope
+
+- Add an ordered dropdown builder for nine valuation, growth, quality, and
+  company-size filters.
+- Use the current median Industry P/E for the relative valuation rule.
+- Compare current P/E with the stock's own available 3Y/5Y/10Y average P/E.
+- Apply three-state evaluation with lenient missing-data handling.
+- Load the committed Screener summary once only when selected filters need it.
+- Retain incomplete-data stocks with filter-level availability labels.
+- Remove the legacy optional ten-post-cross-session rule.
+- Persist optional settings only in active Streamlit session strategies.
+
+### Acceptance Criteria
+
+- No selected filters produces the same results as the existing scan.
+- Confirmed failures reject with readable optional-check reasons.
+- Missing individual historical periods do not create tags.
+- Completely unavailable filter data retains the stock with one filter-level
+  label.
+- Post and Impending Golden Cross remain the only result groups.
+- Optional filters do not affect score.
+- Normal scans make no live Screener requests.
+- Automated tests cover rule boundaries, partial history, missing snapshots,
+  session reruns, and result formatting.
 
 ## Release 1.1 — Reliability and Auditability
 

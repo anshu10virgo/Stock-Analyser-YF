@@ -20,6 +20,7 @@ Status: Active Development
   authentication
 - Unified, resumable Screener fundamentals refresh with batch throttling
 - Git-backed Screener summary and historical valuation snapshot contracts
+- Three-state optional fundamental-filter evaluation backed by committed data
 
 ### Technical Analysis
 
@@ -34,6 +35,8 @@ Status: Active Development
   and provider metrics
 - Separate Post Golden Cross and opt-in Impending Golden Cross qualification
   paths with shared reversal calculations and distinct results
+- Nine opt-in fundamental filters that run after mandatory technical checks
+  without changing technical scores
 
 ### Dashboard
 
@@ -41,6 +44,7 @@ Status: Active Development
 - Strategy controls grouped into common Golden Cross, Post Golden Cross, and
   opt-in Impending Golden Cross sections
 - Session-only named strategies that do not alter committed defaults
+- Empty-by-default optional-filter builder with add/remove sequencing
 - Progressive qualified-stock display and locally derived scan insights
 - Plain-language most-common rejection insights based on the exact failed rule
 - Branded colour system and bull/bear market artwork
@@ -51,6 +55,7 @@ Status: Active Development
 - Score details that expand without reloading chart history
 - Effective source, fallback, timing, and fundamentals coverage diagnostics
 - Selected-stock historical P/E and TTM EPS chart with six time periods
+- Filter-level missing-data labels without an additional result split
 
 ## Current Hardening Work
 
@@ -60,12 +65,13 @@ Status: Active Development
 
 ## Current Sprint
 
-- Historical P/E and TTM EPS chart from committed Screener data.
-- Backend-only long-term valuation, growth, debt, ROE, and OPM metrics, plus
-  daily Yahoo-P/E-based PEG.
-- Monthly/manual resumable Screener refresh with controlled throttling.
-- Current scan rules and results remain unchanged.
-- Optional fundamental filters are deferred to the next sprint.
+- Nine optional valuation, growth, quality, leverage, and market-cap filters.
+- Ordered dropdown builder with no filters selected by default.
+- Current P/E compared with median Industry P/E and the stock's own available
+  historical average P/E.
+- Lenient missing-data handling with filter-level availability labels.
+- One-load committed Screener summary access and no live scan scraping.
+- Removal of the legacy ten-post-cross-session optional check.
 
 ## Current Risks
 

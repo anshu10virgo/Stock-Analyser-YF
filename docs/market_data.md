@@ -49,8 +49,8 @@ only after the data files pass validation.
 
 The Screener directory has its own manifest and lifecycle. Its summary file
 stores 3Y/5Y/10Y P/E averages and medians, sales/profit/EPS growth,
-debt-to-equity, ROE, and latest OPM. Those fields are backend-only in the
-current sprint. Its
+debt-to-equity, ROE, and latest OPM. Selected optional filters use the
+applicable summary fields. Its
 Parquet file stores historical P/E and TTM EPS observations used exclusively
 by the selected-stock valuation chart.
 
@@ -150,8 +150,14 @@ the active Screener snapshot's positive 3-year compounded profit growth. The
 P/E uses Yahoo `trailingPE`, with the existing market-price/trailing-EPS
 fallback. PEG remains blank until both sources are available.
 
-These summary fields are intentionally not shown in current results or charts.
-They are data foundations for a later optional-filter sprint.
+Selected optional filters use the summary's P/E averages, growth,
+debt-to-equity, and ROE. P/E medians and OPM remain backend context. The
+scanner loads the summary once when required and never makes a live Screener
+request.
+
+Missing individual 3Y, 5Y, or 10Y periods are ignored. If no usable value
+exists for a selected filter, the stock remains qualified under its technical
+result group with one filter-level `not evaluated` label.
 
 ## Universe Reconciliation
 

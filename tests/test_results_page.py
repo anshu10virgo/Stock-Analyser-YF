@@ -26,6 +26,7 @@ class ResultsPageTests(unittest.TestCase):
         self.assertNotIn("Cross Score", results.columns)
         self.assertNotIn("Trend Score", results.columns)
         self.assertNotIn("Price Position Score", results.columns)
+        self.assertNotIn("Optional Data", results.columns)
 
     def test_performance_includes_since_cross_return(self) -> None:
         """Selected-stock details report return relative to the Golden Cross close."""
@@ -54,6 +55,25 @@ class ResultsPageTests(unittest.TestCase):
         self.assertIn("Short MA 5-Day Slope", results.columns)
         self.assertNotIn("Score", results.columns)
         self.assertNotIn("Cross Date", results.columns)
+
+    def test_results_show_only_filter_level_unavailable_tags(self):
+        results = prepare_results(
+            pd.DataFrame(
+                [{
+                    "symbol": "MISSING.NS",
+                    "optional_filters_not_evaluated": [
+                        "P/E vs. Historical Stock P/E"
+                    ],
+                }]
+            )
+        )
+
+        self.assertEqual(
+            results.loc[0, "Optional Data"],
+            "Not evaluated: P/E vs. Historical Stock P/E",
+        )
+        self.assertNotIn("3Y", results.loc[0, "Optional Data"])
+        self.assertNotIn("10Y", results.loc[0, "Optional Data"])
 
 
 if __name__ == "__main__":

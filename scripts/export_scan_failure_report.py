@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -146,6 +145,7 @@ def main() -> None:
         data_provider=data_services.history,
         fundamentals_provider=data_services.fundamentals,
         industry_valuation_service=data_services.industry_valuation,
+        screener_provider=data_services.screener,
     )
     batch_data = service.data_provider.download_batch(
         symbols, years=3, adjusted_prices=False
@@ -190,7 +190,7 @@ def main() -> None:
             ("Minimum high-to-trough decline duration (sessions)", config.min_long_ma_decline_duration),
             ("Minimum Long-MA high-to-trough decline (%)", config.min_long_ma_decline),
             ("Maximum price premium above Long MA (%)", config.max_price_premium),
-            ("Post-cross optional check", "Not enabled"),
+            ("Optional fundamental filters", "Not enabled"),
         ],
         columns=["setting", "value"],
     )

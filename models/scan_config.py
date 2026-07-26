@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from models.optional_filter import OptionalFilterConfig, SCREENER_OPTIONAL_FILTERS
+
 
 @dataclass(frozen=True)
 class ScanConfig:
@@ -16,7 +18,7 @@ class ScanConfig:
     include_impending_crosses: bool = False
     impending_max_gap_pct: float = 3
     pre_cross_validation_sessions: int = 20
-    require_post_cross_sessions: bool = False
+    optional_filters: tuple[OptionalFilterConfig, ...] = ()
     adjusted_prices: bool = False
 
     def validate(self) -> None:
@@ -33,7 +35,20 @@ class ScanConfig:
             or self.impending_max_gap_pct < 0
         ):
             raise ValueError("Percentage thresholds cannot be negative")
+        selected_keys = [optional_filter.key for optional_filter in self.optional_filters]
+        if len(selected_keys) != len(set(selected_keys)):
+            raise ValueError("An optional filter cannot be selected more than once")
+        for optional_filter in self.optional_filters:
+            optional_filter.validate()
 
     @property
     def optional_checks_selected(self) -> bool:
-        return self.require_post_cross_sessions
+        return bool(self.optional_filters)
+
+    @property
+    def requires_screener_data(self) -> bool:
+        """Return whether any selected filter reads the committed Screener snapshot."""
+        return any(
+            optional_filter.key in SCREENER_OPTIONAL_FILTERS
+            for optional_filter in self.optional_filters
+        )
