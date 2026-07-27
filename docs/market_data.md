@@ -159,6 +159,31 @@ Missing individual 3Y, 5Y, or 10Y periods are ignored. If no usable value
 exists for a selected filter, the stock remains qualified under its technical
 result group with one filter-level `not evaluated` label.
 
+## Result Details and Email Reports
+
+Selected-stock details use the committed Screener summary for debt-to-equity,
+ROE, and the 3Y profit, EPS, and sales/revenue CAGR cards. Displayed PEG is the
+current scan P/E divided by positive stored 3Y profit growth. Market
+capitalisation is displayed in Indian crore. Missing values are shown as
+unavailable and never trigger a live Screener request.
+
+The price/MA chart reads the snapshot's full configured retention period
+(currently ten calendar years) and provides 6M, 1Y, 3Y, 5Y, 10Y, and Max
+navigation plus zoom, pan, reset, hover, and a range slider. The Historical P/E
+and TTM EPS chart remains a separate, unchanged committed-Screener view.
+
+Completed reports can be mailed to one or more session-only recipients. The
+Excel workbook begins with a `Filters` sheet followed by `Post Golden Cross`
+and `Impending Golden Cross`. Maximum-period price/MA PNGs are compressed into
+size-bounded ZIP parts. Configure these Streamlit deployment secrets:
+
+- `REPORT_SMTP_USERNAME`
+- `REPORT_SMTP_APP_PASSWORD`
+
+The username is the Gmail sender and the password must be a dedicated Google
+App Password. Neither credentials nor recipient addresses are written to Git
+or included in exported worksheets.
+
 ## Universe Reconciliation
 
 New symbols receive all available history up to the ten-year limit. Removed

@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from ui.results_page import _performance, prepare_results
+from ui.results_page import _format_market_cap, _peg_ratio, _performance, prepare_results
 
 
 class ResultsPageTests(unittest.TestCase):
@@ -74,6 +74,16 @@ class ResultsPageTests(unittest.TestCase):
         )
         self.assertNotIn("3Y", results.loc[0, "Optional Data"])
         self.assertNotIn("10Y", results.loc[0, "Optional Data"])
+
+    def test_market_cap_uses_indian_crore_format(self):
+        self.assertEqual(_format_market_cap(123_450_000_000), "₹12,345 Cr")
+
+    def test_peg_uses_current_pe_and_stored_three_year_profit_growth(self):
+        self.assertEqual(
+            _peg_ratio({"pe": 18}, {"profit_growth_3y": 12}),
+            1.5,
+        )
+        self.assertIsNone(_peg_ratio({"pe": 18}, {"profit_growth_3y": None}))
 
 
 if __name__ == "__main__":

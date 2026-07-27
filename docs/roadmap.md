@@ -31,7 +31,7 @@ changing current scan qualification or result columns.
 - Automated tests cover parsing, calculations, throttling, retry, resume,
   storage validation, repository reads, and chart layers.
 
-## Active Sprint — Optional Fundamental Filters
+## Completed — Optional Fundamental Filters
 
 ### Goal
 
@@ -63,6 +63,38 @@ technical qualification, technical scoring, or the two result groups.
 - Automated tests cover rule boundaries, partial history, missing snapshots,
   session reruns, and result formatting.
 
+## Active Sprint — Result Detail and Email Reporting
+
+### Goal
+
+Improve qualified-stock exploration and reproducible sharing without changing
+scanner qualification, optional-filter formulas, scoring, or the Historical
+P/E and TTM EPS chart.
+
+### Scope
+
+- Show market cap in crore and add debt-to-equity, ROE, and PEG to Company
+  Overview while removing P/E Source.
+- Present 3Y profit, EPS, and revenue CAGR as separate cards.
+- Expand the price/MA chart to all retained history with 6M through Max
+  controls, zoom, pan, reset, hover details, and range navigation.
+- Email a filters-first workbook containing both result groups to one or more
+  session-only recipients.
+- Attach maximum-period price/MA charts in size-bounded ZIP parts.
+
+### Acceptance Criteria
+
+- Normal result expansion and report generation make no live Screener request.
+- Missing company metrics display as unavailable.
+- The workbook sheet order is Filters, Post Golden Cross, then Impending
+  Golden Cross.
+- SMTP credentials remain in Streamlit Secrets and recipients are not
+  persisted.
+- Existing technical rules, scoring, and valuation-chart behaviour remain
+  unchanged.
+- Tests cover display formatting, chart controls, workbook order, recipient
+  validation, attachment batching, and SMTP delivery.
+
 ## Release 1.1 — Reliability and Auditability
 
 - Structured failure results for every symbol and scanner stage.
@@ -82,7 +114,8 @@ technical qualification, technical scoring, or the two result groups.
 
 ## Release 1.3 — Reporting and User Experience
 
-- Excel and CSV exports for qualified and rejected stocks.
+- Filters-first Excel email reports for both qualified result groups.
+- Maximum-period chart snapshots with safe attachment batching.
 - Saved scan configuration profiles.
 - Filters, sorting, and mobile-friendly result exploration.
 - Clear scan history and result timestamping.

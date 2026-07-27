@@ -289,6 +289,8 @@ def render_live_scan_page() -> None:
         **settings,
         "market_data_source": source,
         "market_data_snapshot": data_services.metadata,
+        "stock_market": "India — NSE",
+        "stock_count": len(symbols),
     }
     scan_run = ScanService(
         _build_config(settings),

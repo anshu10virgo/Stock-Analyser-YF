@@ -1,11 +1,22 @@
+import os
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
-from pathlib import Path
 
 from core.indicators import Indicators
 from providers.repository_data import SnapshotUnavailableError
-from ui.stock_detail import render_pe_eps_chart, render_stock_detail
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
+from services.scan_report import (
+    MailConfiguration,
+    build_chart_archives,
+    build_messages,
+    build_price_chart_png,
+    build_workbook,
+    parse_recipients,
+    send_messages,
+)
+from ui.stock_detail import render_pe_eps_chart, render_stock_detail
 
 
 DISPLAY_COLUMNS = {
@@ -61,8 +72,8 @@ def prepare_results(df, impending=False):
     results["Company Name"] = results["Company Name"].fillna(
         results["Symbol"].str.removesuffix(".NS")
     )
-    results["Market Cap"] = results["Market Cap"].div(1_000_000).map(
-        lambda value: f"{value:,.0f} M" if pd.notna(value) else None
+    results["Market Cap"] = results["Market Cap"].div(10_000_000).map(
+        lambda value: f"₹{value:,.0f} Cr" if pd.notna(value) else None
     )
     results["Optional Data"] = results["Optional Data"].map(
         lambda filters: (
@@ -88,8 +99,8 @@ def _format_text(value, empty="Not available"):
 
 
 def _format_market_cap(value):
-    """Format market capitalisation in millions, matching the results table."""
-    return "Not available" if pd.isna(value) else f"{value / 1_000_000:,.0f} M"
+    """Format Indian market capitalisation in crore."""
+    return "Not available" if pd.isna(value) else f"₹{value / 10_000_000:,.0f} Cr"
 
 
 def _price_at_cross(chart_data, cross_date):
@@ -130,13 +141,23 @@ def _has_death_cross_after(chart_data, cross_date):
     return bool(death_crosses.any())
 
 
-def _render_stock_overview(result):
-    """Render company information available from the scan's fundamentals lookup."""
+def _peg_ratio(result, screener_summary):
+    """Calculate the displayed PEG using current P/E and stored 3Y profit growth."""
+    pe = result.get("pe")
+    growth = screener_summary.get("profit_growth_3y")
+    if pd.isna(pe) or pd.isna(growth) or pe <= 0 or growth <= 0:
+        return None
+    return pe / growth
+
+
+def _render_stock_overview(result, screener_summary):
+    """Render company and valuation information from committed snapshots."""
     st.subheader("Company overview")
     overview = pd.DataFrame(
         {
             "Field": (
-                "Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "PE Source", "EPS",
+                "Symbol", "Company", "Sector", "Industry", "Market Cap", "PE", "EPS",
+                "Debt-to-Equity Ratio", "ROE (%)", "PEG Ratio",
                 "Weighted Industry P/E", "Median Industry P/E", "Industry Peers",
                 "Optional filters not evaluated",
             ),
@@ -147,8 +168,10 @@ def _render_stock_overview(result):
                 _format_text(result.get("industry")),
                 _format_market_cap(result.get("market_cap")),
                 _format_value(result.get("pe")),
-                _format_text(result.get("pe_source")),
                 _format_value(result.get("eps")),
+                _format_value(screener_summary.get("debt_to_equity")),
+                _format_value(screener_summary.get("roe"), "{:.2f}%"),
+                _format_value(_peg_ratio(result, screener_summary)),
                 _format_value(result.get("industry_weighted_pe")),
                 _format_value(result.get("industry_median_pe")),
                 _format_value(result.get("industry_peer_count"), "{:.0f}"),
@@ -160,6 +183,22 @@ def _render_stock_overview(result):
         }
     )
     st.dataframe(overview, width="stretch", hide_index=True)
+
+
+def _render_growth_cards(screener_summary):
+    """Render the requested three-year growth metrics outside the overview table."""
+    st.subheader("Three-year growth")
+    columns = st.columns(3)
+    metrics = (
+        ("Profit Growth CAGR — 3Y", "profit_growth_3y"),
+        ("EPS Growth CAGR — 3Y", "eps_growth_3y"),
+        ("Revenue Growth CAGR — 3Y", "sales_growth_3y"),
+    )
+    for column, (label, field) in zip(columns, metrics):
+        column.metric(
+            label,
+            _format_value(screener_summary.get(field), "{:+.2f}%"),
+        )
 
 
 def _render_technical_status(result, chart_data, cross_close):
@@ -241,15 +280,16 @@ def _load_selected_history(
     symbol,
     source,
     adjusted_prices,
+    history_years,
     snapshot_version,
     project_root,
 ):
-    """Cache only one stock's chart rows, keyed by snapshot version."""
+    """Cache one stock's full retained chart history by snapshot version."""
     del snapshot_version  # The value participates in Streamlit's cache key.
     services = build_data_services(source, Path(project_root))
     batch_data = services.history.download_batch(
         [symbol],
-        years=1,
+        years=history_years,
         adjusted_prices=adjusted_prices,
     )
     return services.history.get_symbol_history(batch_data, symbol)
@@ -266,33 +306,32 @@ def _load_selected_valuation(
     services = build_data_services(LIVE_SOURCE, Path(project_root))
     history = services.screener.valuation_history(symbol)
     summary = services.screener.fundamental_metrics(symbol)
-    return history, {
-        "source_url": summary.get("source_url"),
-        "refreshed_at": summary.get("refreshed_at"),
-    }
+    return history, summary
 
 
 def render_selected_stock(result, settings, show_score=True):
-    """Load and render the selected stock's cached one-year details."""
+    """Load and render the selected stock's cached full-history details."""
     symbol = result["symbol"]
     source = settings.get("market_data_source", LIVE_SOURCE)
     snapshot = settings.get("market_data_snapshot", {})
     snapshot_version = snapshot.get("generated_at") or snapshot.get(
         "last_trading_date", "live"
     )
+    history_years = int(snapshot.get("retention_calendar_years") or 10)
     project_root = Path(__file__).resolve().parents[1]
 
-    with st.spinner(f"Loading one-year chart for {symbol}..."):
+    with st.spinner(f"Loading available price history for {symbol}..."):
         history = _load_selected_history(
             symbol,
             source,
             settings["adjusted_prices"],
+            history_years,
             snapshot_version,
             str(project_root),
         )
 
     if history.empty:
-        st.error(f"Could not load one-year price history for {symbol}.")
+        st.error(f"Could not load price history for {symbol}.")
         return
 
     chart_data = Indicators.add_moving_averages(
@@ -300,24 +339,35 @@ def render_selected_stock(result, settings, show_score=True):
         settings["short_ma"],
         settings["long_ma"],
     )
-    _render_stock_overview(result)
-    st.subheader("One-year price and moving averages")
-    render_stock_detail(symbol, chart_data, result["cross_date"])
     screener_services = build_data_services(LIVE_SOURCE, project_root)
     screener_metadata = screener_services.screener.metadata()
+    valuation_history = pd.DataFrame()
+    screener_summary = {}
     try:
-        valuation_history, valuation_metadata = _load_selected_valuation(
+        valuation_history, screener_summary = _load_selected_valuation(
             symbol,
             screener_metadata.get("generated_at", "missing"),
             str(project_root),
         )
+    except SnapshotUnavailableError:
+        pass
+
+    _render_stock_overview(result, screener_summary)
+    _render_growth_cards(screener_summary)
+    st.subheader("Price and moving averages")
+    st.caption(
+        "Use the period buttons, range slider, drag-to-zoom, pan, or reset "
+        "controls to explore all available history."
+    )
+    render_stock_detail(symbol, chart_data, result["cross_date"])
+    if not valuation_history.empty:
         render_pe_eps_chart(
             symbol,
             valuation_history,
-            valuation_metadata.get("source_url"),
-            valuation_metadata.get("refreshed_at"),
+            screener_summary.get("source_url"),
+            screener_summary.get("refreshed_at"),
         )
-    except SnapshotUnavailableError:
+    else:
         st.info(
             "Historical P/E and TTM EPS will appear after the committed "
             "Screener fundamentals snapshot is refreshed."
@@ -440,6 +490,140 @@ def _render_impending_results(df, settings):
         )
 
 
+def _mail_credentials():
+    """Read report credentials from Streamlit secrets or local environment."""
+    try:
+        username = st.secrets.get("REPORT_SMTP_USERNAME")
+        password = st.secrets.get("REPORT_SMTP_APP_PASSWORD")
+    except (FileNotFoundError, KeyError):
+        username = None
+        password = None
+    username = username or os.environ.get("REPORT_SMTP_USERNAME")
+    password = password or os.environ.get("REPORT_SMTP_APP_PASSWORD")
+    if not username or not password:
+        return None
+    return MailConfiguration(username=username, password=password)
+
+
+def _report_chart_images(post_cross, impending, settings, progress):
+    """Build maximum-period chart PNGs from the selected market-data policy."""
+    combined = pd.concat([post_cross, impending], ignore_index=True)
+    if combined.empty:
+        return []
+    combined = combined.drop_duplicates("symbol", keep="first")
+    records = combined.set_index("symbol").to_dict("index")
+    symbols = list(records)
+    services = build_data_services(
+        settings.get("market_data_source", LIVE_SOURCE),
+        Path(__file__).resolve().parents[1],
+    )
+    history_years = int(
+        settings.get("market_data_snapshot", {}).get("retention_calendar_years")
+        or 10
+    )
+    images = []
+    processed = 0
+    for offset in range(0, len(symbols), 10):
+        chunk = symbols[offset : offset + 10]
+        batch = services.history.download_batch(
+            chunk,
+            years=history_years,
+            adjusted_prices=settings.get("adjusted_prices", False),
+        )
+        for symbol in chunk:
+            history = services.history.get_symbol_history(batch, symbol)
+            if history.empty:
+                processed += 1
+                progress.progress(processed / len(symbols))
+                continue
+            chart_data = Indicators.add_moving_averages(
+                history,
+                settings["short_ma"],
+                settings["long_ma"],
+            )
+            payload = build_price_chart_png(
+                symbol,
+                chart_data,
+                records[symbol].get("cross_date"),
+            )
+            images.append((f"{symbol.removesuffix('.NS')}_price_chart.png", payload))
+            processed += 1
+            progress.progress(processed / len(symbols))
+    return images
+
+
+def _render_email_report(post_cross, impending, scan_time, settings):
+    """Render the explicit, session-only scan report delivery action."""
+    st.divider()
+    st.subheader("Email scan report")
+    st.caption(
+        "Send both result lists, the applied filters, and maximum-period "
+        "price/MA chart snapshots. Recipient addresses are not saved."
+    )
+    with st.form("email_scan_report"):
+        raw_recipients = st.text_input(
+            "Recipient email addresses",
+            placeholder="name@example.com, another@example.com",
+            help="Separate multiple addresses with commas.",
+        )
+        submitted = st.form_submit_button(
+            "Email Report",
+            type="primary",
+            disabled=post_cross.empty and impending.empty,
+        )
+    if not submitted:
+        return
+
+    try:
+        recipients = parse_recipients(raw_recipients)
+    except ValueError as error:
+        st.error(str(error))
+        return
+    credentials = _mail_credentials()
+    if credentials is None:
+        st.error(
+            "Email is not configured. Add REPORT_SMTP_USERNAME and "
+            "REPORT_SMTP_APP_PASSWORD to Streamlit Secrets."
+        )
+        return
+
+    status = st.status("Preparing report...", expanded=True)
+    try:
+        status.write("Building the filters-first Excel workbook...")
+        workbook = build_workbook(settings, scan_time, post_cross, impending)
+        status.write("Rendering maximum-period price charts...")
+        progress = st.progress(0)
+        chart_images = _report_chart_images(
+            post_cross,
+            impending,
+            settings,
+            progress,
+        )
+        archives = build_chart_archives(chart_images)
+        status.write(
+            f"Sending {max(1, len(archives))} email part(s) to "
+            f"{len(recipients)} recipient(s)..."
+        )
+        messages = build_messages(
+            recipients,
+            credentials.username,
+            scan_time,
+            len(post_cross),
+            len(impending),
+            workbook,
+            archives,
+        )
+        send_messages(messages, credentials)
+    except Exception as error:
+        status.update(label="Email report failed", state="error", expanded=True)
+        st.error(f"The report could not be sent: {error}")
+        return
+    status.update(label="Email report sent", state="complete", expanded=False)
+    st.success(
+        f"Sent {len(messages)} report email(s) to {', '.join(recipients)}."
+    )
+
+
 def render_results(df, impending_df, scan_time, settings, metrics=None):
     """Render formatted qualified-stock results for a completed scan."""
     st.subheader("Scan Results")
@@ -456,7 +640,7 @@ def render_results(df, impending_df, scan_time, settings, metrics=None):
         right.metric("Average score", f"{results['Score'].mean():.1f}")
 
         st.caption(
-            "Score is out of 85. Select a stock to view its one-year chart, "
+            "Score is out of 85. Select a stock to view its price chart, "
             "technical details, performance, and score breakdown."
         )
         selection = st.dataframe(
@@ -486,6 +670,7 @@ def render_results(df, impending_df, scan_time, settings, metrics=None):
     if settings.get("include_impending_crosses"):
         st.divider()
         _render_impending_results(impending_df, settings)
+    _render_email_report(df, impending_df, scan_time, settings)
 
 
 def render_optional_failures(df):
