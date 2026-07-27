@@ -182,18 +182,23 @@ interactive charts, and shareable Streamlit deployment.
 - Results show separate Post and Impending Golden Cross sections with
   meaningful labels, scan timestamp, symbol, company, sector,
   industry, score, market cap, price, MA values, fundamentals, and cross date.
-- Selecting a qualified stock shows one year of price history with short/long
-  MAs and a labeled Golden Cross marker when a cross date exists.
+- Market capitalisation is displayed in Indian crore. P/E source is not shown
+  in the company overview.
+- Selecting a qualified stock shows the complete retained price history with
+  short/long MAs, a labeled Golden Cross marker, period controls, zoom, pan,
+  reset, hover details, and range navigation.
 - Selecting a qualified stock also shows committed historical P/E and TTM EPS
-  only in the dedicated valuation chart. It does not expose the backend-only
-  long-term growth or debt fields.
+  only in the dedicated, unchanged valuation chart. Debt-to-equity, ROE, PEG,
+  and separate 3Y profit, EPS, and revenue CAGR cards are supplemental company
+  context and do not change qualification or score.
 - When at least one optional rule is selected, users can view stocks rejected
   by optional checks and their rejection reasons. Retained stocks identify
   filters that could not be evaluated without listing missing individual
   historical periods.
 - The dashboard must show both qualified and failed stocks with summary counts.
-- Exports must include scan settings, timestamps, qualified records, and
-  failure reasons.
+- Emailed exports begin with applied scan settings and timestamp, then contain
+  separate Post and Impending result sheets plus maximum-period price/MA
+  chart snapshots. Recipients are session-only.
 
 ## 13. Operational Standards
 

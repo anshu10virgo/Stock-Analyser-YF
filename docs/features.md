@@ -41,7 +41,9 @@
 - Main-screen choice between live Yahoo and the committed Git snapshot
 - Adjustable or actual-price market data selection
 - Formatted scan results with a scan timestamp
-- Clickable result rows with one-year stock charts
+- Clickable result rows with full retained-history stock charts
+- Company overview with market cap in crore, debt-to-equity, ROE, and PEG
+- Separate 3Y profit, EPS, and revenue CAGR cards
 - Retried and cached Yahoo fundamental-data retrieval
 - Selected-stock weighted and median industry P/E benchmarks with peer count
 - Selected-stock historical P/E and TTM EPS chart sourced only from the
@@ -50,6 +52,8 @@
 - Snapshot date, PE/industry coverage, effective source, and fallback metrics
 - Colour-accented desktop visual system and reduced interface typography
 - Single-row compact workflow navigation on mobile screens
+- Multi-recipient scan-report email with a filters-first workbook and
+  maximum-period price-chart archives
 
 ## Charts
 
@@ -59,11 +63,16 @@
 - Golden Cross Marker
 - Historical P/E line, selected-period median P/E, and reported TTM EPS bars
 - 1M, 6M, 1Y, 3Y, 5Y, and 10Y valuation periods
+- 6M, 1Y, 3Y, 5Y, 10Y, and Max price periods with drag zoom, pan, reset,
+  hover details, and a full-history range slider
 - Cached single-symbol history reads without loading the complete snapshot
 
 ## Export
 
-- Excel
+- Excel workbook with Filters, Post Golden Cross, and Impending Golden Cross
+  worksheets
+- Maximum-period price/MA PNG charts split into size-bounded ZIP attachments
+- Session-only multiple-recipient email delivery
 
 ## Market Data Operations
 

@@ -33,3 +33,11 @@
 - [x] Add opt-in PEG, ROE, debt-to-equity, and market-cap filters.
 - [x] Define lenient three-state missing-fundamental behaviour.
 - [x] Keep optional filters empty by default and session-only.
+
+## Result Detail and Email Reporting Sprint
+
+- [x] Show market cap in crore and add selected valuation/quality context.
+- [x] Add separate 3Y profit, EPS, and revenue CAGR cards.
+- [x] Add full retained-history price/MA periods and interactive zoom controls.
+- [x] Add filters-first Excel reports for Post and Impending results.
+- [x] Add multi-recipient secret-managed email and chart ZIP batching.

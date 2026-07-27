@@ -7,3 +7,4 @@ __pycache__/
 *.log
 reports/
 data/market_data/screener/.staging/
+.streamlit/secrets.toml

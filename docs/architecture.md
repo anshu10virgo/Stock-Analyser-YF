@@ -43,6 +43,10 @@ Yahoo Finance, Screener Snapshots, Cache, and Observability
   valuation, growth, debt-to-equity, ROE, and latest OPM fields.
 - `services/data_source.py`: constructs one consistent provider set for the
   source selected on the main screen.
+- `services/scan_report.py`: pure workbook, chart-image, ZIP batching, email
+  validation, message construction, and authenticated SMTP delivery helpers.
+  The Streamlit UI supplies completed results and deployment-managed secrets;
+  recipients are never persisted.
 - `scripts/refresh_market_data.py`: full backfill, incremental append, universe
   reconciliation, symbol-grouped Parquet optimization, semiannual
   classifications, industry P/E calculation, coverage reporting, and atomic
@@ -82,5 +86,7 @@ Yahoo Finance, Screener Snapshots, Cache, and Observability
   selected settings.
 - User-named strategies are presentation/session state only. They must not
   mutate code-defined defaults or be persisted to Git.
+- Report recipients remain session-only and SMTP credentials are read only
+  from Streamlit Secrets or local environment variables.
 - Optional filters start empty, persist through Streamlit reruns and named
   session strategies, and never create a third result group for missing data.

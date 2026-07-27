@@ -70,6 +70,22 @@ historical periods are ignored; if an entire selected filter cannot be
 evaluated, the stock is retained with one filter-level availability label.
 Normal scans load the committed summary and never scrape Screener live.
 
+## Emailing completed scan reports
+
+The Results page can email a filters-first Excel workbook and maximum-period
+price/MA chart archives to multiple comma-separated recipients. Recipient
+addresses exist only for the active send action. Configure the deployed
+Streamlit app under **App settings > Secrets**:
+
+```toml
+REPORT_SMTP_USERNAME = "your-sender@gmail.com"
+REPORT_SMTP_APP_PASSWORD = "your-google-app-password"
+```
+
+Use a dedicated Google App Password; never add the real value to the
+repository. `.streamlit/secrets.toml.example` contains the supported names,
+while `.streamlit/secrets.toml` is ignored by Git.
+
 The monthly workflow
 `.github/workflows/refresh-screener-fundamentals.yml` refreshes and validates
 the complete dataset, then commits it to `main`. Normal scans and chart

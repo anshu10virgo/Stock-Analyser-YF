@@ -12,6 +12,79 @@ VALUATION_PERIOD_DAYS = {
     "10Y": 10 * 365,
 }
 
+PRICE_RANGE_BUTTONS = (
+    {"count": 6, "label": "6M", "step": "month", "stepmode": "backward"},
+    {"count": 1, "label": "1Y", "step": "year", "stepmode": "backward"},
+    {"count": 3, "label": "3Y", "step": "year", "stepmode": "backward"},
+    {"count": 5, "label": "5Y", "step": "year", "stepmode": "backward"},
+    {"count": 10, "label": "10Y", "step": "year", "stepmode": "backward"},
+    {"label": "Max", "step": "all"},
+)
+
+
+def build_stock_detail_figure(symbol, df, cross_date=None, trough_dates=None):
+    """Build the reusable full-history price and moving-average figure."""
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Candlestick(
+            x=df.index,
+            open=df["Open"],
+            high=df["High"],
+            low=df["Low"],
+            close=df["Close"],
+            name="Price",
+            hovertext=symbol,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df["MA_SHORT"],
+            name="Short MA",
+            hovertemplate="%{x|%d %b %Y}<br>Short MA: %{y:.2f}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df["MA_LONG"],
+            name="Long MA",
+            hovertemplate="%{x|%d %b %Y}<br>Long MA: %{y:.2f}<extra></extra>",
+        )
+    )
+
+    if cross_date is not None and pd.notna(cross_date):
+        fig.add_vline(
+            x=cross_date,
+            line_width=2,
+            line_dash="dash",
+            annotation_text=f"Golden Cross: {cross_date:%d %b %Y}",
+            annotation_position="top left",
+        )
+
+    for date in trough_dates or ():
+        fig.add_vline(x=date, line_width=1)
+
+    fig.update_layout(
+        height=700,
+        dragmode="zoom",
+        hovermode="x unified",
+        margin={"l": 10, "r": 10, "t": 50, "b": 10},
+        xaxis={
+            "rangeslider": {"visible": True, "thickness": 0.08},
+            "rangeselector": {
+                "buttons": list(PRICE_RANGE_BUTTONS),
+                "x": 0,
+                "y": 1.08,
+            },
+            "showspikes": True,
+            "spikemode": "across",
+        },
+        yaxis={"fixedrange": False},
+    )
+    return fig
+
 
 def render_stock_detail(
     symbol,
@@ -22,63 +95,17 @@ def render_stock_detail(
 
     st.subheader(symbol)
 
-    fig = go.Figure()
-
-    fig.add_trace(
-        go.Candlestick(
-            x=df.index,
-            open=df["Open"],
-            high=df["High"],
-            low=df["Low"],
-            close=df["Close"],
-            name="Price"
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=df.index,
-            y=df["MA_SHORT"],
-            name="Short MA"
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=df.index,
-            y=df["MA_LONG"],
-            name="Long MA"
-        )
-    )
-
-    if cross_date is not None and pd.notna(cross_date):
-
-        fig.add_vline(
-            x=cross_date,
-            line_width=2,
-            line_dash="dash",
-            annotation_text=(
-                f"Golden Cross: {cross_date:%d %b %Y}"
-            ),
-            annotation_position="top left",
-        )
-
-    if trough_dates:
-
-        for date in trough_dates:
-
-            fig.add_vline(
-                x=date,
-                line_width=1
-            )
-
-    fig.update_layout(
-        height=700
-    )
+    fig = build_stock_detail_figure(symbol, df, cross_date, trough_dates)
 
     st.plotly_chart(
         fig,
-        width="stretch"
+        width="stretch",
+        config={
+            "displaylogo": False,
+            "scrollZoom": True,
+            "modeBarButtonsToAdd": ["pan2d", "resetScale2d"],
+        },
+        key=f"price_ma_chart_{symbol}",
     )
 
 

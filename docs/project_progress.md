@@ -50,12 +50,16 @@ Status: Active Development
 - Branded colour system and bull/bear market artwork
 - Configurable scanner controls and scan-size selection
 - Formatted qualified-stock table with latest scan timestamp
-- Interactive one-year selected-stock chart
+- Interactive full-history selected-stock chart with 6M through Max periods,
+  zoom, pan, reset, hover details, and range navigation
 - Golden Cross date marker on charts
 - Score details that expand without reloading chart history
 - Effective source, fallback, timing, and fundamentals coverage diagnostics
 - Selected-stock historical P/E and TTM EPS chart with six time periods
 - Filter-level missing-data labels without an additional result split
+- Company overview ratios, market cap in crore, and separate 3Y growth cards
+- Multi-recipient report email with filters-first Excel and maximum-period
+  price-chart ZIP attachments
 
 ## Current Hardening Work
 
@@ -65,13 +69,11 @@ Status: Active Development
 
 ## Current Sprint
 
-- Nine optional valuation, growth, quality, leverage, and market-cap filters.
-- Ordered dropdown builder with no filters selected by default.
-- Current P/E compared with median Industry P/E and the stock's own available
-  historical average P/E.
-- Lenient missing-data handling with filter-level availability labels.
-- One-load committed Screener summary access and no live scan scraping.
-- Removal of the legacy ten-post-cross-session optional check.
+- Rich selected-stock overview without changing scanner qualification.
+- Full retained-history price/MA exploration and maximum-period chart export.
+- Filters-first Excel reports for both technical result groups.
+- Session-only, secret-managed multi-recipient email delivery with safe
+  attachment batching.
 
 ## Current Risks
 
