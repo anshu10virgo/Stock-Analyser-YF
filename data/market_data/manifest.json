@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-08-19T13:29:05.906474+00:00",
-  "refreshed_at": "2026-08-19T13:29:05.906474+00:00",
-  "history_start": "2016-08-19",
-  "history_end": "2026-08-19",
-  "last_trading_date": "2026-08-19",
+  "generated_at": "2026-08-20T13:31:17.006656+00:00",
+  "refreshed_at": "2026-08-20T13:31:17.006656+00:00",
+  "history_start": "2016-08-22",
+  "history_end": "2026-08-20",
+  "last_trading_date": "2026-08-20",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
   "symbol_count": 2056,
@@ -68,17 +68,17 @@
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "29b5b34f9c8f39c57799d1d6b03e9a64dcda1c83591de71e34dbb7ec33797e46",
-      "size_bytes": 8671098
+      "sha256": "651cd93dce74109bd327e6637b448d29df47c05dbbc1f946ff22488862ab00d0",
+      "size_bytes": 8719195
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "3e199caadfe4ed2557825f8eabc6415c0d78d0df461656c80258325e0af88926"
+    "sha256": "d331c8a2e4d886c9bb4fd1d23c96ef0f44e04490539e1b74d5a552d99ca05f9d"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "dee997daa30c646a0d4696bc75ea3d74d9d83e7e256327c6cf0aae82d41bf0bb"
+    "sha256": "b99683239d853e94fc604f924a730c40a0e489c7ccffc7620a8d77046c522386"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
@@ -89,15 +89,15 @@
     "sha256": "9930f9710526276003d3147b2acd795f222d647ab18a6d00fc0a15300bb2ecea"
   },
   "fundamentals_coverage": {
-    "pe": 1805,
-    "peg_ratio": 1044,
-    "eps": 2037,
+    "pe": 1812,
+    "peg_ratio": 1047,
+    "eps": 2044,
     "sector": 1987,
     "industry": 1987,
     "industries_with_valuations": 119
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "40383c805cf8aa018d5d52f629f9063f75864104c6cd41aae771eae741c0429c"
+    "sha256": "aad6ddb46b03685b544b5e81df43b6fcd943fd99056851161ab23cdf76711000"
   }
 }
