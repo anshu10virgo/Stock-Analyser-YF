@@ -1,50 +1,50 @@
 {
   "schema_version": 1,
   "source": "screener.in",
-  "generated_at": "2026-08-01T22:43:49.792457+00:00",
+  "generated_at": "2026-08-23T18:06:55.829859+00:00",
   "universe_sha256": "9db7f51a81f20810593bdaa0c3bc7607b95aab29018369ffe2f3fca743e9462f",
   "requested_symbol_count": 2056,
-  "successful_symbol_count": 1674,
-  "failed_symbol_count": 382,
-  "historical_observation_count": 601595,
+  "successful_symbol_count": 1679,
+  "failed_symbol_count": 377,
+  "historical_observation_count": 605587,
   "batch_size": 10,
   "batch_sleep_seconds": 5.0,
   "summary_file": {
-    "path": "snapshots/fundamental_metrics_20260801T224349Z.csv",
-    "sha256": "d55b781e6f72106322f688f0bce78c2c8ae23281ce54b6d2f61dd52d6ff5bb00"
+    "path": "snapshots/fundamental_metrics_20260823T180655Z.csv",
+    "sha256": "d8d285de3ba693ffd0c3ebaceef286449a8723b76345d0df53b2d11957bbad8f"
   },
   "history_file": {
-    "path": "snapshots/historical_valuation_20260801T224349Z.parquet",
-    "sha256": "755ab524b48fd47d6b8ba1b9b09425d45a6df4e35ae6941b987153af8e7ac44d"
+    "path": "snapshots/historical_valuation_20260823T180655Z.parquet",
+    "sha256": "a79d4a43e74ef5ead43c5c3bfaaeac2cdfbda567744a971df7ff01253f6b6761"
   },
   "coverage_file": {
-    "path": "snapshots/coverage_20260801T224349Z.csv",
-    "sha256": "212f80dd7b725bf33226669d0de611f294b055500faee805b1e712527d6ed5a8"
+    "path": "snapshots/coverage_20260823T180655Z.csv",
+    "sha256": "6d6362bd2cb9cd0a4bed07f80743b21b98f68245831f80bac2f367da6b9aa79b"
   },
   "metric_coverage": {
-    "financial_reporting_date": 1674,
-    "pe_average_3y": 1674,
-    "pe_median_3y": 1674,
-    "pe_average_5y": 1674,
-    "pe_median_5y": 1674,
-    "pe_average_10y": 1674,
-    "pe_median_10y": 1674,
-    "sales_growth_3y": 1538,
-    "sales_growth_5y": 1318,
-    "sales_growth_10y": 942,
-    "profit_growth_3y": 1463,
-    "profit_growth_5y": 1356,
-    "profit_growth_10y": 1080,
-    "eps_growth_3y": 1266,
-    "eps_growth_5y": 1074,
-    "eps_growth_10y": 748,
+    "financial_reporting_date": 1679,
+    "pe_average_3y": 1679,
+    "pe_median_3y": 1679,
+    "pe_average_5y": 1679,
+    "pe_median_5y": 1679,
+    "pe_average_10y": 1679,
+    "pe_median_10y": 1679,
+    "sales_growth_3y": 1541,
+    "sales_growth_5y": 1315,
+    "sales_growth_10y": 938,
+    "profit_growth_3y": 1458,
+    "profit_growth_5y": 1371,
+    "profit_growth_10y": 1084,
+    "eps_growth_3y": 1265,
+    "eps_growth_5y": 1072,
+    "eps_growth_10y": 747,
     "debt_to_equity": 1552,
     "roe": 1645,
-    "opm": 1584
+    "opm": 1589
   },
   "provider_metrics": {
-    "requests": 5844,
-    "retries": 1734,
+    "requests": 6604,
+    "retries": 2494,
     "failures": 2
   }
 }
