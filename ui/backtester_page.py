@@ -1,0 +1,111 @@
+"""Backtester workflow page."""
+
+from __future__ import annotations
+
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+
+from core.indicators import Indicators
+from models.scan_config import ScanConfig
+from services.backtest_service import BacktestService
+from services.data_source import LIVE_SOURCE, build_data_services
+from services.stock_universe import StockUniverse
+from ui.stock_detail import PRICE_RANGE_BUTTONS
+
+
+def _config(settings: dict | None) -> ScanConfig:
+    settings = settings or {}
+    return ScanConfig(
+        settings.get("short_ma", 50), settings.get("long_ma", 200),
+        settings.get("cross_age", 80), settings.get("min_long_ma_decline_duration", 60),
+        settings.get("min_long_ma_decline", 10), settings.get("max_price_premium", 10),
+        adjusted_prices=False,
+    )
+
+
+def render_backtester_page(project_root) -> None:
+    symbols = st.session_state.get("selected_symbols", [])
+    if not symbols:
+        st.info("Complete Setup before running a backtest.")
+        return
+    config = _config(st.session_state.get("backtest_settings"))
+    universe = StockUniverse(project_root / "data" / "stock_universe")
+    names = {}
+    try:
+        universe_frame = pd.read_csv(universe.active_file())
+        names = universe_frame.set_index("Symbol")["Company Name"].dropna().to_dict()
+    except (OSError, KeyError, pd.errors.ParserError):
+        pass
+    st.subheader("Backtester")
+    st.caption("Replay your Post Golden Cross strategy against historical prices.")
+    with st.container(border=True):
+        st.subheader("Strategy summary")
+        summary = st.columns(3)
+        summary[0].caption(f"**Moving averages**  {config.short_ma} / {config.long_ma}")
+        summary[1].caption(f"**Cross age**  {config.max_cross_age} days")
+        summary[2].caption("**Short-MA slope**  Positive, 5 sessions")
+        summary[0].caption(f"**Long-MA decline**  ≥{config.min_long_ma_decline}%")
+        summary[1].caption(f"**Decline duration**  ≥{config.min_long_ma_decline_duration} sessions")
+        summary[2].caption("**Long-MA recovery**  Positive")
+        summary[0].caption("**Price position**  Close above Long MA")
+        summary[1].caption(f"**Maximum premium**  {config.max_price_premium}%")
+        summary[2].caption("**Price data**  Unadjusted")
+    selected = st.multiselect("Stocks to backtest", symbols, default=[], format_func=lambda symbol: f"{symbol} — {names.get(symbol, symbol)}", placeholder="Type to filter ticker or company")
+    period = st.radio("Test period", ("1Y", "3Y", "5Y", "10Y"), horizontal=True, index=3)
+    if not st.button("Run Backtest", type="primary", disabled=not selected):
+        services = build_data_services(LIVE_SOURCE, project_root)
+        years = int(period[:-1])
+        batch = services.history.download_batch(selected, years=years + 2, adjusted_prices=False)
+        engine = BacktestService(config, services.screener)
+        rows = []
+        charts = {}
+        for symbol in selected:
+            history = services.history.get_symbol_history(batch, symbol)
+            charts[symbol] = Indicators.add_moving_averages(history, config.short_ma, config.long_ma)
+            run = engine.replay_symbol(symbol, history)
+            for signal in run.signals:
+                rows.append({"Stock": symbol, "Company": names.get(symbol), "Cross date": signal.cross_date.date(), "Signal date": signal.signal_date.date(), "Entry": signal.entry_price, "P/E": signal.pe, **signal.returns})
+        st.session_state["backtest_results"] = pd.DataFrame(rows)
+        st.session_state["backtest_charts"] = charts
+    results = st.session_state.get("backtest_results")
+    if results is not None:
+        st.subheader("Historical results")
+        if results.empty:
+            st.warning("No historical signals qualified for the selected stocks and period.")
+        else:
+            one_year = results["1Y"].dropna()
+            metrics = st.columns(4)
+            metrics[0].metric("Signals", len(results))
+            metrics[1].metric("Signals with 1Y data", len(one_year))
+            metrics[2].metric("Average 1Y return", f"{one_year.mean():+.1f}%" if not one_year.empty else "N/A")
+            metrics[3].metric("Median 1Y return", f"{one_year.median():+.1f}%" if not one_year.empty else "N/A")
+            formats = {"Cross date": st.column_config.DateColumn(format="DD MMM YYYY"), "Signal date": st.column_config.DateColumn(format="DD MMM YYYY"), "Entry": st.column_config.NumberColumn(format="%.2f"), "P/E": st.column_config.NumberColumn(format="%.2f")}
+            formats.update({horizon: st.column_config.NumberColumn(format="%.2f%%") for horizon in ("1W", "2W", "3W", "1M", "3M", "6M", "1Y")})
+            st.dataframe(results, width="stretch", hide_index=True, column_config=formats)
+            with st.expander("Show stock chart"):
+                chart_symbol = st.selectbox("Stock chart", sorted(results["Stock"].unique()))
+                chart_data = st.session_state.get("backtest_charts", {}).get(chart_symbol)
+                if chart_data is not None and not chart_data.empty:
+                    figure = go.Figure()
+                    for column, label, colour in (("Close", "Close", "#26324B"), ("MA_SHORT", f"Short MA {config.short_ma}", "#16A085"), ("MA_LONG", f"Long MA {config.long_ma}", "#E67E22")):
+                        figure.add_scatter(x=chart_data.index, y=chart_data[column], name=label, line={"color": colour})
+                    signals = results.loc[results["Stock"].eq(chart_symbol)]
+                    figure.add_scatter(x=signals["Signal date"], y=[chart_data.loc[:pd.Timestamp(date), "Close"].iloc[-1] for date in signals["Signal date"]], name="Signals", mode="markers", marker={"color": "white", "line": {"color": "#26324B", "width": 2}, "size": 10})
+                    figure.update_layout(
+                        height=600,
+                        dragmode="zoom",
+                        hovermode="x unified",
+                        margin={"l": 10, "r": 10, "t": 50, "b": 10},
+                        paper_bgcolor="#F8FAFC",
+                        plot_bgcolor="#F8FAFC",
+                        xaxis={
+                            "rangeslider": {"visible": True, "thickness": 0.08},
+                            "rangeselector": {"buttons": list(PRICE_RANGE_BUTTONS), "x": 0, "y": 1.08},
+                            "showspikes": True,
+                            "spikemode": "across",
+                        },
+                        yaxis={"fixedrange": False},
+                    )
+                    st.plotly_chart(figure, width="stretch", config={"displaylogo": False, "scrollZoom": True})
+            st.caption("Historical, hypothetical results — not investment advice.")

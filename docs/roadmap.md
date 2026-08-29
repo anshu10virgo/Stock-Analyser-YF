@@ -63,7 +63,7 @@ technical qualification, technical scoring, or the two result groups.
 - Automated tests cover rule boundaries, partial history, missing snapshots,
   session reruns, and result formatting.
 
-## Active Sprint — Result Detail and Email Reporting
+## Completed — Result Detail and Email Reporting
 
 ### Goal
 
@@ -95,6 +95,51 @@ P/E and TTM EPS chart.
 - Tests cover display formatting, chart controls, workbook order, recipient
   validation, attachment batching, and SMTP delivery.
 
+## Completed — Historical Golden Cross Backtester
+
+### Goal
+
+Let users replay the active Post Golden Cross strategy against historical
+prices for selected Setup-universe stocks, without changing Live Scan results.
+
+### Scope
+
+- Commit the refreshed ranked stock-universe snapshot and change the Setup
+  default from 1,500 to 2,000 stocks, capped by the available universe.
+- Add Backtester as the fifth workflow option and rename Results to Golden
+  Cross Results.
+- Reuse the complete Post Golden Cross rules with point-in-time evaluation:
+  actual MA cross, cross age, MA slope, Long-MA decline/recovery, price-above-
+  Long-MA, and maximum price premium checks.
+- Produce one signal at the first qualifying close after each actual Golden
+  Cross; do not repeat it until a new actual cross occurs.
+- Enter at the next available trading session's unadjusted Open price.
+- Calculate actual historical returns after 1W, 2W, 3W, 1M, 3M, 6M, and 1Y;
+  show N/A when the future price history is insufficient.
+- Add searchable multi-select stock selection from the Setup universe and 1Y,
+  3Y, 5Y, and 10Y test-period controls.
+- Show all active strategy parameters, signal-level P/E context, a result row
+  for every historical signal, summary metrics, and a selected-stock chart.
+- Use the established app theme and Results chart colours: Close navy, Short
+  MA teal, and Long MA orange.
+- Exclude dividends, fees, slippage, exit rules, re-entry, short positions,
+  leverage, and portfolio allocation from this fixed-horizon MVP.
+
+### Acceptance Criteria
+
+- Backtest signals use no data that was unavailable on their signal date.
+- Every signal uses the next available Open price as its entry.
+- A stock can display multiple historical signals, with no duplicate signal for
+  the same actual Golden Cross.
+- Historical P/E uses the latest stored observation on or before the signal
+  date and does not affect qualification.
+- Live Scan session state and results remain independent of Backtester state.
+- Results show Signals, Signals with 1Y data, average 1Y return, and median
+  1Y return, without a win-rate metric.
+- Automated tests cover signal timing, duplicate prevention, entry timing,
+  return horizons, historical P/E selection, multi-stock selection, and the
+  Setup default handoff.
+
 ## Release 1.1 — Reliability and Auditability
 
 - Structured failure results for every symbol and scanner stage.
@@ -119,6 +164,69 @@ P/E and TTM EPS chart.
 - Saved scan configuration profiles.
 - Filters, sorting, and mobile-friendly result exploration.
 - Clear scan history and result timestamping.
+
+## Future — Advanced Backtesting
+
+### Goal
+
+Extend the historical Golden Cross backtester from fixed forward-return
+measurement into optional trade and portfolio simulation.
+
+### Scope
+
+- Configurable exits: fixed holding period, profit target, stop loss, or a
+  Death Cross exit.
+- Portfolio allocation: equal allocation, fixed amount per signal, and a
+  maximum number of open positions.
+- Re-entry: permit a new trade only after the previous trade in that stock has
+  exited and a later, new valid Golden Cross signal occurs.
+- Keep broker fees, taxes, and slippage out of scope.
+
+### Acceptance Criteria
+
+- Every simulated trade records its entry date, entry price, exit date, exit
+  price, exit reason, and realised return.
+- Allocation rules never invest more capital than is available.
+- Re-entry never duplicates an open trade or reuses the same Golden Cross.
+- Fixed-horizon Backtester results remain available independently of this
+  optional simulation mode.
+
+## Future — United States Market Expansion
+
+### Goal
+
+Extend Stock Analyser to support a separate United States universe while
+preserving the existing NSE workflow and data sets.
+
+### Scope
+
+- Add a market selector for India — NSE and United States — S&P 500.
+- Maintain a versioned, market-cap-ranked S&P 500 stock universe with company
+  names and exchange tickers.
+- Use SEC Company Facts filings for historical annual and quarterly financial
+  statements, with bounded retries, fair-use throttling, and auditable refresh
+  results.
+- Use Yahoo Finance raw historical prices for technical indicators and price-
+  based valuation calculations.
+- Retain at least ten years of annual history where available and quarterly
+  history for the most recent five years where available.
+- Calculate US equivalents of the existing fundamental metrics, including
+  revenue and profit growth, EPS growth, debt-to-equity, ROE, operating margin,
+  P/E, and PEG with clearly documented definitions.
+- Keep country-specific field mappings and formula differences explicit rather
+  than mixing US and NSE data in one source model.
+
+### Acceptance Criteria
+
+- Users can switch markets without mixing NSE and US symbols, prices, or
+  fundamentals.
+- The S&P 500 universe and financial snapshots are versioned and reproducible.
+- Historical P/E uses raw price and point-in-time trailing EPS, without using
+  dividend-adjusted prices.
+- Missing, amended, or non-comparable SEC filing data is labelled unavailable
+  rather than silently substituted.
+- US data refreshes and calculations have automated coverage for mapping,
+  point-in-time selection, and formula boundaries.
 
 ## Release 1.4 — Production Operations
 
