@@ -227,7 +227,7 @@ def render_strategy_page() -> None:
                 "market_data_source": source,
             }
             _navigate_to("3. Live Scan")
-    if actions[1].button("Backtest a stock"):
+    if actions[1].button("Backtest a stock", type="primary"):
         try:
             _build_config(settings).validate()
         except ValueError as error:
