@@ -10,6 +10,7 @@ from core.indicators import Indicators
 from models.scan_config import ScanConfig
 from services.backtest_service import BacktestService
 from services.data_source import LIVE_SOURCE, build_data_services
+from services.stock_universe import StockUniverse
 
 
 def _config(settings: dict | None) -> ScanConfig:
@@ -28,10 +29,17 @@ def render_backtester_page(project_root) -> None:
         st.info("Complete Setup before running a backtest.")
         return
     config = _config(st.session_state.get("backtest_settings"))
+    universe = StockUniverse(project_root / "data" / "stock_universe")
+    names = {}
+    try:
+        universe_frame = pd.read_csv(universe.active_file())
+        names = universe_frame.set_index("Symbol")["Company Name"].dropna().to_dict()
+    except (OSError, KeyError, pd.errors.ParserError):
+        pass
     st.subheader("Backtester")
     st.caption("Replay your Post Golden Cross strategy against historical prices.")
     st.info(f"Strategy summary: {config.short_ma} / {config.long_ma} MA · Cross age: {config.max_cross_age} days · Positive 5-session Short-MA slope · Long-MA decline ≥{config.min_long_ma_decline}% for ≥{config.min_long_ma_decline_duration} sessions · Positive recovery · Close above Long MA · Max premium {config.max_price_premium}% · Unadjusted prices")
-    selected = st.multiselect("Stocks to backtest", symbols, default=symbols[:1], placeholder="Type to filter ticker")
+    selected = st.multiselect("Stocks to backtest", symbols, default=symbols[:1], format_func=lambda symbol: f"{symbol} — {names.get(symbol, symbol)}", placeholder="Type to filter ticker or company")
     period = st.radio("Test period", ("1Y", "3Y", "5Y", "10Y"), horizontal=True, index=3)
     if not st.button("Run Backtest", type="primary", disabled=not selected):
         services = build_data_services(LIVE_SOURCE, project_root)
@@ -46,7 +54,7 @@ def render_backtester_page(project_root) -> None:
             run = engine.replay_symbol(symbol, history)
             for signal in run.signals:
                 pe_age = None if signal.pe_date is None else (signal.signal_date.date() - signal.pe_date.date()).days
-                rows.append({"Stock": symbol, "Cross date": signal.cross_date, "Signal date": signal.signal_date, "Entry": signal.entry_price, "P/E": signal.pe, "P/E date": signal.pe_date, "P/E age": pe_age, **signal.returns})
+                rows.append({"Stock": symbol, "Company": names.get(symbol), "Cross date": signal.cross_date, "Signal date": signal.signal_date, "Entry": signal.entry_price, "P/E": signal.pe, "P/E date": signal.pe_date, "P/E age": pe_age, **signal.returns})
         st.session_state["backtest_results"] = pd.DataFrame(rows)
         st.session_state["backtest_charts"] = charts
     results = st.session_state.get("backtest_results")
