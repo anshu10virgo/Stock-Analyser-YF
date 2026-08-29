@@ -95,14 +95,12 @@ P/E and TTM EPS chart.
 - Tests cover display formatting, chart controls, workbook order, recipient
   validation, attachment batching, and SMTP delivery.
 
-## Active Sprint — Historical Golden Cross Backtester
+## Completed — Historical Golden Cross Backtester
 
 ### Goal
 
 Let users replay the active Post Golden Cross strategy against historical
 prices for selected Setup-universe stocks, without changing Live Scan results.
-
-**Status: Completed.**
 
 ### Scope
 
