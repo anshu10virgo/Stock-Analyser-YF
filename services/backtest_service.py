@@ -50,6 +50,14 @@ class BacktestService:
         latest = history.iloc[-1]
         return float(latest["pe"]), latest["date"].to_pydatetime()
 
+    @staticmethod
+    def _forward_returns(history: pd.DataFrame, entry_position: int, entry_price: float) -> dict[str, float | None]:
+        returns = {}
+        for label, sessions in HORIZON_SESSIONS.items():
+            exit_position = entry_position + sessions
+            returns[label] = None if exit_position >= len(history) else round(((history.iloc[exit_position]["Close"] / entry_price) - 1) * 100, 2)
+        return returns
+
     def replay_symbol(self, symbol: str, prices: pd.DataFrame) -> BacktestRun:
         run = BacktestRun()
         if prices.empty or not {"Open", "Close"}.issubset(prices.columns):
@@ -69,10 +77,7 @@ class BacktestService:
                 entry_price = history.iloc[entry_position]["Open"]
                 if pd.isna(entry_price) or entry_price <= 0:
                     break
-                returns = {}
-                for label, sessions in HORIZON_SESSIONS.items():
-                    exit_position = entry_position + sessions
-                    returns[label] = None if exit_position >= len(history) else round(((history.iloc[exit_position]["Close"] / entry_price) - 1) * 100, 2)
+                returns = self._forward_returns(history, entry_position, float(entry_price))
                 pe, pe_date = self._pe_at(symbol, partial.index[-1])
                 run.signals.append(BacktestSignal(symbol, cross_index.to_pydatetime(), partial.index[-1].to_pydatetime(), history.index[entry_position].to_pydatetime(), float(entry_price), returns, pe, pe_date))
                 break

@@ -1,6 +1,7 @@
 import unittest
 
 import pandas as pd
+import numpy as np
 
 from models.backtest import HORIZON_SESSIONS
 from models.scan_config import ScanConfig
@@ -31,6 +32,21 @@ class BacktestServiceTests(unittest.TestCase):
         cross_date = pd.Timestamp("2024-01-01")
         self.assertTrue(service._within_cross_age(cross_date, pd.Timestamp("2024-03-21")))
         self.assertFalse(service._within_cross_age(cross_date, pd.Timestamp("2024-03-22")))
+
+    def test_forward_returns_use_next_session_entry_and_available_close(self):
+        history = pd.DataFrame({"Open": [90.0] * 7, "Close": [90.0, 100.0, 105.0, 106.0, 107.0, 108.0, 110.0]})
+        returns = BacktestService._forward_returns(history, 1, 100.0)
+        self.assertEqual(returns["1W"], 10.0)
+        self.assertIsNone(returns["2W"])
+
+    def test_one_signal_is_recorded_for_one_actual_cross(self):
+        dates = pd.bdate_range("2020-01-01", periods=600)
+        closes = np.r_[np.full(300, 100.0), np.linspace(101.0, 300.0, 300)]
+        prices = pd.DataFrame({"Open": closes, "Close": closes}, index=dates)
+        service = BacktestService(ScanConfig(50, 200, 80, 60, 10, 10))
+        service._qualifies = lambda history: True
+        run = service.replay_symbol("TEST.NS", prices)
+        self.assertEqual(len(run.signals), 1)
 
 
 if __name__ == "__main__":
