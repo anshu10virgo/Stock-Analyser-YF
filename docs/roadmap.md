@@ -102,7 +102,7 @@ P/E and TTM EPS chart.
 Let users replay the active Post Golden Cross strategy against historical
 prices for selected Setup-universe stocks, without changing Live Scan results.
 
-**Status: In progress.**
+**Status: Completed.**
 
 ### Scope
 
