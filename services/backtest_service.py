@@ -37,6 +37,9 @@ class BacktestService:
         premium = Indicators.distance_from_ma(latest["Close"], latest["MA_LONG"])
         return premium <= self.config.max_price_premium
 
+    def _within_cross_age(self, cross_date: pd.Timestamp, evaluation_date: pd.Timestamp) -> bool:
+        return (evaluation_date - cross_date).days <= self.config.max_cross_age
+
     def _pe_at(self, symbol: str, signal_date: pd.Timestamp):
         if self.screener_provider is None:
             return None, None
@@ -56,9 +59,10 @@ class BacktestService:
         crosses = (history["MA_SHORT"].shift(1).le(history["MA_LONG"].shift(1)) & history["MA_SHORT"].gt(history["MA_LONG"]))
         for cross_index in history.index[crosses]:
             cross_position = history.index.get_loc(cross_index)
-            max_position = min(len(history) - 2, cross_position + self.config.max_cross_age)
-            for position in range(cross_position, max_position + 1):
+            for position in range(cross_position, len(history) - 1):
                 partial = history.iloc[: position + 1]
+                if not self._within_cross_age(cross_index, partial.index[-1]):
+                    break
                 if not self._qualifies(partial):
                     continue
                 entry_position = position + 1

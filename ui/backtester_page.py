@@ -45,7 +45,8 @@ def render_backtester_page(project_root) -> None:
             charts[symbol] = Indicators.add_moving_averages(history, config.short_ma, config.long_ma)
             run = engine.replay_symbol(symbol, history)
             for signal in run.signals:
-                rows.append({"Stock": symbol, "Cross date": signal.cross_date, "Signal date": signal.signal_date, "Entry": signal.entry_price, "P/E": signal.pe, **signal.returns})
+                pe_age = None if signal.pe_date is None else (signal.signal_date.date() - signal.pe_date.date()).days
+                rows.append({"Stock": symbol, "Cross date": signal.cross_date, "Signal date": signal.signal_date, "Entry": signal.entry_price, "P/E": signal.pe, "P/E date": signal.pe_date, "P/E age": pe_age, **signal.returns})
         st.session_state["backtest_results"] = pd.DataFrame(rows)
         st.session_state["backtest_charts"] = charts
     results = st.session_state.get("backtest_results")

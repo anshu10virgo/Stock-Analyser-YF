@@ -26,6 +26,12 @@ class BacktestServiceTests(unittest.TestCase):
         self.assertEqual(pe, 20.0)
         self.assertEqual(date.date().isoformat(), "2024-01-01")
 
+    def test_cross_age_uses_calendar_days(self):
+        service = BacktestService(ScanConfig(50, 200, 80, 60, 10, 10))
+        cross_date = pd.Timestamp("2024-01-01")
+        self.assertTrue(service._within_cross_age(cross_date, pd.Timestamp("2024-03-21")))
+        self.assertFalse(service._within_cross_age(cross_date, pd.Timestamp("2024-03-22")))
+
 
 if __name__ == "__main__":
     unittest.main()
