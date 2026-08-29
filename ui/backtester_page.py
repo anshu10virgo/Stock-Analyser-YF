@@ -11,6 +11,7 @@ from models.scan_config import ScanConfig
 from services.backtest_service import BacktestService
 from services.data_source import LIVE_SOURCE, build_data_services
 from services.stock_universe import StockUniverse
+from ui.stock_detail import PRICE_RANGE_BUTTONS
 
 
 def _config(settings: dict | None) -> ScanConfig:
@@ -91,6 +92,20 @@ def render_backtester_page(project_root) -> None:
                         figure.add_scatter(x=chart_data.index, y=chart_data[column], name=label, line={"color": colour})
                     signals = results.loc[results["Stock"].eq(chart_symbol)]
                     figure.add_scatter(x=signals["Signal date"], y=[chart_data.loc[:pd.Timestamp(date), "Close"].iloc[-1] for date in signals["Signal date"]], name="Signals", mode="markers", marker={"color": "white", "line": {"color": "#26324B", "width": 2}, "size": 10})
-                    figure.update_layout(height=380, margin={"l": 10, "r": 10, "t": 30, "b": 10}, paper_bgcolor="#F8FAFC", plot_bgcolor="#F8FAFC")
-                    st.plotly_chart(figure, width="stretch")
+                    figure.update_layout(
+                        height=600,
+                        dragmode="zoom",
+                        hovermode="x unified",
+                        margin={"l": 10, "r": 10, "t": 50, "b": 10},
+                        paper_bgcolor="#F8FAFC",
+                        plot_bgcolor="#F8FAFC",
+                        xaxis={
+                            "rangeslider": {"visible": True, "thickness": 0.08},
+                            "rangeselector": {"buttons": list(PRICE_RANGE_BUTTONS), "x": 0, "y": 1.08},
+                            "showspikes": True,
+                            "spikemode": "across",
+                        },
+                        yaxis={"fixedrange": False},
+                    )
+                    st.plotly_chart(figure, width="stretch", config={"displaylogo": False, "scrollZoom": True})
             st.caption("Historical, hypothetical results — not investment advice.")
