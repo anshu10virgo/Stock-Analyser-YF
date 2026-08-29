@@ -1,0 +1,20 @@
+{
+  "refreshed_at": "2026-08-29",
+  "source_url": "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",
+  "candidate_symbol_count": 2287,
+  "validated_symbol_count": 2287,
+  "rejected_symbol_count": 0,
+  "provider_metrics": {
+    "requests": 23,
+    "cache_hits": 0,
+    "cache_misses": 23,
+    "retries": 0,
+    "failures": 0
+  },
+  "market_cap_provider_metrics": {
+    "requests": 34,
+    "failures": 0
+  },
+  "market_cap_ranked_symbol_count": 2104,
+  "rejected_symbols": []
+}

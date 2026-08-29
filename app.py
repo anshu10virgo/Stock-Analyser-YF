@@ -15,6 +15,7 @@ from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_servic
 from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
 from ui.introduction_page import render_introduction
+from ui.backtester_page import render_backtester_page
 from ui.results_page import prepare_results, render_optional_failures, render_results
 from ui.scan_insights import render_scan_insights
 from ui.sidebar import render_scan_configuration
@@ -29,7 +30,8 @@ NAVIGATION_OPTIONS = (
     "1. Setup",
     "2. Strategy",
     "3. Live Scan",
-    "4. Results",
+    "4. Golden Cross Results",
+    "5. Backtester",
 )
 STOCK_UNIVERSE = StockUniverse(
     PROJECT_ROOT / "data" / "stock_universe",
@@ -141,7 +143,7 @@ def render_setup_page() -> None:
     if symbols:
         st.session_state["selected_symbols"] = symbols
         maximum = len(symbols)
-        current = min(int(st.session_state.get("stock_count", 1500)), maximum)
+        current = min(int(st.session_state.get("stock_count", 2000)), maximum)
         st.number_input(
             "Highest market-cap stocks to analyse",
             min_value=1,
@@ -201,7 +203,7 @@ def render_strategy_page() -> None:
         unsafe_allow_html=True,
     )
     settings = render_scan_configuration()
-    count = min(int(st.session_state.get("stock_count", 1500)), len(symbols))
+    count = min(int(st.session_state.get("stock_count", 2000)), len(symbols))
     source = st.session_state.get(MARKET_DATA_SESSION_KEY, LIVE_SOURCE)
     st.divider()
     review = st.columns(3)
@@ -212,7 +214,8 @@ def render_strategy_page() -> None:
         "Post + Impending" if settings["include_impending_crosses"] else "Post Cross",
     )
 
-    if st.button("Run scan", type="primary"):
+    actions = st.columns(2)
+    if actions[0].button("Run scan", type="primary"):
         try:
             _build_config(settings).validate()
         except ValueError as error:
@@ -224,6 +227,14 @@ def render_strategy_page() -> None:
                 "market_data_source": source,
             }
             _navigate_to("3. Live Scan")
+    if actions[1].button("Backtest a stock"):
+        try:
+            _build_config(settings).validate()
+        except ValueError as error:
+            st.error(str(error))
+        else:
+            st.session_state["backtest_settings"] = settings
+            _navigate_to("5. Backtester")
 
 
 def _live_update(index: int, total: int, run, placeholders: dict) -> None:
@@ -357,5 +368,7 @@ elif section == "2. Strategy":
     render_strategy_page()
 elif section == "3. Live Scan":
     render_live_scan_page()
-else:
+elif section == "4. Golden Cross Results":
     render_results_page()
+else:
+    render_backtester_page(PROJECT_ROOT)
