@@ -26,7 +26,7 @@
 
 ## Dashboard
 
-- Guided desktop workflow: Setup, Strategy, Live Scan, and Results
+- Guided desktop workflow: Setup, Strategy, Live Scan, Results, and Backtester
 - Display identity simplified to `Stock Analyser` while the repository name remains unchanged
 - Market, universe, data-source, and Top N choices grouped in Setup
 - Up to five named scan strategies stored only in the active Streamlit session
@@ -54,6 +54,21 @@
 - Single-row compact workflow navigation on mobile screens
 - Multi-recipient scan-report email with a filters-first workbook and
   maximum-period price-chart archives
+- Selected-stock Backtester with multiple historical Golden Cross signals,
+  next-session entry values, point-in-time P/E, and 1W through 1Y completed
+  return horizons
+
+## Ticksy
+
+- Ticksy local-data assistant launcher with a themed icon, session-only chat,
+  deterministic stock-status explanations, current-market summaries, stock
+  comparisons, historical Backtester reviews, calculation traces, and
+  confirmation before scan, Backtester, strategy, or navigation actions
+- Ticksy support for local positive-convergence crossover windows, parameter
+  help, scan health, data provenance, data dictionary, workflow guidance,
+  selected-universe lookup, plain-English local reports, and session notes
+- Gemini Flash initial provider with a disabled state when no configured key is
+  available and an OpenAI-ready provider setting
 
 ## Charts
 

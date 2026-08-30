@@ -12,7 +12,8 @@ python -m streamlit run app.py
 
 ## Current capabilities
 
-- Guided desktop workflow with Setup, Strategy, Live Scan, and Results stages.
+- Guided desktop workflow with Setup, Strategy, Live Scan, Results, and
+  Backtester stages.
 - Up to five named scan strategies stored only for the active app session;
   committed defaults are never overwritten.
 - Batched live progress, partial qualified results, and locally derived insights.
@@ -31,6 +32,75 @@ python -m streamlit run app.py
   growth, quality, leverage, and market-cap rules.
 - Lenient missing-data handling that retains stocks with a filter-level
   availability label rather than creating another result group.
+- Historical Golden Cross Backtester for selected Setup-universe stocks, with
+  1Y, 3Y, 5Y, and 10Y periods, point-in-time P/E context, and completed
+  forward-return horizons.
+- Ticksy, a local-data-only assistant with deterministic stock explanations,
+  current-market insights, comparisons, historical Backtester reviews,
+  confirmed actions, Gemini Flash as the initial provider, and an OpenAI-ready
+  provider setting.
+
+## Ticksy configuration
+
+Ticksy appears as a bottom-right launcher. It uses local project data for
+facts and calculations, and never uses web search, news, RAG, or external
+market-data retrieval. Python services remain the source of truth for scan and
+Backtester outcomes. Model requests are used only to understand user wording
+and present readable responses.
+
+Ticksy is disabled safely until the selected provider key is configured in
+Streamlit Secrets. For local development, create `.streamlit/secrets.toml`
+from `.streamlit/secrets.toml.example`. For Streamlit Community Cloud, open
+**App settings → Secrets** and add the same values there. Copy only the
+provider key you intend to use:
+
+```toml
+GEMINI_API_KEY = "your-gemini-api-key"
+# OPENAI_API_KEY = "your-openai-api-key"
+
+[assistant]
+provider = "gemini"
+gemini_model = "gemini-3.7-flash"
+openai_model = "gpt-5.6-terra"
+```
+
+Set `provider` to `openai` and configure `OPENAI_API_KEY` to switch providers;
+the Ticksy interface, guardrails, local tools, scanner, and Backtester remain
+unchanged. Never commit real API keys.
+
+## Manual stock-universe refresh
+
+The app does not refresh its stock list automatically. Approximately every six
+months, run the following maintenance command locally:
+
+```powershell
+python scripts/refresh_stock_universe.py
+```
+
+The command downloads NSE's official listed-equities source, keeps the selected
+NSE `EQ` series, converts symbols to Yahoo Finance NSE format (`.NS`),
+validates that Yahoo provides usable price history, retrieves Yahoo market caps,
+and stores the validated universe in descending market-cap order with a market-cap rank. Therefore, the app's Top N choice scans the largest N ranked companies. It then writes:
+
+```text
+data/stock_universe/
+  manifest.json
+  snapshots/nse_equity_YYYY-MM-DD.csv
+  validated/yahoo_nse_YYYY-MM-DD.csv
+  refresh_reports/YYYY-MM-DD.json
+```
+
+The app reads `manifest.json`, which explicitly identifies the active validated
+universe and records the count of symbols with stored market-cap ranks. Review
+the generated refresh report before committing all generated
+files together in a PR, for example:
+
+```text
+Refresh NSE Yahoo stock universe — YYYY-MM-DD
+```
+
+The script is intentionally not exposed in Streamlit, so a user cannot change
+the production universe accidentally.
 
 ## Committed market-data refresh
 
@@ -91,45 +161,10 @@ The monthly workflow
 the complete dataset, then commits it to `main`. Normal scans and chart
 expansion never make a live Screener request.
 
-## Manual stock-universe refresh
-
-The app does not refresh its stock list automatically. Approximately every six
-months, run the following maintenance command locally:
-
-```powershell
-python scripts/refresh_stock_universe.py
-```
-
-The command downloads NSE's official listed-equities source, keeps the selected
-NSE `EQ` series, converts symbols to Yahoo Finance NSE format (`.NS`),
-validates that Yahoo provides usable price history, retrieves Yahoo market caps,
-and stores the validated universe in descending market-cap order with a market-cap rank. Therefore, the app's Top N choice scans the largest N ranked companies. It then writes:
-
-```text
-data/stock_universe/
-  manifest.json
-  snapshots/nse_equity_YYYY-MM-DD.csv
-  validated/yahoo_nse_YYYY-MM-DD.csv
-  refresh_reports/YYYY-MM-DD.json
-```
-
-The app reads `manifest.json`, which explicitly identifies the active validated
-universe and records the count of symbols with stored market-cap ranks. Review
-the generated refresh report before committing all generated
-files together in a PR, for example:
-
-```text
-Refresh NSE Yahoo stock universe — YYYY-MM-DD
-```
-
-The script is intentionally not exposed in Streamlit, so a user cannot change
-the production universe accidentally.
-
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Business rules](docs/business_rules.md)
 - [Roadmap](docs/roadmap.md)
-- [Current TODO](docs/todo.md)
-- [Project rules](docs/project_rules.md)
+- [Features](docs/features.md)
 - [Committed market data](docs/market_data.md)

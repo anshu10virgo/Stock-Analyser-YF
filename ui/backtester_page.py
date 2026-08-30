@@ -39,6 +39,8 @@ def render_backtester_page(project_root) -> None:
         pass
     st.subheader("Backtester")
     st.caption("Replay your Post Golden Cross strategy against historical prices.")
+    request = st.session_state.pop("ticksy_backtest_request", None) or {}
+    requested_symbols = [symbol for symbol in request.get("symbols", []) if symbol in symbols]
     with st.container(border=True):
         st.subheader("Strategy summary")
         summary = st.columns(3)
@@ -53,7 +55,10 @@ def render_backtester_page(project_root) -> None:
         summary[2].caption("**Price data**  Unadjusted")
     selected = st.multiselect("Stocks to backtest", symbols, default=[], format_func=lambda symbol: f"{symbol} — {names.get(symbol, symbol)}", placeholder="Type to filter ticker or company")
     period = st.radio("Test period", ("1Y", "3Y", "5Y", "10Y"), horizontal=True, index=3)
-    if not st.button("Run Backtest", type="primary", disabled=not selected):
+    if requested_symbols:
+        selected = requested_symbols
+        period = request.get("period", period)
+    if st.button("Run Backtest", type="primary", disabled=not selected) or bool(requested_symbols):
         services = build_data_services(LIVE_SOURCE, project_root)
         years = int(period[:-1])
         batch = services.history.download_batch(selected, years=years + 2, adjusted_prices=False)
