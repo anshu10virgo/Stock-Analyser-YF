@@ -103,6 +103,16 @@ def _render_ticksy_panel() -> None:
                 if response is None:
                     try:
                         response = provider.respond(AssistantRequest(tuple(messages), build_local_context(st.session_state, prompt)))
+                    except requests.HTTPError as error:
+                        status_code = error.response.status_code if error.response is not None else None
+                        if status_code in {500, 502, 503, 504}:
+                            response = "Ticksy's configured provider is temporarily unavailable. Please try again in a moment. Your local app data remains unchanged."
+                        elif status_code == 429:
+                            response = "Ticksy's configured provider is currently rate-limited. Please try again shortly. Your local app data remains unchanged."
+                        elif status_code in {401, 403}:
+                            response = "Ticksy's configured provider rejected its API key or access settings. Check the provider key and its project permissions. Your local app data remains unchanged."
+                        else:
+                            response = "Ticksy could not complete the configured provider request. Your local app data remains unchanged."
                     except requests.RequestException:
                         response = "Ticksy could not reach the configured provider. Your local app data remains unchanged."
                     except RuntimeError as error:
