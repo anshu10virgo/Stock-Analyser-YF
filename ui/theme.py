@@ -107,7 +107,8 @@ def apply_app_theme() -> None:
             background: rgba(15, 139, 141, 0.08);
         }
         .st-key-workflow_navigation [role="radiogroup"] {
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 0.35rem;
             padding: 0.35rem;
             margin: 0 auto 0.75rem;
@@ -117,7 +118,8 @@ def apply_app_theme() -> None:
         }
         .st-key-workflow_navigation label[data-baseweb="radio"] {
             justify-content: center;
-            min-width: 7.25rem;
+            min-width: 0;
+            width: 100%;
             padding: 0.38rem 0.65rem;
             margin: 0;
             border: 1px solid #cbd8e6;
@@ -127,6 +129,7 @@ def apply_app_theme() -> None:
         }
         .st-key-workflow_navigation label[data-baseweb="radio"] p {
             font-size: 0.84rem;
+            white-space: nowrap;
         }
         .st-key-workflow_navigation label[data-baseweb="radio"] > div:first-child {
             display: none;
@@ -140,6 +143,25 @@ def apply_app_theme() -> None:
         .st-key-workflow_navigation label[data-baseweb="radio"]:has(input:checked) p {
             color: white;
             font-weight: 700;
+        }
+        .st-key-ticksy_launcher {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 1.25rem;
+            z-index: 1000;
+            width: 9.75rem;
+            margin: 0;
+        }
+        .st-key-ticksy_launcher button {
+            width: 100%;
+            white-space: nowrap;
+        }
+        .st-key-ticksy_panel [data-testid="stChatMessage"] {
+            padding: 0.55rem;
+            margin-bottom: 0.45rem;
+            border: 1px solid rgba(37, 99, 166, 0.12);
+            border-radius: 0.55rem;
+            background: rgba(248, 250, 252, 0.85);
         }
         @media (max-width: 768px) {
             .sa-app-header {
@@ -165,7 +187,7 @@ def apply_app_theme() -> None:
             }
             .st-key-workflow_navigation [role="radiogroup"] {
                 display: grid;
-                grid-template-columns: repeat(4, minmax(0, 1fr));
+                grid-template-columns: repeat(5, minmax(0, 1fr));
                 width: 100%;
                 gap: 0.15rem;
                 padding: 0.2rem;
@@ -177,11 +199,14 @@ def apply_app_theme() -> None:
                 border-radius: 0.4rem;
             }
             .st-key-workflow_navigation label[data-baseweb="radio"] p {
-                font-size: 0.68rem;
+                font-size: 0.62rem;
                 white-space: nowrap;
             }
             [data-testid="stMetric"] {
                 padding: 0.6rem 0.7rem;
+            }
+            .st-key-ticksy_launcher button {
+                width: 100% !important;
             }
         }
         </style>

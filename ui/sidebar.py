@@ -27,7 +27,7 @@ DEFAULT_SCAN_SETTINGS = {
     "min_long_ma_decline_duration": 60,
     "min_long_ma_decline": 10,
     "include_impending_crosses": False,
-    "impending_max_gap_pct": 3,
+    "impending_max_gap_pct": 10,
     "pre_cross_validation_sessions": 20,
     "optional_filters": [],
     "adjusted_prices": False,
@@ -466,7 +466,7 @@ def render_scan_configuration() -> dict:
     st.divider()
     st.subheader("Impending Golden Cross")
     include_impending_crosses = st.checkbox(
-        "Do you want stocks for an Impending Golden Cross?",
+        "Do you want impending stocks?",
         value=DEFAULT_SCAN_SETTINGS["include_impending_crosses"],
         key=_widget_key("include_impending_crosses"),
         help="Adds a separate result list for stocks approaching a fresh crossover.",

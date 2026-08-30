@@ -165,6 +165,58 @@ prices for selected Setup-universe stocks, without changing Live Scan results.
 - Filters, sorting, and mobile-friendly result exploration.
 - Clear scan history and result timestamping.
 
+## Release 2.0 — Ticksy Local-Data AI Assistant
+
+### Goal
+
+Add a local-data-only assistant that explains verified Stock Analyser results
+and prepares confirmed scan or Backtester workflows without changing
+calculation logic.
+
+### Delivered Scope
+
+- Bottom-right Ticksy launcher and themed panel with the Ticksy icon,
+  session-only chat, New Chat, quick actions, and a permanently visible
+  local-data-only summary.
+- Typed assistant request/action models, bounded local context, and
+  deterministic local-response routing.
+- Local explanations for current Post Golden Cross, Impending Golden Cross, and
+  failed-stock results. They use stored MA values, slopes, gaps, cross details,
+  and recorded failure reasons where available.
+- Natural-language recognition for common ticker and current-result company
+  references, periods, market scans, Backtests, and moving-average-pair
+  requests, with explicit confirmation before state-changing scan, strategy,
+  or Backtester actions.
+- Confirmed handoffs to Strategy, Live Scan, Results, selected-stock charts,
+  and Backtester while preserving the active deterministic Python services and
+  their outputs.
+- On-request illustrative crossover windows for Impending stocks when the
+  Short MA converges on the Long MA at a positive local rate; the response is
+  explicitly not a prediction or a scan, ranking, alert, or Backtester rule.
+- Current-scan market summaries, current-result stock comparisons, historical
+  Backtester signal summaries, parameter help, data provenance, calculation
+  traces, scan-health summaries, and plain-English local reports.
+- Basic selected-universe company lookup, workflow guidance, a data
+  dictionary, and session-only Ticksy notes.
+- Confirmed strategy proposals for the core technical settings and supported
+  threshold, P/E, and market-cap optional filters.
+- Impending Golden Cross retained as an optional scan group with the prompt
+  "Do you want impending stocks?" and a default maximum Short-MA/Long-MA gap
+  of 10%.
+- Gemini Flash and OpenAI provider implementations behind one configuration
+  interface, plus a safe disabled state when the active provider key is absent.
+- Strict no-browser, no-news, no-RAG, no-external-market-data tool boundary;
+  Python services remain the calculation and rule source of truth.
+
+### Acceptance Criteria
+
+- Existing scan and Backtest calculations remain reproducible with or without
+  Ticksy enabled.
+- Ticksy cannot use browser, search, news, RAG, or external market-data tools.
+- Proposed scan and Backtester actions require explicit user confirmation.
+- Changing between Gemini Flash and OpenAI preserves the same local tools and
+  deterministic calculation results.
+
 ## Future — Advanced Backtesting
 
 ### Goal
@@ -190,6 +242,12 @@ measurement into optional trade and portfolio simulation.
 - Re-entry never duplicates an open trade or reuses the same Golden Cross.
 - Fixed-horizon Backtester results remain available independently of this
   optional simulation mode.
+
+## Future — Production Operations
+
+- Continuous integration for tests and linting.
+- Deployment health checks, structured logs, and error monitoring.
+- Release tags, changelog, and rollback procedure.
 
 ## Future — United States Market Expansion
 
@@ -228,8 +286,55 @@ preserving the existing NSE workflow and data sets.
 - US data refreshes and calculations have automated coverage for mapping,
   point-in-time selection, and formula boundaries.
 
-## Release 1.4 — Production Operations
+## Future — Ticksy Enhancements
 
-- Continuous integration for tests and linting.
-- Deployment health checks, structured logs, and error monitoring.
-- Release tags, changelog, and rollback procedure.
+### Goal
+
+Build on the completed Ticksy foundation with additional local-data assistant
+capabilities, without changing calculation logic or using external market,
+news, web, or RAG data.
+
+### Scope
+
+- Broaden flexible natural-language phrasing for existing Ticksy actions and
+  settings beyond common ticker/company, period, scan, Backtest, and
+  moving-average-pair wording; ask a concise clarification only when needed.
+- Extend the delivered failed-stock stage and reason explanation into a full
+  rule-by-rule diagnostic and nearest-unmet-condition ranking.
+- Extend the delivered Post and Impending explanation with requested
+  conditions, unavailable-data detail, and optional-fundamental context that
+  are not in the current local result record.
+- Add an on-request daily change summary that compares the latest completed
+  scan with the prior local snapshot, optionally by industry or requested
+  stock, covering status, indicator, and available valuation changes.
+- Broaden the delivered natural-language filter support beyond the current
+  threshold, P/E, and market-cap phrases; display the interpreted filters and
+  require confirmation before running a scan.
+- Broaden answers across current local scan and Backtester results beyond the
+  delivered market summaries, comparisons, reports, and signal histories,
+  without modifying the underlying results.
+- Extend selected-universe lookup with stored industry classifications and
+  industry-membership counts.
+- Explain why a stock entered or left a result group by comparing completed
+  local scan snapshots and identifying the changed rule outcome.
+- Persist user-approved notes as searchable local records beyond the current
+  Ticksy session.
+
+### Acceptance Criteria
+
+- Assistant explanations list the data date, strategy values, and source
+  values used for every rule-based conclusion.
+- Requested strategy changes are displayed and explicitly confirmed before a
+  scan or backtest runs.
+- Equivalent natural-language phrasings produce the same interpreted action
+  and the displayed interpretation lets users correct any misunderstanding.
+- The assistant cannot alter settings, refresh data, or trigger external-data
+  retrieval without a separate, explicit application workflow.
+- Unavailable local data produces a clear unavailable response rather than an
+  inferred or externally sourced answer.
+- Existing scan and backtest outputs are reproducible with or without the
+  assistant enabled.
+- Switching Gemini Flash and OpenAI through configuration preserves the same
+  local tool contracts, guardrails, and deterministic calculation results.
+- Daily summaries use only completed local scan history and clearly state when
+  a prior comparison snapshot or industry classification is unavailable.

@@ -16,9 +16,10 @@ from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
 from ui.introduction_page import render_introduction
 from ui.backtester_page import render_backtester_page
-from ui.results_page import prepare_results, render_optional_failures, render_results
+from ui.results_page import prepare_results, render_optional_failures, render_results, render_selected_stock
 from ui.scan_insights import render_scan_insights
 from ui.sidebar import render_scan_configuration
+from ui.ticksy import render_ticksy
 from ui.theme import apply_app_theme, render_app_header, scroll_to_top
 
 
@@ -30,7 +31,7 @@ NAVIGATION_OPTIONS = (
     "1. Setup",
     "2. Strategy",
     "3. Live Scan",
-    "4. Golden Cross Results",
+    "4. Results",
     "5. Backtester",
 )
 STOCK_UNIVERSE = StockUniverse(
@@ -342,6 +343,17 @@ def render_results_page() -> None:
         st.session_state["scan_settings"],
         st.session_state.get("scan_metrics", {}),
     )
+    requested_symbol = st.session_state.pop("ticksy_selected_symbol", None)
+    if requested_symbol:
+        combined = pd.concat([results, impending], ignore_index=True)
+        if "symbol" in combined.columns:
+            selected = combined.loc[combined["symbol"] == requested_symbol]
+            if not selected.empty:
+                st.divider()
+                st.subheader(f"Ticksy selected: {requested_symbol}")
+                render_selected_stock(selected.iloc[0], st.session_state["scan_settings"], show_score=selected.iloc[0].get("strategy") != "Impending Golden Cross")
+            else:
+                st.info(f"{requested_symbol} is not available in the current qualified Results.")
     if st.session_state["scan_settings"].get("optional_filters") and st.checkbox(
         "Show stocks rejected by optional checks"
     ):
@@ -368,7 +380,9 @@ elif section == "2. Strategy":
     render_strategy_page()
 elif section == "3. Live Scan":
     render_live_scan_page()
-elif section == "4. Golden Cross Results":
+elif section == "4. Results":
     render_results_page()
 else:
     render_backtester_page(PROJECT_ROOT)
+
+render_ticksy()

@@ -16,7 +16,7 @@ class ScanConfig:
     min_long_ma_decline: float
     max_price_premium: float
     include_impending_crosses: bool = False
-    impending_max_gap_pct: float = 3
+    impending_max_gap_pct: float = 10
     pre_cross_validation_sessions: int = 20
     optional_filters: tuple[OptionalFilterConfig, ...] = ()
     adjusted_prices: bool = False

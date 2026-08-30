@@ -74,6 +74,7 @@ class ScanInsightTests(unittest.TestCase):
         settings["short_ma"] = 10
 
         self.assertEqual(DEFAULT_SCAN_SETTINGS["short_ma"], 50)
+        self.assertEqual(DEFAULT_SCAN_SETTINGS["impending_max_gap_pct"], 10)
 
 
 if __name__ == "__main__":
