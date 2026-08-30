@@ -54,7 +54,7 @@ class GeminiProvider:
             for message in request.messages
         ]
         payload = {
-            "system_instruction": {
+            "systemInstruction": {
                 "parts": [{"text": f"{SYSTEM_INSTRUCTION}\n\nLOCAL CONTEXT\n{request.local_context}"}]
             },
             "contents": contents,
@@ -62,7 +62,7 @@ class GeminiProvider:
         }
         response = requests.post(
             self.endpoint_template.format(model=self.model),
-            params={"key": self.api_key},
+            headers={"x-goog-api-key": self.api_key},
             json=payload,
             timeout=30,
         )

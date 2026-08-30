@@ -41,7 +41,9 @@ class AssistantProviderTests(unittest.TestCase):
 
         self.assertEqual(answer, "Local answer")
         self.assertNotIn("tools", post.call_args.kwargs["json"])
-        self.assertIn("Do not browse", post.call_args.kwargs["json"]["system_instruction"]["parts"][0]["text"])
+        self.assertIn("Do not browse", post.call_args.kwargs["json"]["systemInstruction"]["parts"][0]["text"])
+        self.assertEqual(post.call_args.kwargs["headers"]["x-goog-api-key"], "key")
+        self.assertNotIn("params", post.call_args.kwargs)
 
     @patch("services.assistant_provider.requests.post")
     def test_openai_request_does_not_enable_external_tools(self, post):
