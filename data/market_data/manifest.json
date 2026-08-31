@@ -1,103 +1,103 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-08-26T13:40:58.763519+00:00",
-  "refreshed_at": "2026-08-26T13:40:58.763519+00:00",
-  "history_start": "2016-08-26",
-  "history_end": "2026-08-26",
-  "last_trading_date": "2026-08-26",
+  "generated_at": "2026-08-31T19:17:15.178269+00:00",
+  "refreshed_at": "2026-08-31T19:17:15.178269+00:00",
+  "history_start": "2016-08-31",
+  "history_end": "2026-08-31",
+  "last_trading_date": "2026-08-31",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
-  "symbol_count": 2056,
-  "stored_symbol_count": 2056,
-  "universe_sha256": "9db7f51a81f20810593bdaa0c3bc7607b95aab29018369ffe2f3fca743e9462f",
+  "symbol_count": 2287,
+  "stored_symbol_count": 2349,
+  "universe_sha256": "2f3d28d0fe7e70ae11e50b8d9eb8328e68f6e46d712211601979e8caf1ab8333",
   "validation": {
-    "invalid_rows_dropped": 0,
-    "duplicate_rows_dropped": 0
+    "invalid_rows_dropped": 47,
+    "duplicate_rows_dropped": 366
   },
   "price_files": [
     {
       "path": "prices/2016.parquet",
-      "sha256": "c63cc8fc005f62270a15ace2642499828c2803920a060f2cdd2f30d000f9e7c9",
-      "size_bytes": 2968737
+      "sha256": "2e0c1e9c57a7607560870ceae91017886d93a619f2a1aad0208f83314450c41d",
+      "size_bytes": 2343437
     },
     {
       "path": "prices/2017.parquet",
-      "sha256": "5d1df788885c9df35609f33707a30f40395dfc7ab8079e68a609b11a6767d3c8",
-      "size_bytes": 7034511
+      "sha256": "6b3f3cde9e2ca4a015e1693b9d6f0aa3e1a4043036d1a68ec36430d708c14d0f",
+      "size_bytes": 7322449
     },
     {
       "path": "prices/2018.parquet",
-      "sha256": "82c1018d0a12e2ec7af63d60e6a0581d76457fc74b4f3de3db8c7f6bdf397d1f",
-      "size_bytes": 7571239
+      "sha256": "08e3f9e118e1b890d528fac2bbf0e24d36762428d78e0f4686dbd0b67de75590",
+      "size_bytes": 7900758
     },
     {
       "path": "prices/2019.parquet",
-      "sha256": "270a903d4e1e537f7f15e0b962bad8ff5fc8724f9583cc5dc6def39e47b6f8fe",
-      "size_bytes": 7370376
+      "sha256": "8a46e27c87781ee5d13d5e6b19ecf76320381a9dba374c70a820fcbe37c78ee7",
+      "size_bytes": 7707028
     },
     {
       "path": "prices/2020.parquet",
-      "sha256": "3be1e4c2ab2dc701812b188a1bcd48214041b1b56e1016c0359ff87f319d845b",
-      "size_bytes": 7878274
+      "sha256": "07ffe5cee3e626ebb27aba4d4a29ee52ba8e2e79bcc0f5ce4819af51de01e142",
+      "size_bytes": 8227447
     },
     {
       "path": "prices/2021.parquet",
-      "sha256": "ad3429a0fc7e88a920abd2113f6b324270e9b425cde84b627ecb940fbcf194fc",
-      "size_bytes": 8662525
+      "sha256": "537500f5d5768522efc1e2bc23eb9f7fd5f18c95c07eaadba1a46ece79ce7c43",
+      "size_bytes": 9085497
     },
     {
       "path": "prices/2022.parquet",
-      "sha256": "863f070af66c6efa084c1b0077aeff8f2ac2df075e4fad34a54290c88a253ba2",
-      "size_bytes": 9404843
+      "sha256": "3bd294ed78a9d6d80618e056789f6da588c11ae520093133da25b6ea17be28bb",
+      "size_bytes": 9887226
     },
     {
       "path": "prices/2023.parquet",
-      "sha256": "93b6850ca16233fb58ebf6c08fdc1d456627308843426e2a08d4ff4cae533dd8",
-      "size_bytes": 9816063
+      "sha256": "acfa1a8f8fc8cc62174b38249b8d5c903759a77b2c88246d09255b0578cacedb",
+      "size_bytes": 10320122
     },
     {
       "path": "prices/2024.parquet",
-      "sha256": "27c321645e281dafddf080e99c4a0a20be7b04d2661a26411876494bf68d036d",
-      "size_bytes": 11434745
+      "sha256": "63944b1b731f8d461f4892e64d55f62158c36c47fa49dda9dddfa0d4429d4697",
+      "size_bytes": 12081819
     },
     {
       "path": "prices/2025.parquet",
-      "sha256": "33a6eb9f17b20f109231ca12d600a4473828bf2d0a191ad74673aae79e7f8be8",
-      "size_bytes": 12507888
+      "sha256": "2e46b43f2ed8355b1ab7cbc7dd7318d9adf38520f177a25f6e24614e33daf43f",
+      "size_bytes": 13227484
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "420ee3e5fa44873aeb7dc3bbb10d4241c6f306f29ba0ce72ac94416968d24d06",
-      "size_bytes": 8950012
+      "sha256": "b3588cf895463db155f4965307ec117ea82a2a51cf0e0064b1aa87d93990582c",
+      "size_bytes": 9596020
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "0459c837d2faf961d3a98074a6de0ee5e2f74cdcb1cb86d025dfda1f5fee0de7"
+    "sha256": "ebd10e5cb9db38e1cb1966957834ba2653a691134f2a80208c74dee2d283e09e"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "5041e6f23fed94e50eb41d9e24ddd795c798e2d6a7e0ae86d800fd1b9b05942a"
+    "sha256": "5c5e45645d045e74414324db84f5b965b6d3d711525fd626e0afffe88f56d183"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
-    "sha256": "7cf4f06d60c05850e085f591584f00078983b401075ab415e8a53dd812a5b35b"
+    "sha256": "138159d8331da31f8b7bf7bda2768d00e7b0d6e16f206f10ecabc002059e9d2a"
   },
   "classification_metadata_file": {
     "path": "fundamentals/classification_metadata.json",
-    "sha256": "9930f9710526276003d3147b2acd795f222d647ab18a6d00fc0a15300bb2ecea"
+    "sha256": "1377158695118f6cfcde3a64bfa3846b0e756b775c7caacb8d15d50ebca95616"
   },
   "fundamentals_coverage": {
-    "pe": 1802,
-    "peg_ratio": 1038,
-    "eps": 2045,
-    "sector": 1987,
-    "industry": 1987,
-    "industries_with_valuations": 119
+    "pe": 1980,
+    "peg_ratio": 1014,
+    "eps": 2278,
+    "sector": 2280,
+    "industry": 2280,
+    "industries_with_valuations": 120
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "e0b2b6c94ab15e6d9f0b315b78676adc39d63a0af1ffcf340e0943799cb1e6d4"
+    "sha256": "e89660cc2eec789808ce04f40acc79083c658fb9e28e96ee8c593cf0a648d60a"
   }
 }
