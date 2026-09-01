@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-08-31T19:17:15.178269+00:00",
-  "refreshed_at": "2026-08-31T19:17:15.178269+00:00",
-  "history_start": "2016-08-31",
-  "history_end": "2026-08-31",
-  "last_trading_date": "2026-08-31",
+  "generated_at": "2026-09-01T16:52:39.672976+00:00",
+  "refreshed_at": "2026-09-01T16:52:39.672976+00:00",
+  "history_start": "2016-09-01",
+  "history_end": "2026-09-01",
+  "last_trading_date": "2026-09-01",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
   "symbol_count": 2287,
   "stored_symbol_count": 2349,
   "universe_sha256": "2f3d28d0fe7e70ae11e50b8d9eb8328e68f6e46d712211601979e8caf1ab8333",
   "validation": {
-    "invalid_rows_dropped": 47,
-    "duplicate_rows_dropped": 366
+    "invalid_rows_dropped": 0,
+    "duplicate_rows_dropped": 0
   },
   "price_files": [
     {
@@ -68,17 +68,17 @@
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "b3588cf895463db155f4965307ec117ea82a2a51cf0e0064b1aa87d93990582c",
-      "size_bytes": 9596020
+      "sha256": "9b1fee0a260b31fc2471b8ecdf377db97f9978aaf204e4550a6717624b5a777b",
+      "size_bytes": 9663608
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "ebd10e5cb9db38e1cb1966957834ba2653a691134f2a80208c74dee2d283e09e"
+    "sha256": "e37788c457c7b15d81f9dd7fd57e9b78cda0ee89a75b15518348f5f6496e217b"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "5c5e45645d045e74414324db84f5b965b6d3d711525fd626e0afffe88f56d183"
+    "sha256": "911808005052d300e145c6fd9df272256267940804039b4a64c48dead686c6f2"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
@@ -89,8 +89,8 @@
     "sha256": "1377158695118f6cfcde3a64bfa3846b0e756b775c7caacb8d15d50ebca95616"
   },
   "fundamentals_coverage": {
-    "pe": 1980,
-    "peg_ratio": 1014,
+    "pe": 1981,
+    "peg_ratio": 1015,
     "eps": 2278,
     "sector": 2280,
     "industry": 2280,
@@ -98,6 +98,6 @@
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "e89660cc2eec789808ce04f40acc79083c658fb9e28e96ee8c593cf0a648d60a"
+    "sha256": "6896cc7db0ae522cdeac53bac0d8bd83c85e3a3c3865ce4264d48ed607db7ba7"
   }
 }
