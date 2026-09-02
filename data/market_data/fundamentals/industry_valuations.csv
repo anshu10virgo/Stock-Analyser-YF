@@ -1,121 +1,121 @@
 industry,industry_weighted_pe,industry_median_pe,industry_peer_count
-Advertising Agencies,16.15,18.31,5
-Aerospace & Defense,43.85,88.34,13
-Agricultural Inputs,19.55,15.2,40
-Airports & Air Services,235.3,235.3,1
-Aluminum,17.25,26.21,9
-Apparel Manufacturing,37.69,21.28,23
-Apparel Retail,69.5,50.7,11
-Asset Management,33.25,37.62,27
-Auto & Truck Dealerships,56.95,46.55,3
-Auto Manufacturers,27.41,29.37,11
-Auto Parts,29.18,29.15,84
-Banks - Regional,12.84,10.98,39
-Beverages - Brewers,87.73,87.73,1
-Beverages - Non-Alcoholic,40.39,36.99,2
-Beverages - Wineries & Distilleries,55.09,43.97,11
-Biotechnology,61.65,37.93,6
-Broadcasting,15.93,22.95,5
-Building Materials,33.56,31.46,28
-Building Products & Equipment,44.52,29.26,28
-Business Equipment & Supplies,41.0,21.71,6
-Capital Markets,29.17,16.43,51
-Chemicals,25.58,20.79,29
-Communication Equipment,35.04,61.62,9
-Computer Hardware,100.05,112.49,3
-Confectioners,21.66,20.49,18
-Conglomerates,35.36,33.5,26
-Consulting Services,29.2,38.39,2
-Consumer Electronics,51.79,62.08,3
-Copper,43.1,19.33,5
-Credit Services,17.85,16.54,52
-Department Stores,53.52,49.44,3
-Diagnostics & Research,65.08,58.94,9
-Discount Stores,81.71,81.71,1
-Drug Manufacturers - General,41.65,33.24,11
-Drug Manufacturers - Specialty & Generic,37.72,37.2,76
-Education & Training Services,63.71,21.51,11
-Electrical Equipment & Parts,52.63,39.12,47
-Electronic Components,77.56,75.18,7
-Electronic Gaming & Multimedia,15.61,15.61,1
-Electronics & Computer Distribution,27.15,27.32,5
-Engineering & Construction,21.12,18.61,74
-Entertainment,54.14,38.3,15
-Farm & Heavy Construction Machinery,28.09,29.84,13
-Farm Products,15.95,13.64,14
-Financial Conglomerates,28.83,21.74,7
-Financial Data & Stock Exchanges,43.76,34.41,4
-Food Distribution,28.26,45.34,2
-Footwear & Accessories,42.66,45.43,13
-"Furnishings, Fixtures & Appliances",51.57,36.57,26
-Health Information Services,30.21,34.71,5
-Healthcare Plans,26.68,26.68,1
-Home Improvement Retail,25.24,47.5,2
-Household & Personal Products,44.55,35.38,15
-Industrial Distribution,81.0,83.55,3
-Information Technology Services,20.07,17.48,52
-Infrastructure Operations,22.09,13.91,7
-Insurance - Diversified,34.15,36.07,2
-Insurance - Life,14.95,67.08,9
-Insurance - Property & Casualty,48.92,48.92,1
-Insurance - Reinsurance,7.01,7.01,1
-Insurance Brokers,113.4,113.4,1
-Integrated Freight & Logistics,54.72,26.39,21
-Internet Content & Information,28.46,24.4,5
-Internet Retail,566.88,191.93,4
-Leisure,35.23,49.31,2
-Lodging,33.49,29.1,22
-Lumber & Wood Production,54.98,47.58,6
-Luxury Goods,48.51,14.83,29
-Marine Shipping,24.23,22.36,10
-Medical Care Facilities,70.58,56.19,22
-Medical Devices,74.79,79.2,2
-Medical Distribution,62.72,62.72,1
-Medical Instruments & Supplies,130.46,82.67,6
-Metal Fabrication,43.2,28.55,23
-Mortgage Finance,12.48,12.94,12
-Oil & Gas E&P,33.96,55.02,4
-Oil & Gas Equipment & Services,53.45,24.8,7
-Oil & Gas Integrated,7.27,8.19,2
-Oil & Gas Refining & Marketing,11.29,10.42,11
-Other Industrial Metals & Mining,14.07,14.79,9
-Other Precious Metals & Mining,28.62,28.62,1
-Packaged Foods,40.22,23.7,49
-Packaging & Containers,15.75,19.9,23
-Paper & Paper Products,15.53,14.14,13
-Pharmaceutical Retailers,38.35,38.35,1
-Pollution & Treatment Controls,254.03,254.03,1
-Publishing,10.99,8.42,8
-Railroads,35.04,31.38,5
-Real Estate - Development,29.88,24.14,46
-Real Estate - Diversified,55.29,59.2,3
-Real Estate Services,31.45,22.97,17
-Rental & Leasing Services,20.43,19.87,3
-Resorts & Casinos,41.27,59.22,2
-Restaurants,50.05,152.09,2
-Scientific & Technical Instruments,34.99,60.23,2
-Security & Protection Services,38.47,32.33,2
-Semiconductor Equipment & Materials,157.12,157.12,1
-Shell Companies,303.21,446.39,2
-Software - Application,34.28,33.11,29
-Software - Infrastructure,45.96,31.15,11
-Solar,20.91,20.47,18
-Specialty Business Services,18.31,19.87,16
-Specialty Chemicals,36.57,26.8,99
-Specialty Industrial Machinery,57.76,45.82,64
-Specialty Retail,42.2,44.49,2
-Staffing & Employment Services,18.94,15.01,4
-Steel,18.81,21.72,73
-Telecom Services,19.81,20.3,10
-Textile Manufacturing,26.61,18.4,77
-Thermal Coal,16.62,13.18,7
-Tobacco,17.21,16.83,3
-Tools & Accessories,44.33,42.53,9
-Travel Services,35.43,57.52,5
-Trucking,19.62,19.62,1
-Utilities - Independent Power Producers,31.67,27.07,10
-Utilities - Regulated Electric,11.16,11.95,6
-Utilities - Regulated Gas,18.24,16.08,6
-Utilities - Regulated Water,972.96,972.96,1
-Utilities - Renewable,64.49,49.97,12
-Waste Management,24.16,26.94,3
+Advertising Agencies,15.7,17.61,5
+Aerospace & Defense,43.57,87.98,13
+Agricultural Inputs,19.54,15.15,40
+Airports & Air Services,234.97,234.97,1
+Aluminum,17.22,25.96,9
+Apparel Manufacturing,37.89,20.84,23
+Apparel Retail,69.19,51.01,11
+Asset Management,32.9,37.17,28
+Auto & Truck Dealerships,56.22,45.7,3
+Auto Manufacturers,26.85,28.86,11
+Auto Parts,28.81,28.77,84
+Banks - Regional,12.76,10.92,39
+Beverages - Brewers,85.97,85.97,1
+Beverages - Non-Alcoholic,41.23,37.24,2
+Beverages - Wineries & Distilleries,55.02,43.03,11
+Biotechnology,61.86,38.49,6
+Broadcasting,15.74,24.0,5
+Building Materials,33.44,31.25,28
+Building Products & Equipment,44.14,29.11,28
+Business Equipment & Supplies,40.69,21.71,6
+Capital Markets,28.86,16.31,52
+Chemicals,24.49,20.49,29
+Communication Equipment,34.29,59.08,9
+Computer Hardware,99.14,111.79,3
+Confectioners,21.72,21.25,18
+Conglomerates,34.93,32.8,26
+Consulting Services,29.03,37.4,2
+Consumer Electronics,52.51,61.64,3
+Copper,42.75,19.36,5
+Credit Services,17.88,16.28,52
+Department Stores,54.35,49.24,3
+Diagnostics & Research,65.67,59.19,9
+Discount Stores,81.07,81.07,1
+Drug Manufacturers - General,41.61,33.67,11
+Drug Manufacturers - Specialty & Generic,37.72,36.83,76
+Education & Training Services,63.86,22.91,11
+Electrical Equipment & Parts,51.64,37.8,47
+Electronic Components,76.71,74.45,7
+Electronic Gaming & Multimedia,15.55,15.55,1
+Electronics & Computer Distribution,26.92,26.2,5
+Engineering & Construction,21.07,18.58,74
+Entertainment,53.16,37.59,15
+Farm & Heavy Construction Machinery,28.0,29.68,13
+Farm Products,16.0,13.72,14
+Financial Conglomerates,29.13,25.68,7
+Financial Data & Stock Exchanges,42.71,33.74,4
+Food Distribution,28.18,44.75,2
+Footwear & Accessories,41.8,44.45,13
+"Furnishings, Fixtures & Appliances",50.86,36.93,26
+Health Information Services,30.23,33.0,5
+Healthcare Plans,26.72,26.72,1
+Home Improvement Retail,25.1,47.6,2
+Household & Personal Products,44.16,35.27,15
+Industrial Distribution,76.9,47.74,4
+Information Technology Services,19.82,17.41,52
+Infrastructure Operations,21.9,13.76,7
+Insurance - Diversified,34.39,37.24,2
+Insurance - Life,14.82,66.35,9
+Insurance - Property & Casualty,48.57,48.57,1
+Insurance - Reinsurance,7.03,7.03,1
+Insurance Brokers,115.02,115.02,1
+Integrated Freight & Logistics,54.23,26.7,21
+Internet Content & Information,28.13,24.17,5
+Internet Retail,565.83,191.28,4
+Leisure,34.77,47.93,2
+Lodging,33.58,29.39,22
+Lumber & Wood Production,54.61,47.63,6
+Luxury Goods,48.81,14.65,29
+Marine Shipping,24.45,22.85,10
+Medical Care Facilities,69.68,55.81,22
+Medical Devices,78.42,82.26,2
+Medical Distribution,62.63,62.63,1
+Medical Instruments & Supplies,131.85,84.22,6
+Metal Fabrication,42.45,25.55,25
+Mortgage Finance,12.54,12.9,12
+Oil & Gas E&P,36.08,56.65,4
+Oil & Gas Equipment & Services,56.37,24.77,7
+Oil & Gas Integrated,7.32,8.28,2
+Oil & Gas Refining & Marketing,11.34,10.31,11
+Other Industrial Metals & Mining,13.87,14.56,9
+Other Precious Metals & Mining,27.59,27.59,1
+Packaged Foods,39.96,23.99,49
+Packaging & Containers,15.76,19.55,23
+Paper & Paper Products,15.26,13.97,13
+Pharmaceutical Retailers,37.6,37.6,1
+Pollution & Treatment Controls,249.03,249.03,1
+Publishing,10.85,8.69,8
+Railroads,34.75,31.1,5
+Real Estate - Development,29.88,23.98,47
+Real Estate - Diversified,56.16,59.97,3
+Real Estate Services,31.23,22.82,17
+Rental & Leasing Services,20.1,19.63,3
+Resorts & Casinos,40.56,58.54,2
+Restaurants,49.85,151.2,2
+Scientific & Technical Instruments,37.25,61.7,2
+Security & Protection Services,38.66,32.6,2
+Semiconductor Equipment & Materials,156.41,156.41,1
+Shell Companies,294.87,435.78,2
+Software - Application,33.93,32.54,29
+Software - Infrastructure,45.75,31.08,11
+Solar,20.85,20.37,18
+Specialty Business Services,18.25,20.08,16
+Specialty Chemicals,36.42,26.74,99
+Specialty Industrial Machinery,57.37,45.91,65
+Specialty Retail,42.12,44.36,2
+Staffing & Employment Services,18.83,14.8,4
+Steel,18.8,22.4,73
+Telecom Services,19.77,19.97,10
+Textile Manufacturing,26.61,18.34,77
+Thermal Coal,16.94,13.17,7
+Tobacco,17.16,16.81,3
+Tools & Accessories,44.27,41.84,9
+Travel Services,34.91,57.65,5
+Trucking,19.61,19.61,1
+Utilities - Independent Power Producers,32.3,27.58,10
+Utilities - Regulated Electric,11.25,12.04,6
+Utilities - Regulated Gas,18.31,16.05,6
+Utilities - Regulated Water,1012.69,1012.69,1
+Utilities - Renewable,64.47,50.33,12
+Waste Management,23.8,27.12,3
