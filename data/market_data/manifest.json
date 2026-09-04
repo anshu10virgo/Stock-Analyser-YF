@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-09-02T16:51:07.823353+00:00",
-  "refreshed_at": "2026-09-02T16:51:07.823353+00:00",
-  "history_start": "2016-09-02",
-  "history_end": "2026-09-02",
-  "last_trading_date": "2026-09-02",
+  "generated_at": "2026-09-04T16:35:02.700594+00:00",
+  "refreshed_at": "2026-09-04T16:35:02.700594+00:00",
+  "history_start": "2016-09-06",
+  "history_end": "2026-09-04",
+  "last_trading_date": "2026-09-04",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
   "symbol_count": 2287,
@@ -68,17 +68,17 @@
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "0661c22d35440a2ef7650faa9b083f4d44c251138768d127d9fd5d4a8d1eaf1d",
-      "size_bytes": 9733835
+      "sha256": "737862d7782aa464f2a285b2f3f47475c5679d2ede5e7ebb9ed94347c9b21c8e",
+      "size_bytes": 9841803
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "13bf5b4d3d0b356929721746e2c59253480c60fc002539dc9f45c21cd200c7c5"
+    "sha256": "06e53fc00948f0894aa5bf5d2477609ef98f34fb3c037c38d35fe6f88d520e7b"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "11a375d75d8ed4e2b272456b3e68608a8df5856eb2f01c3fddcd10b454857ff3"
+    "sha256": "60bfe6d39df0687034603fe493aecb7760a625b9b8f0051d4cc6f4f5a48883a6"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
@@ -89,15 +89,15 @@
     "sha256": "1377158695118f6cfcde3a64bfa3846b0e756b775c7caacb8d15d50ebca95616"
   },
   "fundamentals_coverage": {
-    "pe": 1981,
+    "pe": 1982,
     "peg_ratio": 1110,
-    "eps": 2278,
+    "eps": 2279,
     "sector": 2280,
     "industry": 2280,
-    "industries_with_valuations": 120
+    "industries_with_valuations": 119
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "7908bd06a1c26fec273c61c5f36e06e92b1f63feb21ae758ec1f263261a2c496"
+    "sha256": "f06c2341ede715852b9c76c743e4882dda6bbe548f118f852e3ddca1465a80f3"
   }
 }
