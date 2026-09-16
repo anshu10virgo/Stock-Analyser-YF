@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-09-15T17:15:40.795519+00:00",
-  "refreshed_at": "2026-09-15T17:15:40.795519+00:00",
-  "history_start": "2016-09-15",
-  "history_end": "2026-09-15",
-  "last_trading_date": "2026-09-15",
+  "generated_at": "2026-09-16T17:16:04.623894+00:00",
+  "refreshed_at": "2026-09-16T17:16:04.623894+00:00",
+  "history_start": "2016-09-16",
+  "history_end": "2026-09-16",
+  "last_trading_date": "2026-09-16",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
   "symbol_count": 2287,
@@ -68,17 +68,17 @@
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "34b454588846284668d419d0293f4fec08bf835f2be870b9abcaa5862101aa8b",
-      "size_bytes": 10191544
+      "sha256": "fab9988f5ec969c6b862f6b0c46859ab56007d6c96a501afccf89be0a3c9a362",
+      "size_bytes": 10254376
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "a616859069c603e3df6e077dc3a3c29338dee983d75fe754d7d70bee0ffa31a8"
+    "sha256": "a3b03f445e9197ee414d049ba4220b68e024fe09d8a58dcf22ab91a3c97b4df0"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "0f043f178863c5c87e001ae6346e3365ad6e09ff918ea5f91868a99a072fbccd"
+    "sha256": "2a70201b183a56cdcf4837a1f35f3ca9cae9f790b1c6d5c47f63a1d1a0d4d2f4"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
@@ -89,15 +89,15 @@
     "sha256": "1377158695118f6cfcde3a64bfa3846b0e756b775c7caacb8d15d50ebca95616"
   },
   "fundamentals_coverage": {
-    "pe": 1976,
+    "pe": 1979,
     "peg_ratio": 1110,
-    "eps": 2274,
+    "eps": 2278,
     "sector": 2280,
     "industry": 2280,
     "industries_with_valuations": 120
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "7aca88bddff957d53f21964849c3c46f7583aacea6f5f60c2a383b737eeefb0a"
+    "sha256": "6aa50743f19ff45b838e6debdb41860940fa3be2e6a13508fab5d4185f69636a"
   }
 }
