@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source": "yahoo_finance",
-  "generated_at": "2026-10-01T18:34:04.777494+00:00",
-  "refreshed_at": "2026-10-01T18:34:04.777494+00:00",
-  "history_start": "2016-10-03",
-  "history_end": "2026-10-01",
-  "last_trading_date": "2026-10-01",
+  "generated_at": "2026-10-05T20:43:53.517465+00:00",
+  "refreshed_at": "2026-10-05T20:43:53.517465+00:00",
+  "history_start": "2016-10-05",
+  "history_end": "2026-10-05",
+  "last_trading_date": "2026-10-05",
   "retention_calendar_years": 10,
   "maximum_supported_long_ma": 2000,
   "symbol_count": 2287,
@@ -68,17 +68,17 @@
     },
     {
       "path": "prices/2026.parquet",
-      "sha256": "6286323ffb8c26e4f6f133a284a37c0e6d70561b9167cd8c1c6630f593f56880",
-      "size_bytes": 10865989
+      "sha256": "9526c151564aa36fdbdfcdf90de3f6b7bb3464388a6c99bf721056ba3c25aca4",
+      "size_bytes": 10931569
     }
   ],
   "fundamentals_file": {
     "path": "fundamentals/fundamentals.csv",
-    "sha256": "1e3942cbe0d77ded12466a0a94465f36b798c6107b02a6420287702523fc34d0"
+    "sha256": "7b2fffb5e8b9f071715dfb354afe6f7d07cf0eaf07296dc96d00704d8d4d64d5"
   },
   "industry_valuations_file": {
     "path": "fundamentals/industry_valuations.csv",
-    "sha256": "c4e184c2cfa3c5098cceca8d91633e36198da346b8a9a6199e3fe79df7acc83a"
+    "sha256": "d8080d20e7e1ff66eb2777e94364eeda7d5c164eca735a1e68408345057533a3"
   },
   "classifications_file": {
     "path": "fundamentals/classifications.csv",
@@ -89,15 +89,15 @@
     "sha256": "1377158695118f6cfcde3a64bfa3846b0e756b775c7caacb8d15d50ebca95616"
   },
   "fundamentals_coverage": {
-    "pe": 1980,
-    "peg_ratio": 1110,
-    "eps": 2277,
+    "pe": 1982,
+    "peg_ratio": 1103,
+    "eps": 2276,
     "sector": 2280,
     "industry": 2280,
-    "industries_with_valuations": 120
+    "industries_with_valuations": 118
   },
   "coverage_file": {
     "path": "symbol_coverage.csv",
-    "sha256": "295ef1e79411d4281351b4ce3fe527bc1e73446c13a1f379711bb1f13be265df"
+    "sha256": "d6645b4bb5c8cadae4dc166b8f3da29682fd54ca58ec8c4864dcbe2c9a5141a7"
   }
 }
