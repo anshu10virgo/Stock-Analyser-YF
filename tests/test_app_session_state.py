@@ -30,7 +30,7 @@ class AppSessionStateTests(unittest.TestCase):
         storage = self.storage
         storage.cloud = True
         storage.snapshot_id = "test-snapshot"
-        app = AppTest.from_file("app.py", default_timeout=20)
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=20)
         app.secrets["storage"] = {"provider": "r2"}
         app.secrets["GEMINI_API_KEY"] = ""
         app.secrets["OPENAI_API_KEY"] = ""
@@ -44,7 +44,7 @@ class AppSessionStateTests(unittest.TestCase):
 
     def _run_local_app(self):
         """Keep UI regressions independent of real cloud/model credentials."""
-        app = AppTest.from_file("app.py", default_timeout=20)
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=20)
         app.secrets["storage"] = {"provider": "local"}
         app.secrets["GEMINI_API_KEY"] = ""
         app.secrets["OPENAI_API_KEY"] = ""
