@@ -1,13 +1,33 @@
 """Tests for compact scan-result and selected-stock detail calculations."""
 
 import unittest
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
-from ui.results_page import _format_market_cap, _peg_ratio, _performance, prepare_results
+from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE
+from ui.results_page import _format_market_cap, _peg_ratio, _performance, prepare_results, _render_data_provenance
 
 
 class ResultsPageTests(unittest.TestCase):
+    def test_provenance_labels_match_the_recorded_scan_storage(self):
+        for source, access, expected in [
+            (SNAPSHOT_SOURCE, "cloud_snapshot", "Cloud snapshot only"),
+            (SNAPSHOT_SOURCE, "git_snapshot", "Git snapshot only"),
+            (LIVE_SOURCE, "cloud_snapshot", "Live Yahoo Finance"),
+        ]:
+            with self.subTest(expected=expected), patch("ui.results_page.st") as streamlit:
+                columns = [MagicMock() for _ in range(4)]
+                streamlit.columns.return_value = columns
+                _render_data_provenance({"market_data_source": source,
+                        "market_data_snapshot": {"access_mode": access}},
+                        {"market_data": {"snapshot_hits": 1}})
+                columns[0].metric.assert_called_once_with("Effective data source", expected)
+                if access == "cloud_snapshot" and source == SNAPSHOT_SOURCE:
+                    self.assertIn("Cloud snapshot", streamlit.success.call_args.args[0])
+                    details = streamlit.dataframe.call_args.args[0]
+                    self.assertEqual(details.iloc[0]["Value"], "Cloud snapshot")
+
     def test_main_results_only_include_total_score(self) -> None:
         """Individual scoring components belong in the selected-stock details."""
         results = prepare_results(

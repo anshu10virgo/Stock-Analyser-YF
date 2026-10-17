@@ -387,20 +387,22 @@ def _render_data_provenance(settings, metrics):
     timing = metrics.get("timing", {})
     snapshot_metadata = settings.get("market_data_snapshot", {})
     fundamentals_coverage = snapshot_metadata.get("fundamentals_coverage", {})
+    snapshot_label = ("Cloud snapshot" if snapshot_metadata.get("access_mode") == "cloud_snapshot"
+                      else "Git snapshot")
 
     if requested_source == SNAPSHOT_SOURCE:
         fallback_requests = market_metrics.get("fallback_requests", 0)
         snapshot_hits = market_metrics.get("snapshot_hits", 0)
         if snapshot_hits and not fallback_requests:
-            effective_source = "Git snapshot only"
-            st.success("Data-source verification: price history came from the Git snapshot; Yahoo fallback was not used.")
+            effective_source = f"{snapshot_label} only"
+            st.success(f"Data-source verification: price history came from the {snapshot_label}; Yahoo fallback was not used.")
         elif fallback_requests:
-            effective_source = "Git snapshot + Yahoo fallback"
+            effective_source = f"{snapshot_label} + Yahoo fallback"
             st.warning(
                 f"Data-source verification: Yahoo fallback was used for {fallback_requests} missing-data batch(es)."
             )
         else:
-            effective_source = "Git snapshot (no completed history request)"
+            effective_source = f"{snapshot_label} (no completed history request)"
     else:
         effective_source = "Live Yahoo Finance"
         st.info("Data-source verification: this scan requested live Yahoo Finance history.")
@@ -434,7 +436,7 @@ def _render_data_provenance(settings, metrics):
                     "Industries with PE benchmarks",
                 ),
                 "Value": (
-                    requested_source,
+                    snapshot_label if requested_source == SNAPSHOT_SOURCE else requested_source,
                     effective_source,
                     market_metrics.get("snapshot_hits", 0),
                     market_metrics.get("fallback_requests", 0),

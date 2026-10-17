@@ -82,6 +82,11 @@ def check_app(snapshot_id, root_layout=False):
     if app.exception or app.session_state["selected_market_data_source"] != SNAPSHOT_SOURCE:
         raise AssertionError("Cloud Setup page did not load")
     print("Cloud Setup page loaded with cloud snapshot selected.")
+    app.radio[0].set_value("2. Strategy").run()
+    source = next((metric for metric in app.metric if metric.label == "Data source"), None)
+    if app.exception or source is None or source.value != "Cloud snapshot":
+        raise AssertionError("Strategy page did not identify cloud storage")
+    print("Strategy page identifies the data source as Cloud snapshot.")
 
 
 if __name__ == "__main__":

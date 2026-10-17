@@ -1,14 +1,33 @@
 """Regression tests for Streamlit navigation session state."""
 
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
 from models.optional_filter import PEG_RATIO
 from services.data_source import SNAPSHOT_SOURCE
+from services.snapshot_storage import LocalSnapshotStorage
 
 
 class AppSessionStateTests(unittest.TestCase):
+    def test_cloud_strategy_summary_labels_the_configured_storage(self):
+        storage = LocalSnapshotStorage(Path.cwd())
+        storage.cloud = True
+        storage.snapshot_id = "test-snapshot"
+        app = AppTest.from_file("app.py", default_timeout=20)
+        app.secrets["storage"] = {"provider": "r2"}
+        app.secrets["GEMINI_API_KEY"] = ""
+        app.secrets["OPENAI_API_KEY"] = ""
+        with patch("services.storage_config.application_snapshot_storage", return_value=storage), \
+             patch("services.data_source.application_snapshot_storage", return_value=storage):
+            app.run()
+            app.radio[0].set_value("2. Strategy").run()
+        self.assertEqual(len(app.exception), 0)
+        source = next(metric for metric in app.metric if metric.label == "Data source")
+        self.assertEqual(source.value, "Cloud snapshot")
+
     def _run_local_app(self):
         """Keep UI regressions independent of real cloud/model credentials."""
         app = AppTest.from_file("app.py", default_timeout=20)

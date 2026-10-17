@@ -235,7 +235,11 @@ def render_strategy_page() -> None:
     st.divider()
     review = st.columns(3)
     review[0].metric("Stocks", f"{count:,}")
-    review[1].metric("Data source", "Git snapshot" if source == SNAPSHOT_SOURCE else "Live Yahoo")
+    source_label = "Live Yahoo"
+    if source == SNAPSHOT_SOURCE:
+        source_label = ("Cloud snapshot" if application_snapshot_storage(PROJECT_ROOT).cloud
+                        else "Git snapshot")
+    review[1].metric("Data source", source_label)
     review[2].metric(
         "Result groups",
         "Post + Impending" if settings["include_impending_crosses"] else "Post Cross",
