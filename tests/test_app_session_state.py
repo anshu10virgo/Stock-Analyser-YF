@@ -9,8 +9,16 @@ from services.data_source import SNAPSHOT_SOURCE
 
 
 class AppSessionStateTests(unittest.TestCase):
+    def _run_local_app(self):
+        """Keep UI regressions independent of real cloud/model credentials."""
+        app = AppTest.from_file("app.py", default_timeout=20)
+        app.secrets["storage"] = {"provider": "local"}
+        app.secrets["GEMINI_API_KEY"] = ""
+        app.secrets["OPENAI_API_KEY"] = ""
+        return app.run()
+
     def test_market_data_source_survives_scan_page_reruns(self):
-        app = AppTest.from_file("app.py", default_timeout=20).run()
+        app = self._run_local_app()
 
         app.radio[2].set_value(SNAPSHOT_SOURCE).run()
         app.radio[0].set_value("2. Strategy").run()
@@ -23,7 +31,7 @@ class AppSessionStateTests(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
 
     def test_optional_filters_start_empty_and_survive_strategy_reruns(self):
-        app = AppTest.from_file("app.py", default_timeout=20).run()
+        app = self._run_local_app()
         app.button[0].click().run()
 
         self.assertEqual(app.session_state["scan_config_optional_sequence"], [])

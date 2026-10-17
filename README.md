@@ -23,6 +23,8 @@ python -m streamlit run app.py
 - Formatted results, scan timestamps, and one-year interactive charts.
 - GitHub-backed Streamlit Community Cloud deployment.
 - Selectable live Yahoo or committed Git-snapshot market data.
+- Optional private R2/S3-compatible snapshots with verified local caching,
+  separate India/US storage namespaces, and versioned publication/rollback.
 - Ten-year Git-backed price history with scheduled incremental refresh support.
 - Filtered, cached single-symbol chart reads from symbol-grouped Parquet.
 - Semiannual Yahoo sector/industry classifications and committed industry P/E.
@@ -70,6 +72,15 @@ unchanged. Never commit real API keys.
 
 ## Manual stock-universe refresh
 
+For the R2-backed app, use this command to refresh the universe, synchronize
+its supporting market data, and publish a validated cloud snapshot:
+
+```powershell
+python -u scripts/refresh_cloud_market_data.py --refresh-universe
+```
+
+For the legacy Git-backed workflow, use the maintenance command below.
+
 The app does not refresh its stock list automatically. Approximately every six
 months, run the following maintenance command locally:
 
@@ -110,12 +121,29 @@ Build the initial ten-year snapshot once:
 python scripts/refresh_market_data.py --mode full
 ```
 
+For a manual daily refresh from the active R2 snapshot back to R2, after cloud
+Secrets are configured:
+
+```powershell
+python -u scripts/refresh_cloud_market_data.py
+```
+
+This uses isolated local staging, retains the existing Screener and universe
+snapshots, and publishes only when the normal daily refresh changes the data.
+See [Cloud storage](docs/cloud_storage.md) and the [deployment runbook](docs/deployment.md).
+
 The workflow `.github/workflows/refresh-market-data.yml` then runs incremental
-refreshes on weekdays after market close, validates the snapshot, and commits
-changed data to `main`. It is also manually runnable in incremental or
+refreshes on weekdays at 18:00 IST, validates the snapshot, and publishes
+changed data to R2. It is also manually runnable in incremental or
 classification, or validation-only mode. Sector/industry classifications are
 automatically preserved and refreshed every 180 days. See
 [Committed Market Data](docs/market_data.md).
+
+Both scheduled workflows require the `R2_PUBLISHER_CONFIG` GitHub Actions Secret.
+It contains the publisher configuration as JSON; no credential file is written
+to the runner checkout. The deployed app uses separate read-only Streamlit Secrets.
+The monthly Screener workflow also refreshes dependent fundamentals/PEG data
+before publishing. Neither workflow commits generated data to Git.
 
 ## Screener fundamentals refresh
 
@@ -158,7 +186,7 @@ while `.streamlit/secrets.toml` is ignored by Git.
 
 The monthly workflow
 `.github/workflows/refresh-screener-fundamentals.yml` refreshes and validates
-the complete dataset, then commits it to `main`. Normal scans and chart
+the complete dataset, then publishes it to R2. Normal scans and chart
 expansion never make a live Screener request.
 
 ## Documentation
@@ -168,3 +196,5 @@ expansion never make a live Screener request.
 - [Roadmap](docs/roadmap.md)
 - [Features](docs/features.md)
 - [Committed market data](docs/market_data.md)
+- [Cloud storage design and setup](docs/cloud_storage.md) — R2 preparation,
+  separate India/US namespaces, publication, verification, and rollback.

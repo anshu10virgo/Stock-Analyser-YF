@@ -37,6 +37,8 @@ def parse_arguments():
     parser.add_argument("--source-url", default=NSE_EQUITY_URL)
     parser.add_argument("--series", default="EQ", help="NSE series to include")
     parser.add_argument("--chunk-size", type=int, default=100)
+    parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
+                        help="Project-style root for an isolated universe refresh")
     return parser.parse_args()
 
 
@@ -69,6 +71,7 @@ def validate_candidates(candidates: pd.DataFrame, chunk_size: int):
     rejected = []
     for start in range(0, len(candidates), chunk_size):
         chunk = candidates.iloc[start:start + chunk_size]
+        print(f"Validating universe {min(start + len(chunk), len(candidates))}/{len(candidates)} symbols", flush=True)
         symbols = chunk["Symbol"].tolist()
         try:
             batch_data = provider.download_batch(symbols, years=1)
@@ -161,16 +164,20 @@ def write_refresh_artifacts(
 
 
 def main():
+    global UNIVERSE_ROOT
     arguments = parse_arguments()
+    UNIVERSE_ROOT = arguments.data_root / "data" / "stock_universe"
     raw_source = download_nse_source(arguments.source_url)
     candidates = build_candidates(raw_source, arguments.series)
+    print(f"NSE source contains {len(candidates)} {arguments.series} candidates", flush=True)
     validated, rejected, metrics = validate_candidates(candidates, arguments.chunk_size)
     if validated.empty:
         raise RuntimeError("No Yahoo symbols validated; manifest was not updated")
 
     market_cap_provider = YahooFinanceMarketCapProvider()
-    market_caps = market_cap_provider.market_caps()
-    if not market_caps:
+    print(f"Refreshing market caps for {len(validated)} validated symbols", flush=True)
+    market_caps = market_cap_provider.market_caps(validated["Symbol"].tolist())
+    if not any(symbol in market_caps for symbol in validated["Symbol"]):
         raise RuntimeError("Yahoo Finance returned no market-cap data; manifest was not updated")
     validated = rank_by_market_cap(validated, market_caps)
 

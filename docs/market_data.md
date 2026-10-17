@@ -197,3 +197,9 @@ retained for reproducibility. Unchanged symbols receive only missing sessions.
   manifest creation, deduplication, and local-only reads.
 - Manual incremental mode on a holiday verifies the no-op path and must not
   commit when Yahoo returns no new session.
+# Cloud storage preparation
+
+The [R2 storage proposal](cloud_storage.md) adds optional verified cloud reads
+and maintenance publication with separate India and US namespaces. Git remains
+active until the structure and cutover are approved. Existing refresh workflows
+continue publishing to Git during this preparation stage.

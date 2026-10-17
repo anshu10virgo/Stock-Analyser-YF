@@ -11,6 +11,8 @@ from models.scan_config import ScanConfig
 from services.backtest_service import BacktestService
 from services.data_source import LIVE_SOURCE, build_data_services
 from services.stock_universe import StockUniverse
+from services.snapshot_storage import ScopedSnapshotStorage
+from services.storage_config import application_snapshot_storage
 from ui.stock_detail import PRICE_RANGE_BUTTONS
 
 
@@ -30,7 +32,10 @@ def render_backtester_page(project_root) -> None:
         st.info("Complete Setup before running a backtest.")
         return
     config = _config(st.session_state.get("backtest_settings"))
-    universe = StockUniverse(project_root / "data" / "stock_universe")
+    universe = StockUniverse(
+        project_root / "data" / "stock_universe",
+        storage=ScopedSnapshotStorage(application_snapshot_storage(project_root), "data/stock_universe"),
+    )
     names = {}
     try:
         universe_frame = pd.read_csv(universe.active_file())
@@ -59,7 +64,9 @@ def render_backtester_page(project_root) -> None:
         selected = requested_symbols
         period = request.get("period", period)
     if st.button("Run Backtest", type="primary", disabled=not selected) or bool(requested_symbols):
-        services = build_data_services(LIVE_SOURCE, project_root)
+        services = build_data_services(
+            st.session_state.get("selected_market_data_source", LIVE_SOURCE), project_root
+        )
         years = int(period[:-1])
         batch = services.history.download_batch(selected, years=years + 2, adjusted_prices=False)
         engine = BacktestService(config, services.screener)
