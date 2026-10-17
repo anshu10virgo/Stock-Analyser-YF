@@ -1,4 +1,4 @@
-"""Construct consistent live or Git-snapshot data services."""
+"""Construct consistent live, cloud-snapshot, or downloaded-local services."""
 
 from __future__ import annotations
 
@@ -21,6 +21,12 @@ from models.market import market_data_root, market_definition
 
 LIVE_SOURCE = "Live Yahoo Finance"
 SNAPSHOT_SOURCE = "Git snapshot (Yahoo fallback if missing)"
+# Retain the historical session identifier so deployed sessions survive upgrades.
+# All user-facing labels derive from the actual storage provider.
+
+
+def snapshot_source_label(cloud):
+    return "Cloud snapshot" if cloud else "Local snapshot"
 
 
 @dataclass(frozen=True)
@@ -75,7 +81,7 @@ def build_data_services(source: str, project_root: Path, storage=None, market="I
         metadata={
             **history.metadata(),
             "market": market,
-            "access_mode": "cloud_snapshot" if storage.cloud else "git_snapshot",
+            "access_mode": "cloud_snapshot" if storage.cloud else "local_snapshot",
             **({"snapshot_id": storage.snapshot_id} if storage.cloud else {}),
         },
     )

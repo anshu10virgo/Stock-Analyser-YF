@@ -215,8 +215,9 @@ Use `[storage.snapshot_ids]` with an `IN` or `US` entry for a fixed version.
 python scripts/cloud_snapshots.py restore --market IN --snapshot-id <retained-id>
 ```
 
-Keep the Git-backed data until cutover is validated. The converted daily and
-monthly workflows publish to R2 once their changes reach the default branch.
+The current Git tree no longer includes production datasets. Exact old Git
+files are retained in a permanent verified R2 archive; the active snapshot and
+cutover baseline remain available. Daily and monthly workflows publish to R2.
 The user-approved `R2_PUBLISHER_CONFIG` GitHub Actions Secret is configured.
 Hosted validation and refresh runs remain rollout checks. See [deployment.md](deployment.md).
 
@@ -242,7 +243,8 @@ remains separate work; no password or login data belongs in market snapshots.
 - Credentials separated between application reads and maintenance writes.
 - Thirty latest catalogs, twelve monthly checkpoints, active/pinned preservation;
   scheduled dry runs and explicit reviewed cleanup.
-- First migration includes India only; Git data stays until cutover checks pass.
+- India-only Git production files are retired to a verified permanent R2 archive;
+  Git history is unchanged and local development uses explicit downloads.
 
 ## Inspecting and relocating storage
 

@@ -12,6 +12,7 @@ from email.message import EmailMessage
 
 import pandas as pd
 from PIL import Image, ImageDraw
+from services.data_source import SNAPSHOT_SOURCE, snapshot_source_label
 
 
 SMTP_HOST = "smtp.gmail.com"
@@ -80,6 +81,8 @@ def filter_rows(settings: dict, scan_time: datetime) -> pd.DataFrame:
     rows = [{"Setting": "Scan date and time", "Value": scan_time.isoformat()}]
     for key, label in SETTING_LABELS:
         value = settings.get(key, "Not recorded")
+        if key == "market_data_source" and value in {SNAPSHOT_SOURCE, "Git snapshot"}:
+            value = snapshot_source_label(settings.get("market_data_snapshot", {}).get("access_mode") == "cloud_snapshot")
         if isinstance(value, bool):
             value = "Yes" if value else "No"
         rows.append({"Setting": label, "Value": value})

@@ -18,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from services.snapshot_publication import SnapshotPublisher, prepare_snapshot, retire_legacy_snapshot
 from services.snapshot_storage import CloudSnapshotStorage, SnapshotStorageError
 from services.storage_config import create_storage_client, configured_cloud_storage, market_storage_prefix
+from services.data_retirement import export_cloud_snapshot
 
 
 def report_progress(completed, total):
@@ -27,7 +28,10 @@ def report_progress(completed, total):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("prepare", "publish", "verify", "restore", "retire-legacy", "inventory"))
+    parser.add_argument("mode", choices=("prepare", "publish", "verify", "restore", "retire-legacy", "inventory", "download"))
+    parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
+                        help="Destination project root for a local cloud snapshot download")
+    parser.add_argument("--overwrite", action="store_true", help="Explicitly overwrite differing local snapshot files")
     parser.add_argument("--snapshot-id", default="")
     parser.add_argument("--market", choices=("IN", "US"), default="IN")
     parser.add_argument("--root-layout", action="store_true", help="Use markets/ directly under the bucket")
@@ -80,6 +84,9 @@ def main():
     if arguments.snapshot_id:
         pinned_configuration["snapshot_ids"] = {arguments.market: arguments.snapshot_id}
     storage = configured_cloud_storage(pinned_configuration, PROJECT_ROOT, arguments.market)
+    if arguments.mode == "download":
+        print(json.dumps(export_cloud_snapshot(storage, arguments.data_root, arguments.overwrite), indent=2))
+        return
     if arguments.mode == "retire-legacy":
         if not arguments.legacy_snapshot_id:
             parser.error("--legacy-snapshot-id is required for retirement")

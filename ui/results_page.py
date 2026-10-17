@@ -6,7 +6,7 @@ import streamlit as st
 
 from core.indicators import Indicators
 from providers.repository_data import SnapshotUnavailableError
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
+from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services, snapshot_source_label
 from services.scan_report import (
     MailConfiguration,
     build_chart_archives,
@@ -387,8 +387,7 @@ def _render_data_provenance(settings, metrics):
     timing = metrics.get("timing", {})
     snapshot_metadata = settings.get("market_data_snapshot", {})
     fundamentals_coverage = snapshot_metadata.get("fundamentals_coverage", {})
-    snapshot_label = ("Cloud snapshot" if snapshot_metadata.get("access_mode") == "cloud_snapshot"
-                      else "Git snapshot")
+    snapshot_label = snapshot_source_label(snapshot_metadata.get("access_mode") == "cloud_snapshot")
 
     if requested_source == SNAPSHOT_SOURCE:
         fallback_requests = market_metrics.get("fallback_requests", 0)

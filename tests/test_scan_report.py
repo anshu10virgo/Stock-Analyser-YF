@@ -18,10 +18,19 @@ from services.scan_report import (
     build_workbook,
     parse_recipients,
     send_messages,
+    filter_rows,
 )
 
 
 class ScanReportTests(unittest.TestCase):
+    def test_report_source_uses_recorded_storage_instead_of_legacy_session_text(self):
+        for access, expected in [("cloud_snapshot", "Cloud snapshot"), ("local_snapshot", "Local snapshot")]:
+            with self.subTest(access=access):
+                settings = {"market_data_source": "Git snapshot",
+                            "market_data_snapshot": {"access_mode": access}}
+                rows = filter_rows(settings, datetime(2026, 10, 17)).set_index("Setting")
+                self.assertEqual(rows.loc["Market-data source", "Value"], expected)
+
     def setUp(self):
         self.scan_time = datetime(2026, 7, 27, 12, 30)
         self.settings = {

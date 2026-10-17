@@ -35,6 +35,10 @@
   rebooted Setup page shows Cloud snapshot through October 16. Hosted R2 read
   cutover is confirmed; observing the first scheduled changed-data publication
   remains the next operational check.
+- Production datasets are retired from the current Git tree in this release.
+  The exact old Git files have a verified permanent R2 archive, recorded in
+  `config/git_data_retirement.json`. Tests generate fixtures and CI checks a
+  data-free checkout. Download commands support offline local development.
 
 ## Implementation and rollout order
 
@@ -61,7 +65,7 @@
 9. Manually exercise both converted refresh jobs, then check Setup, scans, charts,
    Backtester, Ticksy, and report export against the active R2 snapshot.
 10. Rehearse rollback, verify failure notifications, and observe a scheduled daily
-    run. Retain Git-backed data until the cutover checks pass.
+    run. The permanent R2 Git-data archive and protected cutover snapshot support rollback.
 
 ## Acceptance checks
 
@@ -100,7 +104,7 @@ market data, and verifies every cloud object without publishing.
 Keep immutable files referenced by every retained catalog. Retention previews,
 offline cache cleanup, and usage reports are implemented in the
 [housekeeping workflow](storage_housekeeping.md). Scheduled housekeeping only
-reports; deletion requires the exact reviewed plan ID. Git-backed data remains
-until the retirement gates in that document pass.
+reports; deletion requires the exact reviewed plan ID. The exact old Git
+datasets are archived separately in R2; see that document for restore commands.
 
 For current commands and the physical dataset layout, see [cloud_storage.md](cloud_storage.md).

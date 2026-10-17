@@ -11,7 +11,7 @@ import streamlit as st
 from core.data_loader import DataLoader
 from models.optional_filter import OptionalFilterConfig
 from models.scan_config import ScanConfig
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
+from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services, snapshot_source_label
 from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
 from services.snapshot_storage import ScopedSnapshotStorage, SnapshotStorageError
@@ -102,9 +102,9 @@ def _render_snapshot_status(source: str) -> None:
         return
     metadata = build_data_services(SNAPSHOT_SOURCE, PROJECT_ROOT).metadata
     if not metadata.get("last_trading_date"):
-        st.warning("No committed snapshot is available. Missing requests will use Yahoo.")
+        st.warning("No stored snapshot is available. Configure cloud storage or download a local snapshot.")
         return
-    label = "Cloud snapshot" if metadata.get("access_mode") == "cloud_snapshot" else "Git snapshot"
+    label = snapshot_source_label(metadata.get("access_mode") == "cloud_snapshot")
     st.success(f"{label} available through {metadata['last_trading_date']}.")
     coverage = metadata.get("fundamentals_coverage", {})
     if coverage:
@@ -150,8 +150,8 @@ def render_setup_page() -> None:
             st.session_state[MARKET_DATA_SESSION_KEY]
         ),
         key=MARKET_DATA_WIDGET_KEY,
-        format_func=lambda value: ("Cloud snapshot" if value == SNAPSHOT_SOURCE
-            and cloud_storage else value),
+        format_func=lambda value: (snapshot_source_label(cloud_storage)
+                                   if value == SNAPSHOT_SOURCE else value),
         help="Stored snapshots use the configured storage. Cloud snapshots do not fall back to live data.",
     )
     st.session_state[MARKET_DATA_SESSION_KEY] = selected_source
@@ -237,8 +237,7 @@ def render_strategy_page() -> None:
     review[0].metric("Stocks", f"{count:,}")
     source_label = "Live Yahoo"
     if source == SNAPSHOT_SOURCE:
-        source_label = ("Cloud snapshot" if application_snapshot_storage(PROJECT_ROOT).cloud
-                        else "Git snapshot")
+        source_label = snapshot_source_label(application_snapshot_storage(PROJECT_ROOT).cloud)
     review[1].metric("Data source", source_label)
     review[2].metric(
         "Result groups",

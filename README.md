@@ -10,6 +10,19 @@ python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
+Production datasets are stored in R2 and are not included in Git checkouts.
+Configure the read-only `[storage]` section in Streamlit Secrets before starting.
+For offline development, download a complete pinned snapshot first:
+
+```powershell
+python scripts/cloud_snapshots.py download
+```
+
+Local `data/` files are ignored by Git. Set `[storage].provider = "local"` to use
+the downloaded copy. An existing differing local file is preserved unless
+`--overwrite` is explicitly supplied. Tests generate small temporary fixtures
+and require neither production data nor cloud credentials.
+
 ## Current capabilities
 
 - Guided desktop workflow with Setup, Strategy, Live Scan, Results, and
@@ -22,10 +35,11 @@ python -m streamlit run app.py
 - Yahoo Finance fundamentals with retries and in-memory caching.
 - Formatted results, scan timestamps, and one-year interactive charts.
 - GitHub-backed Streamlit Community Cloud deployment.
-- Selectable live Yahoo or committed Git-snapshot market data.
+- Selectable live Yahoo or private R2 snapshot market data, with downloaded
+  local snapshots available for development.
 - Optional private R2/S3-compatible snapshots with verified local caching,
   separate India/US storage namespaces, and versioned publication/rollback.
-- Ten-year Git-backed price history with scheduled incremental refresh support.
+- Ten-year R2-backed price history with scheduled incremental refresh support.
 - Filtered, cached single-symbol chart reads from symbol-grouped Parquet.
 - Semiannual Yahoo sector/industry classifications and committed industry P/E.
 - Committed Screener historical valuation and long-term fundamental snapshots.
@@ -79,7 +93,7 @@ its supporting market data, and publish a validated cloud snapshot:
 python -u scripts/refresh_cloud_market_data.py --refresh-universe
 ```
 
-For the legacy Git-backed workflow, use the maintenance command below.
+For local-only maintenance of a downloaded snapshot, use the command below.
 
 The app does not refresh its stock list automatically. Approximately every six
 months, run the following maintenance command locally:
@@ -103,19 +117,15 @@ data/stock_universe/
 
 The app reads `manifest.json`, which explicitly identifies the active validated
 universe and records the count of symbols with stored market-cap ranks. Review
-the generated refresh report before committing all generated
-files together in a PR, for example:
-
-```text
-Refresh NSE Yahoo stock universe — YYYY-MM-DD
-```
+the generated refresh report before using the local files. Generated datasets
+are ignored by Git; use the R2 refresh command above for production publication.
 
 The script is intentionally not exposed in Streamlit, so a user cannot change
 the production universe accidentally.
 
-## Committed market-data refresh
+## Market-data refresh
 
-Build the initial ten-year snapshot once:
+For a local ten-year rebuild after downloading the universe:
 
 ```powershell
 python scripts/refresh_market_data.py --mode full

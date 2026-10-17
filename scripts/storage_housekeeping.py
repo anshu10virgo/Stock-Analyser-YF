@@ -26,12 +26,17 @@ def git_data_audit(root, cloud_plan, policy):
     result = subprocess.run(["git", "ls-files", "-z", "--", "data"], cwd=root,
                             check=True, capture_output=True)
     paths = [path.decode("utf-8") for path in result.stdout.split(b"\0") if path]
+    record_file = root / "config/git_data_retirement.json"
+    record = json.loads(record_file.read_text(encoding="utf-8")) if record_file.is_file() else None
+    retired = not paths and record is not None and record.get("status") == "archived_and_verified"
     return {"tracked_files": len(paths),
             "tracked_bytes": sum((root / path).stat().st_size for path in paths if (root / path).is_file()),
             "baseline_snapshot_protected": policy["git_baseline_snapshot_id"] in cloud_plan["retained_snapshot_ids"],
             "changed_snapshot_active": cloud_plan["current_snapshot_id"] != policy["git_baseline_snapshot_id"],
-            "removal_performed": False,
-            "remaining_gates": ["Observe a successful changed-data publication and verify rollback",
+            "removal_performed": retired, "archive_record": record,
+            "follow_up_checks": ["Observe the next scheduled changed-data publication",
+                                 "Complete remaining hosted functional smoke checks"] if retired else [],
+            "remaining_gates": [] if retired else ["Observe a successful changed-data publication and verify rollback",
                                 "Complete hosted scan, charts, Backtester, Ticksy, and export smoke checks",
                                 "Move local-mode tests and bootstrap workflows off production Git files"],
             "paths": paths}
@@ -47,8 +52,9 @@ def workflow_write_audit(root):
         reports.append({"workflow": path.name,
             "repository_contents_permission": permission[1].strip("\"'") if permission else "not declared",
             "direct_git_write_commands": re.findall(r"\bgit\s+(?:add|commit|push)\b", source),
-            "data_target": "R2" if any(script in source for script in
-                ("refresh_cloud_market_data.py", "storage_housekeeping.py")) else "review required"})
+            "data_target": ("R2" if any(script in source for script in
+                ("refresh_cloud_market_data.py", "storage_housekeeping.py")) else
+                "No data publication" if "python -m unittest discover -s tests" in source else "review required")})
     return reports
 
 
@@ -98,7 +104,7 @@ def main():
                f"retain {len(cloud['retained_snapshot_ids'])}/{cloud['catalog_count']} snapshots; "
                f"reclaimable {cloud['reclaimable_bytes']:,} bytes.\n"
                f"Local cache: {cache['stored_bytes']:,} bytes; reclaimable {cache['reclaimable_bytes']:,} bytes.\n"
-               f"Git data retained: {result['git_data']['tracked_files']} files.\n")
+               f"Git production data still tracked: {result['git_data']['tracked_files']} files.\n")
     print(summary)
     print(f"Cloud plan: {cloud['plan_id']}\nCache plan: {cache['plan_id']}\nReport: {args.output}")
     for name, report in (("R2", cloud), ("Cache", cache)):

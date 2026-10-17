@@ -94,17 +94,34 @@ summary; job failures use the existing failure email mechanism.
 
 ## Git-backed data retirement
 
-The report inventories tracked production data and records whether a changed
-snapshot is active and the original mirror remains protected in R2. No command
-in this phase removes Git-backed data or rewrites Git history.
+The owner requested Git data retirement in this release. Every committed
+production file, including historical universe versions, is archived verbatim at
+`markets/IN/archives/git-data/<archive-id>/files/data/`. The archive manifest is
+content-addressed, all uploaded bytes are read back and verified, and
+`config/git_data_retirement.json` records the source commit and archive identity.
+This permanent archive is outside retention deletion candidates.
 
-Before retirement:
+The current Git tree no longer contains production datasets. Existing local
+copies are left on disk and ignored by Git. Tests generate temporary fixtures;
+CI also checks that its fresh checkout has no `data/` directory. The active R2
+snapshot and the protected cutover baseline are preserved.
 
-1. Observe a successful changed-data publication and rehearse rollback.
-2. Complete hosted scan, charts, Backtester, Ticksy, and export smoke checks.
-3. Replace local-mode tests' production-file dependency with small fixtures and
-   provide an explicit local bootstrap/export path for development.
-4. Review exact tracked-file removal separately. Keep the cloud baseline pinned.
+Download the current snapshot for development, including every per-symbol file:
 
-Removing files in a later commit will not shrink old Git history. Any historical
-rewrite is a separate decision and is not part of this housekeeping rollout.
+```powershell
+python scripts/cloud_snapshots.py download
+```
+
+Restore the exact old Git datasets, including historical universe versions:
+
+```powershell
+python scripts/archive_git_data.py --restore --data-root .snapshot-cache/git-archive-restore
+```
+
+Both download paths use read-only Streamlit Secrets, verify hashes, and refuse
+to overwrite differing local files without `--overwrite`. For comparisons, run
+`scripts/verify_cloud_results.py --data-root <download-root> --app`.
+
+Observing changed-data publication and completing hosted smoke checks remain
+operational follow-up. No Git history is rewritten: old commits still contain
+their historical data, so checkout retirement does not shrink existing history.

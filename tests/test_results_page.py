@@ -13,7 +13,8 @@ class ResultsPageTests(unittest.TestCase):
     def test_provenance_labels_match_the_recorded_scan_storage(self):
         for source, access, expected in [
             (SNAPSHOT_SOURCE, "cloud_snapshot", "Cloud snapshot only"),
-            (SNAPSHOT_SOURCE, "git_snapshot", "Git snapshot only"),
+            (SNAPSHOT_SOURCE, "git_snapshot", "Local snapshot only"),
+            (SNAPSHOT_SOURCE, "local_snapshot", "Local snapshot only"),
             (LIVE_SOURCE, "cloud_snapshot", "Live Yahoo Finance"),
         ]:
             with self.subTest(expected=expected), patch("ui.results_page.st") as streamlit:

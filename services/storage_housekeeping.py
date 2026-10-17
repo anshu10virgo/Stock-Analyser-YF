@@ -108,7 +108,7 @@ def retention_plan(client, bucket, prefix, policy, now=None, protected_ids=()):
         if eligible and item["LastModified"] <= cutoff:
             candidates.append({"key": key, "size_bytes": item["Size"]})
         elif (not _managed_data_key(relative) and relative != "current.json"
-              and not relative.startswith(("snapshots/", "maintenance/"))):
+              and not relative.startswith(("snapshots/", "maintenance/", "archives/git-data/"))):
             unknown.append(key)
     candidates.sort(key=lambda item: (item["key"] not in expired_catalogs, item["key"]))
     inventory = [(key, value["Size"], value.get("ETag", ""), value["LastModified"].isoformat())

@@ -3,17 +3,31 @@
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from tempfile import TemporaryDirectory
 
 from streamlit.testing.v1 import AppTest
 
 from models.optional_filter import PEG_RATIO
 from services.data_source import SNAPSHOT_SOURCE
 from services.snapshot_storage import LocalSnapshotStorage
+from tests.snapshot_fixtures import create_fixture
 
 
 class AppSessionStateTests(unittest.TestCase):
+    def setUp(self):
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.fixture_root = Path(temporary.name)
+        create_fixture(self.fixture_root)
+        self.storage = LocalSnapshotStorage(self.fixture_root)
+        for name in ("services.storage_config.application_snapshot_storage",
+                     "services.data_source.application_snapshot_storage"):
+            patched = patch(name, return_value=self.storage)
+            patched.start()
+            self.addCleanup(patched.stop)
+
     def test_cloud_strategy_summary_labels_the_configured_storage(self):
-        storage = LocalSnapshotStorage(Path.cwd())
+        storage = self.storage
         storage.cloud = True
         storage.snapshot_id = "test-snapshot"
         app = AppTest.from_file("app.py", default_timeout=20)

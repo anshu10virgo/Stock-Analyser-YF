@@ -23,11 +23,13 @@ from services.stock_universe import StockUniverse
 from services.storage_config import configured_cloud_storage
 
 
-def verify(root_layout=False, data_root=PROJECT_ROOT):
+def verify(root_layout=False, data_root=PROJECT_ROOT, snapshot_id=""):
     with (PROJECT_ROOT / ".streamlit/secrets.toml").open("rb") as stream:
         configuration = tomllib.load(stream)["storage"]
     if root_layout:
         configuration["prefix"] = ""
+    if snapshot_id:
+        configuration["snapshot_ids"] = {"IN": snapshot_id}
     cloud = configured_cloud_storage(configuration, PROJECT_ROOT)
     local = LocalSnapshotStorage(data_root)
     universes = [StockUniverse(PROJECT_ROOT, ScopedSnapshotStorage(storage, "data/stock_universe"))
@@ -96,8 +98,9 @@ if __name__ == "__main__":
         parser.add_argument("--root-layout", action="store_true", help="Check markets/ directly under the bucket")
         parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
                             help="Compare against an isolated refresh staging root")
+        parser.add_argument("--snapshot-id", default="", help="Compare against the exact downloaded snapshot")
         arguments = parser.parse_args()
-        snapshot_id = verify(arguments.root_layout, arguments.data_root)
+        snapshot_id = verify(arguments.root_layout, arguments.data_root, arguments.snapshot_id)
         if arguments.app:
             check_app(snapshot_id, arguments.root_layout)
     except Exception:

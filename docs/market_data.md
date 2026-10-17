@@ -1,4 +1,4 @@
-# Committed Market Data
+# Stored Market Data
 
 ## Purpose
 
@@ -6,8 +6,10 @@ Normal scans and automated tests should be reproducible without repeatedly
 calling Yahoo Finance. The application supports two explicit data sources:
 
 - **Live Yahoo Finance**: temporary rollout and comparison mode.
-- **Git snapshot**: committed prices and fundamentals, with Yahoo fallback only
-  when a required snapshot file or requested symbol is absent.
+- **Cloud snapshot**: versioned R2 prices and fundamentals, without Yahoo fallback.
+- **Local snapshot**: an explicitly downloaded development copy, with Yahoo
+  fallback when required local data is missing. Production datasets are ignored
+  by Git. Download them with `python scripts/cloud_snapshots.py download`.
 
 Snapshot age does not trigger a live request. Its date is shown in the app and
 updated by scheduled maintenance.

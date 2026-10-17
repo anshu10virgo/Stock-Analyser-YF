@@ -9,3 +9,5 @@ reports/
 data/market_data/screener/.staging/
 .streamlit/secrets.toml
 .snapshot-cache/
+/data/
+/markets/US/data/

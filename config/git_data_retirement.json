@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "archived_and_verified",
+  "archive_id": "fe4f3b9c912308f5ac75c48701dea2e64cafc89e69bc6e48532e5524502e2dcd",
+  "archive_prefix": "markets/IN/archives/git-data/fe4f3b9c912308f5ac75c48701dea2e64cafc89e69bc6e48532e5524502e2dcd",
+  "source_commit": "997e220ed0e8af8ec95e2bd8522ca649c4617f38",
+  "market": "IN",
+  "baseline_snapshot_id": "46d55904266d42c108dfca366d12b78889fd8e6d692d183da3c86c1ea460a3c1",
+  "file_count": 31,
+  "total_bytes": 104070342,
+  "verified_at": "2026-10-17T12:43:51.004135+00:00"
+}

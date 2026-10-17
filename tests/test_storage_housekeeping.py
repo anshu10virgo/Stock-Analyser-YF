@@ -182,9 +182,9 @@ class RetentionTests(unittest.TestCase):
 class WorkflowWriteAuditTests(unittest.TestCase):
     def test_actual_data_workflows_target_r2_with_read_only_git_permissions(self):
         reports = workflow_write_audit(Path(__file__).resolve().parents[1])
-        self.assertEqual(len(reports), 3)
+        self.assertEqual(len(reports), 4)
         for report in reports:
-            self.assertEqual(report["data_target"], "R2")
+            self.assertEqual(report["data_target"], "No data publication" if report["workflow"] == "tests.yml" else "R2")
             self.assertEqual(report["direct_git_write_commands"], [])
             self.assertEqual(report["repository_contents_permission"], "read")
 
