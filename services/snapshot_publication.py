@@ -10,6 +10,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from urllib.parse import quote
+from tempfile import TemporaryDirectory
 
 import pandas as pd
 
@@ -18,6 +19,7 @@ from services.snapshot_storage import (
     validate_catalog, dataset_object_key, TRANSFER_WORKERS,
 )
 from models.market import market_data_root, market_definition
+from services.storage_lease import StorageLease
 
 
 def json_bytes(value: dict) -> bytes:
@@ -189,6 +191,16 @@ class SnapshotPublisher:
             raise SnapshotStorageError("Uploaded object validation failed")
 
     def activate(self, snapshot_id, expected_etag):
+        with StorageLease(self.client, self.bucket, self.prefix) as lease, TemporaryDirectory() as temporary:
+            # A rollback target could have been pruned since an earlier check.
+            # Recheck remote bytes while retention is excluded by the lease.
+            candidate = CloudSnapshotStorage(self.client, self.bucket, self.prefix,
+                                            Path(temporary), snapshot_id, self.market)
+            candidate.verify_files(lambda completed, total: lease.renew() if completed % 250 == 0 else None)
+            lease.renew()
+            self._activate(snapshot_id, expected_etag)
+
+    def _activate(self, snapshot_id, expected_etag):
         condition = {"IfMatch": expected_etag} if expected_etag else {"IfNoneMatch": "*"}
         try:
             self.client.put_object(
@@ -238,6 +250,11 @@ class SnapshotPublisher:
 
     def publish(self, prepared: Path, snapshot_id: str, progress=None, copy_source=None,
                 expected_snapshot_id=None):
+        with StorageLease(self.client, self.bucket, self.prefix) as lease:
+            return self._publish(prepared, snapshot_id, progress, copy_source,
+                                 expected_snapshot_id, lease)
+
+    def _publish(self, prepared, snapshot_id, progress, copy_source, expected_snapshot_id, lease):
         if not re.fullmatch(r"[0-9a-f]{64}", snapshot_id):
             raise SnapshotStorageError("Invalid prepared snapshot ID")
         current, expected_etag = self.current()
@@ -257,6 +274,8 @@ class SnapshotPublisher:
             try:
                 for completed, future in enumerate(futures, 1):
                     future.result()
+                    if completed % 250 == 0:
+                        lease.renew()
                     if progress:
                         progress(completed, len(entries))
             except Exception:
@@ -268,8 +287,15 @@ class SnapshotPublisher:
         # Hash metadata alone cannot prove the bytes served by storage are valid.
         candidate = CloudSnapshotStorage(self.client, self.bucket, self.prefix,
                                         prepared / "verified", snapshot_id, self.market)
-        candidate.verify_files(progress)
-        self.activate(snapshot_id, expected_etag)
+        def verification_progress(completed, total):
+            if completed % 250 == 0:
+                lease.renew()
+            if progress:
+                progress(completed, total)
+
+        candidate.verify_files(verification_progress)
+        lease.renew()
+        self._activate(snapshot_id, expected_etag)
         return self.metrics.copy()
 
 

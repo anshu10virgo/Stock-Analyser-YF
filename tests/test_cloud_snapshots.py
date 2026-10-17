@@ -236,7 +236,8 @@ class CloudSnapshotTests(unittest.TestCase):
 
     def test_concurrent_activation_cannot_overwrite_another_publisher(self):
         _, etag = self.publisher.current()
-        self.publisher.activate("a" * 64, etag)
+        self.client.objects["markets/IN/current.json"] = json_bytes(
+            {"snapshot_id": self.snapshot_id, "changed": True})
         with self.assertRaisesRegex(SnapshotStorageError, "Another publisher"):
             self.publisher.activate(self.snapshot_id, etag)
 

@@ -222,11 +222,12 @@ Hosted validation and refresh runs remain rollout checks. See [deployment.md](de
 
 ## Retention and future features
 
-Start with a proposed 30 completed daily snapshots plus selected monthly
-checkpoints. This is a policy proposal, not an enabled deletion job. Do not put
-an age-only expiration rule on dataset folders: an old versioned file may still
-be referenced by the current catalog. Future cleanup must keep every versioned file
-referenced by any retained catalog. Monitor total bytes and request usage.
+The implemented policy keeps the latest 30 catalogs, 12 monthly checkpoints,
+the active catalog, and protected snapshot IDs, with a seven-day upload grace
+period. Weekly housekeeping previews and per-refresh usage reports are enabled;
+deletion requires an exact reviewed plan ID. Shared referenced files are
+preserved. See [storage housekeeping](storage_housekeeping.md) for offline cache
+cleanup and Git-data retirement gates. Do not use age-only dataset expiration.
 
 Reserve separate namespaces for scan history, reports, and approved notes when
 those features are implemented. Persist market, strategy, schema, and snapshot
@@ -239,7 +240,8 @@ remains separate work; no password or login data belongs in market snapshots.
 - Readable, immutable dataset files plus versioned catalogs and an active pointer per market.
 - Annual files for bulk scans and per-symbol files for chart reads.
 - Credentials separated between application reads and maintenance writes.
-- Proposed 30 daily snapshots with monthly checkpoints; cleanup deferred.
+- Thirty latest catalogs, twelve monthly checkpoints, active/pinned preservation;
+  scheduled dry runs and explicit reviewed cleanup.
 - First migration includes India only; Git data stays until cutover checks pass.
 
 ## Inspecting and relocating storage

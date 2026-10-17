@@ -55,6 +55,12 @@ jobs:
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
         run: python -u scripts/refresh_cloud_market_data.py --config-source github --mode "$REFRESH_MODE"
 
+      - name: Report R2 storage usage
+        if: ${{ github.event.inputs.mode != 'notification-test' }}
+        env:
+          R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
+        run: python scripts/storage_housekeeping.py --config-source github
+
       - name: Save refresh reports
         if: ${{ always() && github.event.inputs.mode != 'notification-test' }}
         uses: actions/upload-artifact@v4
@@ -63,6 +69,7 @@ jobs:
           path: |
             .snapshot-cache/market-refresh/IN/*/refresh_report.json
             .snapshot-cache/refresh_failure.json
+            .snapshot-cache/housekeeping-report.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14

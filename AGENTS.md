@@ -14,7 +14,7 @@ These instructions apply to the entire repository.
 - Require explicit user confirmation before a Ticksy action changes strategy
   settings or prepares a scan or Backtest.
 - Keep API keys only in Streamlit Secrets. Never commit `.streamlit/secrets.toml`.
-  User-approved exception: scheduled R2 refresh jobs may use the repository's
+  User-approved exception: R2 refresh and housekeeping jobs may use the repository's
   `R2_PUBLISHER_CONFIG` GitHub Actions Secret. The hosted app receives only
   read-only R2 credentials in Streamlit Secrets, never publisher credentials.
 - Preserve the established `Stock Analyser` visual theme and concise UI labels.

@@ -97,8 +97,10 @@ For a safe first test, manually dispatch each workflow with `mode=validate`.
 That mode stages the current R2 source, checks the corresponding dataset and
 market data, and verifies every cloud object without publishing.
 
-Keep immutable files referenced by every retained catalog. Do not apply age-only
-deletion to shared dataset objects. Add bounded local-cache cleanup and storage
-usage reporting as operational follow-up.
+Keep immutable files referenced by every retained catalog. Retention previews,
+offline cache cleanup, and usage reports are implemented in the
+[housekeeping workflow](storage_housekeeping.md). Scheduled housekeeping only
+reports; deletion requires the exact reviewed plan ID. Git-backed data remains
+until the retirement gates in that document pass.
 
 For current commands and the physical dataset layout, see [cloud_storage.md](cloud_storage.md).

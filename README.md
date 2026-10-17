@@ -131,6 +131,8 @@ python -u scripts/refresh_cloud_market_data.py
 This uses isolated local staging, retains the existing Screener and universe
 snapshots, and publishes only when the normal daily refresh changes the data.
 See [Cloud storage](docs/cloud_storage.md) and the [deployment runbook](docs/deployment.md).
+See [Storage housekeeping](docs/storage_housekeeping.md) for retention previews,
+offline cache cleanup, usage reports, and Git-data retirement gates.
 
 The workflow `.github/workflows/refresh-market-data.yml` then runs incremental
 refreshes on weekdays at 18:00 IST, validates the snapshot, and publishes

@@ -1,0 +1,60 @@
+name: R2 storage housekeeping
+
+on:
+  schedule:
+    - cron: "15 1 * * 0"
+  workflow_dispatch:
+    inputs:
+      apply_plan_id:
+        description: "Optional reviewed cloud plan ID; leave empty for a dry run"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r2-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  housekeeping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Preview or apply reviewed retention plan
+        env:
+          R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
+          APPLY_PLAN_ID: ${{ github.event.inputs.apply_plan_id }}
+        run: |
+          OPTIONS=()
+          if [ -n "$APPLY_PLAN_ID" ]; then
+            OPTIONS+=(--apply-cloud-plan "$APPLY_PLAN_ID")
+          fi
+          python -u scripts/storage_housekeeping.py --config-source github "${OPTIONS[@]}"
+      - name: Save housekeeping report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-housekeeping-report
+          path: .snapshot-cache/housekeeping-report.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Email housekeeping failure
+        if: ${{ failure() }}
+        env:
+          REFRESH_SMTP_USERNAME: anshu10virgo@gmail.com
+          REFRESH_SMTP_APP_PASSWORD: ${{ secrets.REFRESH_SMTP_APP_PASSWORD }}
+          REFRESH_ALERT_RECIPIENT: anshu10virgo@gmail.com
+        run: python scripts/send_refresh_failure_email.py
