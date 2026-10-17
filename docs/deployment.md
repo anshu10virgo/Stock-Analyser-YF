@@ -19,9 +19,18 @@
 - Candidates now pass full remote hash verification before pointer activation.
 - The latest universe refresh did not publish because Yahoo rate-limited market
   caps. Retain the existing valid universe until a complete refresh succeeds.
-- Migration changes are published on `deploy/r2-scheduled-refresh` for review in
-  [PR #19](https://github.com/anshu10virgo/Stock-Analyser-YF/pull/19). The production
-  schedule changes only after merge to `main`.
+- [PR #19](https://github.com/anshu10virgo/Stock-Analyser-YF/pull/19) was merged to
+  `main` on October 17, 2026 (`72e1835`). Both R2 refresh schedules are configured
+  on the default branch.
+- Both GitHub-hosted validation-only jobs passed, as did 146 local unit tests and
+  local/R2 universe, sample stock, scanner, Backtester, and Setup comparisons.
+- The first [normal production refresh](https://github.com/anshu10virgo/Stock-Analyser-YF/actions/runs/39027024667)
+  passed on October 17. It validated 3,939,371 stored price rows through October
+  16 and returned `no_new_data`, retaining the active snapshot. No rate-limit
+  messages were reported. A changed-data publication still needs observation.
+- Hosted app: https://stock-analyser-yf.streamlit.app/. Read-only Streamlit
+  Secrets configuration and confirmation of the Cloud snapshot UI remain pending.
+  No browser session was available to edit the dashboard during this rollout.
 
 ## Implementation and rollout order
 
@@ -65,8 +74,7 @@
 
 The existing daily schedule is weekdays at 12:30 UTC (18:00 Asia/Kolkata).
 The existing Screener schedule is 22:00 UTC on the first day of each month
-(03:30 Asia/Kolkata on the second). The converted schedules take effect only
-after the workflow changes reach the default branch.
+(03:30 Asia/Kolkata on the second). The converted workflows are now on `main`.
 
 ## Scheduled credentials
 
