@@ -12,7 +12,7 @@
 
 - R2 reader, immutable datasets, catalog pinning, and rollback commands exist.
 - The manual daily R2 refresh command exists.
-- Daily and monthly workflows are prepared to publish to R2 instead of Git.
+- Daily and monthly workflows are active on `main` and publish to R2 instead of Git.
 - The user approved a GitHub Actions Secrets exception for scheduled R2 jobs.
   `R2_PUBLISHER_CONFIG` has been configured securely in the repository. App and
   model credentials remain in Streamlit Secrets.
@@ -28,9 +28,13 @@
   passed on October 17. It validated 3,939,371 stored price rows through October
   16 and returned `no_new_data`, retaining the active snapshot. No rate-limit
   messages were reported. A changed-data publication still needs observation.
-- Hosted app: https://stock-analyser-yf.streamlit.app/. Read-only Streamlit
-  Secrets configuration and confirmation of the Cloud snapshot UI remain pending.
-  No browser session was available to edit the dashboard during this rollout.
+- Hosted app: https://stock-analyser-yf.streamlit.app/. On October 17, the owner
+  confirmed saving read-only `[storage]` settings and rebooting. The public page
+  responds with HTTP 200. R2 still contains a matching universe/market-data pair,
+  2,287 symbols, and prices through October 16. The owner also confirmed that the
+  rebooted Setup page shows Cloud snapshot through October 16. Hosted R2 read
+  cutover is confirmed; observing the first scheduled changed-data publication
+  remains the next operational check.
 
 ## Implementation and rollout order
 
