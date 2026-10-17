@@ -1,4 +1,4 @@
-name: Refresh committed Screener fundamentals
+name: Refresh R2 Screener fundamentals
 
 on:
   schedule:
@@ -15,10 +15,10 @@ on:
           - validate
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: committed-data-refresh
+  group: r2-data-refresh
   cancel-in-progress: false
 
 jobs:
@@ -26,11 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: Check out main
+      - name: Check out workflow revision
         uses: actions/checkout@v6
         with:
-          ref: main
-          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -44,25 +43,20 @@ jobs:
       - name: Refresh or validate Screener snapshot
         env:
           REFRESH_MODE: ${{ github.event.inputs.mode || 'refresh' }}
-        run: python scripts/refresh_screener_fundamentals.py --mode "$REFRESH_MODE"
+          R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
+        run: python -u scripts/refresh_cloud_market_data.py --config-source github --dataset screener --mode "$REFRESH_MODE"
 
-      - name: Validate refreshed snapshot
-        if: ${{ github.event.inputs.mode != 'validate' }}
-        run: python scripts/refresh_screener_fundamentals.py --mode validate
-
-      - name: Commit changed Screener data
-        if: ${{ github.event.inputs.mode != 'validate' }}
-        run: |
-          if [ -z "$(git status --porcelain -- data/market_data/screener)" ]; then
-            echo "No Screener data changes to commit."
-            exit 0
-          fi
-          git config user.name "stock-analyser-data-bot"
-          git config user.email "stock-analyser-data-bot@users.noreply.github.com"
-          git add data/market_data/screener
-          git commit -m "Refresh committed Screener fundamentals $(date -u +%F) [skip ci]"
-          git pull --rebase origin main
-          git push origin HEAD:main
+      - name: Save refresh reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-screener-refresh-report
+          path: |
+            .snapshot-cache/screener-refresh/IN/*/refresh_report.json
+            .snapshot-cache/refresh_failure.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Email refresh failure
         if: ${{ failure() }}

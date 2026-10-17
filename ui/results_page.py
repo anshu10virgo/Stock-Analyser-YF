@@ -314,7 +314,7 @@ def render_selected_stock(result, settings, show_score=True):
     symbol = result["symbol"]
     source = settings.get("market_data_source", LIVE_SOURCE)
     snapshot = settings.get("market_data_snapshot", {})
-    snapshot_version = snapshot.get("generated_at") or snapshot.get(
+    snapshot_version = snapshot.get("snapshot_id") or snapshot.get("generated_at") or snapshot.get(
         "last_trading_date", "live"
     )
     history_years = int(snapshot.get("retention_calendar_years") or 10)

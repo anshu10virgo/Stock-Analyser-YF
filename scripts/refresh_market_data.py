@@ -47,7 +47,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("full", "incremental", "classifications", "optimize", "validate"),
+        choices=("full", "incremental", "classifications", "fundamentals", "optimize", "validate"),
         default="incremental",
     )
     parser.add_argument(
@@ -56,6 +56,8 @@ def parse_arguments():
         help="Use deterministic long-form CSV rows instead of calling Yahoo.",
     )
     parser.add_argument("--chunk-size", type=int, default=CHUNK_SIZE)
+    parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
+                        help="Project-style root for an isolated data refresh")
     parser.add_argument(
         "--refresh-classifications",
         action="store_true",
@@ -296,6 +298,7 @@ def build_fundamentals(
     universe_frame: pd.DataFrame,
     classifications: pd.DataFrame | None = None,
     profit_growth_3y_by_symbol: dict[str, float] | None = None,
+    existing_fundamentals: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Build a batch fundamentals snapshot from Yahoo's India screener."""
     quotes = YahooFinanceMarketCapProvider().quotes()
@@ -311,8 +314,20 @@ def build_fundamentals(
         else {}
     )
     rows = []
+    existing_records = (existing_fundamentals.set_index("symbol").to_dict("index")
+                        if existing_fundamentals is not None and not existing_fundamentals.empty
+                        else {})
     for symbol in universe_frame["Symbol"]:
         quote = quotes.get(symbol, {})
+        if not quote and symbol in existing_records:
+            retained = {"symbol": symbol, **existing_records[symbol],
+                        "quote_status": "retained_previous_snapshot"}
+            pe = retained.get("pe")
+            growth = profit_growth_3y_by_symbol.get(symbol)
+            retained["peg_ratio"] = (pe / growth if pd.notna(pe) and pe > 0
+                                      and pd.notna(growth) and growth > 0 else None)
+            rows.append(retained)
+            continue
         classification = classification_records.get(symbol, {})
         eps = quote.get("epsTrailingTwelveMonths")
         pe = quote.get("trailingPE")
@@ -344,6 +359,7 @@ def build_fundamentals(
                 "industry": classification.get("industry"),
                 "revenue_growth": None,
                 "earnings_growth": None,
+                "quote_status": "refreshed" if quote else "unavailable",
             }
         )
     return pd.DataFrame(rows)
@@ -409,7 +425,13 @@ def write_supporting_files(
             ),
             encoding="utf-8",
         )
-    fundamentals = build_fundamentals(universe_frame, classifications)
+    existing_fundamentals = pd.read_csv(fundamentals_file) if fundamentals_file.is_file() else None
+    fundamentals = build_fundamentals(universe_frame, classifications,
+                                      existing_fundamentals=existing_fundamentals)
+    retained = int(fundamentals.get("quote_status", pd.Series(dtype=str))
+                   .eq("retained_previous_snapshot").sum())
+    if retained:
+        print(f"Retained prior fundamentals for {retained} symbols without fresh Yahoo quotes", flush=True)
     fundamentals.to_csv(fundamentals_file, index=False)
     calculate_industry_valuations(fundamentals).to_csv(industry_file, index=False)
 
@@ -553,6 +575,7 @@ def download_incremental(symbols, existing, chunk_size):
         return validate_prices(pd.concat(frames, ignore_index=True)) if frames else pd.DataFrame(columns=PRICE_COLUMNS)
     for start in range(0, len(symbols), chunk_size):
         chunk = symbols[start:start + chunk_size]
+        print(f"Checking new rows for {min(start + len(chunk), len(symbols))}/{len(symbols)} symbols", flush=True)
         batch = provider.download_range(
             chunk,
             start=start_date,
@@ -589,7 +612,7 @@ def refresh(
         print(f"Validated {len(existing):,} stored rows through {existing['Date'].max().date()}")
         return None
 
-    if mode in {"classifications", "optimize"}:
+    if mode in {"classifications", "fundamentals", "optimize"}:
         if existing.empty:
             raise RuntimeError("No committed market-data snapshot exists")
         incoming = pd.DataFrame(columns=PRICE_COLUMNS)
@@ -610,7 +633,7 @@ def refresh(
         != universe.metadata().get("sha256")
     ) if (MARKET_ROOT / "manifest.json").is_file() else False
     if (
-        mode not in {"classifications", "optimize"}
+        mode not in {"classifications", "fundamentals", "optimize"}
         and incoming.empty
         and not existing.empty
         and not universe_changed
@@ -641,7 +664,7 @@ def refresh(
             force_classifications=(
                 force_classifications or mode == "classifications"
             ),
-            allow_classification_refresh=replay_file is None,
+            allow_classification_refresh=replay_file is None and mode != "fundamentals",
         )
     )
     manifest = write_manifest(
@@ -655,7 +678,10 @@ def refresh(
 
 
 def main():
+    global MARKET_ROOT, UNIVERSE_ROOT
     arguments = parse_arguments()
+    MARKET_ROOT = arguments.data_root / "data" / "market_data"
+    UNIVERSE_ROOT = arguments.data_root / "data" / "stock_universe"
     refresh(
         arguments.mode,
         arguments.replay_file,

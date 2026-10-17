@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from copy import deepcopy
 from pathlib import Path
+
+from services.snapshot_storage import LocalSnapshotStorage
 
 import pandas as pd
 
@@ -38,8 +39,9 @@ class RepositoryHistoryProvider:
 
     FILTERED_SYMBOL_LIMIT = 10
 
-    def __init__(self, root: Path, fallback=None) -> None:
+    def __init__(self, root: Path, fallback=None, storage=None) -> None:
         self.root = Path(root)
+        self.storage = storage or LocalSnapshotStorage(root)
         self.fallback = fallback
         self.manifest_file = self.root / "manifest.json"
         self._prices = None
@@ -54,14 +56,18 @@ class RepositoryHistoryProvider:
         }
 
     def metadata(self) -> dict:
-        if not self.manifest_file.is_file():
+        try:
+            return self.storage.read_json("manifest.json")
+        except FileNotFoundError:
             return {}
-        return json.loads(self.manifest_file.read_text(encoding="utf-8"))
 
-    def _price_paths(self) -> list[Path]:
+    def _price_paths(self, symbols=None) -> list[Path]:
         manifest = self.metadata()
         entries = manifest.get("price_files", [])
-        paths = [self.root / entry["path"] for entry in entries]
+        symbol_files = manifest.get("symbol_price_files", {})
+        if symbols and symbol_files:
+            entries = [symbol_files[symbol] for symbol in symbols if symbol in symbol_files]
+        paths = [self.storage.path(entry["path"]) for entry in entries]
         if not paths or any(not path.is_file() for path in paths):
             raise SnapshotUnavailableError("Committed market-data price files are missing")
         return paths
@@ -91,7 +97,7 @@ class RepositoryHistoryProvider:
     ) -> pd.DataFrame:
         """Read only requested symbols from Parquet-backed partitions."""
         frames = []
-        for path in self._price_paths():
+        for path in self._price_paths(symbols):
             if path.suffix == ".parquet":
                 symbol_filter = (
                     ("Symbol", "==", symbols[0])
@@ -112,7 +118,7 @@ class RepositoryHistoryProvider:
                 frames.append(frame)
         self._metrics["filtered_partition_reads"] += 1
         if not frames:
-            return pd.DataFrame()
+            return pd.DataFrame(columns=["Date", "Symbol", *PRICE_COLUMNS])
         prices = pd.concat(frames, ignore_index=True)
         prices["Date"] = pd.to_datetime(prices["Date"], errors="coerce")
         prices.sort_values(["Date", "Symbol"], inplace=True)
@@ -201,17 +207,19 @@ class RepositoryHistoryProvider:
 class RepositoryFundamentalsProvider:
     """Read committed fundamentals, with optional fallback only when absent."""
 
-    def __init__(self, root: Path, fallback=None) -> None:
-        self.file = Path(root) / "fundamentals" / "fundamentals.csv"
+    def __init__(self, root: Path, fallback=None, storage=None) -> None:
+        self.storage = storage or LocalSnapshotStorage(root)
+        self.relative_file = "fundamentals/fundamentals.csv"
         self.fallback = fallback
         self._records = None
 
     def _load(self) -> dict:
         if self._records is not None:
             return self._records
-        if not self.file.is_file():
+        path = self.storage.path(self.relative_file)
+        if not path.is_file():
             raise SnapshotUnavailableError("Committed fundamentals file is missing")
-        frame = pd.read_csv(self.file)
+        frame = pd.read_csv(path)
         if "symbol" not in frame.columns:
             raise SnapshotUnavailableError("Committed fundamentals schema is invalid")
         self._records = frame.set_index("symbol").to_dict("index")
@@ -232,8 +240,9 @@ class RepositoryFundamentalsProvider:
 class RepositoryIndustryValuationService:
     """Read committed industry P/E benchmarks without live peer requests."""
 
-    def __init__(self, root: Path, fallback=None) -> None:
-        self.file = Path(root) / "fundamentals" / "industry_valuations.csv"
+    def __init__(self, root: Path, fallback=None, storage=None) -> None:
+        self.storage = storage or LocalSnapshotStorage(root)
+        self.relative_file = "fundamentals/industry_valuations.csv"
         self.fallback = fallback
         self._records = None
         self._metrics = {"requests": 0, "snapshot_hits": 0, "fallback_requests": 0, "failures": 0}
@@ -249,9 +258,10 @@ class RepositoryIndustryValuationService:
     def _load(self):
         if self._records is not None:
             return self._records
-        if not self.file.is_file():
+        path = self.storage.path(self.relative_file)
+        if not path.is_file():
             raise SnapshotUnavailableError("Committed industry valuation file is missing")
-        frame = pd.read_csv(self.file)
+        frame = pd.read_csv(path)
         if "industry" not in frame.columns:
             raise SnapshotUnavailableError("Committed industry valuation schema is invalid")
         self._records = frame.set_index("industry").to_dict("index")
@@ -286,15 +296,17 @@ class RepositoryIndustryValuationService:
 class RepositoryScreenerProvider:
     """Read committed Screener summary and historical valuation datasets."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, storage=None) -> None:
         self.root = Path(root)
+        self.storage = storage or LocalSnapshotStorage(root)
         self.manifest_file = self.root / "manifest.json"
         self._summary = None
 
     def metadata(self) -> dict:
-        if not self.manifest_file.is_file():
+        try:
+            return self.storage.read_json("manifest.json")
+        except FileNotFoundError:
             return {}
-        return json.loads(self.manifest_file.read_text(encoding="utf-8"))
 
     def _manifest_path(self, key: str) -> Path:
         manifest = self.metadata()
@@ -304,8 +316,8 @@ class RepositoryScreenerProvider:
             raise SnapshotUnavailableError(
                 f"Committed Screener manifest has no {key}"
             )
-        path = (self.root / relative_path).resolve()
-        if self.root.resolve() not in path.parents or not path.is_file():
+        path = self.storage.path(relative_path)
+        if not path.is_file():
             raise SnapshotUnavailableError(
                 f"Committed Screener {key} is missing"
             )
@@ -347,7 +359,11 @@ class RepositoryScreenerProvider:
         }
 
     def valuation_history(self, symbol: str) -> pd.DataFrame:
-        path = self._manifest_path("history_file")
+        symbol_files = self.metadata().get("symbol_history_files", {})
+        if symbol_files and symbol not in symbol_files:
+            raise SnapshotUnavailableError(f"No stored valuation history for {symbol}")
+        path = (self.storage.path(symbol_files[symbol]["path"])
+                if symbol in symbol_files else self._manifest_path("history_file"))
         if path.suffix == ".parquet":
             frame = pd.read_parquet(path, filters=[("symbol", "==", symbol)])
         else:

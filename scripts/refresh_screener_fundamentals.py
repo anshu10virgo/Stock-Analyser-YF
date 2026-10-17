@@ -45,6 +45,8 @@ def parse_arguments():
         default="refresh",
     )
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
+                        help="Project-style root for an isolated refresh")
     parser.add_argument(
         "--sleep-seconds",
         type=float,
@@ -423,8 +425,10 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     arguments = parse_arguments()
+    SCREENER_ROOT = arguments.data_root / "data/market_data/screener"
+    UNIVERSE_ROOT = arguments.data_root / "data/stock_universe"
     if arguments.mode == "validate":
-        result = validate_snapshot()
+        result = validate_snapshot(SCREENER_ROOT)
         logger.info(
             "Validated Screener snapshot generated %s for %s symbols",
             result["generated_at"],
@@ -432,6 +436,7 @@ if __name__ == "__main__":
         )
     else:
         refresh(
+            root=SCREENER_ROOT,
             batch_size=arguments.batch_size,
             sleep_seconds=arguments.sleep_seconds,
             restart=arguments.restart,

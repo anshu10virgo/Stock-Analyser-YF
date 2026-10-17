@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime, timedelta
 from threading import RLock
 
 import pandas as pd
 import yfinance as yf
+from yfinance.exceptions import YFRateLimitError
 
 
 logger = logging.getLogger(__name__)
@@ -278,13 +281,43 @@ class YahooFinanceMarketCapProvider:
         }
         return deepcopy(self._quotes)
 
-    def market_caps(self) -> dict[str, float]:
-        """Return available INR market caps keyed by Yahoo NSE symbol."""
-        return {
+    def market_caps(self, symbols=None) -> dict[str, float]:
+        """Use direct ticker requests if the screener has no requested caps."""
+        caps = {
             symbol: float(quote["marketCap"])
             for symbol, quote in self.quotes().items()
             if quote.get("marketCap") is not None
         }
+        requested = list(dict.fromkeys(symbols or []))
+        if not requested or any(symbol in caps for symbol in requested):
+            return caps
+
+        logger.warning("Yahoo screener returned no requested market caps; using direct ticker data")
+        self._metrics["direct_requests"] = 0
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            # Submit only one small batch at a time so throttling aborts promptly
+            # instead of treating the remaining universe as missing data.
+            for start in range(0, len(requested), 8):
+                batch = requested[start:start + 8]
+                self._metrics["direct_requests"] += len(batch)
+                for symbol, value in executor.map(self._direct_market_cap, batch):
+                    if value is None:
+                        self._metrics["failures"] += 1
+                    else:
+                        caps[symbol] = value
+        return caps
+
+    @staticmethod
+    def _direct_market_cap(symbol):
+        try:
+            value = float(yf.Ticker(symbol).fast_info.market_cap)
+            if math.isfinite(value) and value > 0:
+                return symbol, value
+        except YFRateLimitError:
+            raise
+        except Exception as error:
+            logger.warning("Yahoo market cap unavailable for %s: %s", symbol, error)
+        return symbol, None
 
     def _screen(self, query, offset: int) -> dict:
         self._metrics["requests"] += 1

@@ -14,6 +14,8 @@ from models.scan_config import ScanConfig
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services
 from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
+from services.snapshot_storage import ScopedSnapshotStorage, SnapshotStorageError
+from services.storage_config import application_snapshot_storage
 from ui.introduction_page import render_introduction
 from ui.backtester_page import render_backtester_page
 from ui.results_page import prepare_results, render_optional_failures, render_results, render_selected_stock
@@ -34,15 +36,27 @@ NAVIGATION_OPTIONS = (
     "4. Results",
     "5. Backtester",
 )
-STOCK_UNIVERSE = StockUniverse(
-    PROJECT_ROOT / "data" / "stock_universe",
-)
+
+
+def _stock_universe():
+    return StockUniverse(
+        PROJECT_ROOT / "data" / "stock_universe",
+        storage=ScopedSnapshotStorage(
+            application_snapshot_storage(PROJECT_ROOT), "data/stock_universe"
+        ),
+    )
 
 
 def _initialise_session() -> None:
     """Initialise durable workflow choices independently of widget lifecycle."""
     if MARKET_DATA_SESSION_KEY not in st.session_state:
-        st.session_state[MARKET_DATA_SESSION_KEY] = LIVE_SOURCE
+        try:
+            storage_provider = st.secrets.get("storage", {}).get("provider", "local")
+        except FileNotFoundError:
+            storage_provider = "local"
+        st.session_state[MARKET_DATA_SESSION_KEY] = (
+            SNAPSHOT_SOURCE if storage_provider in {"r2", "s3"} else LIVE_SOURCE
+        )
     if st.session_state.get("app_section") not in NAVIGATION_OPTIONS:
         st.session_state["app_section"] = "1. Setup"
     requested_section = st.session_state.pop("_next_app_section", None)
@@ -79,7 +93,7 @@ def _load_symbols(source: str, uploaded_file) -> list[str]:
         return []
     if uploaded_file is not None:
         return DataLoader.load_symbols(uploaded_file, uploaded_file.name)
-    return DataLoader.load_symbols(STOCK_UNIVERSE.active_file())
+    return DataLoader.load_symbols(_stock_universe().active_file())
 
 
 def _render_snapshot_status(source: str) -> None:
@@ -90,7 +104,8 @@ def _render_snapshot_status(source: str) -> None:
     if not metadata.get("last_trading_date"):
         st.warning("No committed snapshot is available. Missing requests will use Yahoo.")
         return
-    st.success(f"Git snapshot available through {metadata['last_trading_date']}.")
+    label = "Cloud snapshot" if metadata.get("access_mode") == "cloud_snapshot" else "Git snapshot"
+    st.success(f"{label} available through {metadata['last_trading_date']}.")
     coverage = metadata.get("fundamentals_coverage", {})
     if coverage:
         st.caption(
@@ -106,6 +121,11 @@ def render_setup_page() -> None:
     _render_hero()
     st.subheader("Market and data setup")
     st.caption("Complete these choices once; they remain active for this session.")
+    try:
+        cloud_storage = application_snapshot_storage(PROJECT_ROOT).cloud
+    except SnapshotStorageError as error:
+        st.error(str(error))
+        return
     market_col, universe_col = st.columns(2)
     market_col.selectbox(
         "Stock market",
@@ -130,14 +150,20 @@ def render_setup_page() -> None:
             st.session_state[MARKET_DATA_SESSION_KEY]
         ),
         key=MARKET_DATA_WIDGET_KEY,
-        help="Git snapshot uses committed data and contacts Yahoo only for missing snapshot data.",
+        format_func=lambda value: ("Cloud snapshot" if value == SNAPSHOT_SOURCE
+            and cloud_storage else value),
+        help="Stored snapshots use the configured storage. Cloud snapshots do not fall back to live data.",
     )
     st.session_state[MARKET_DATA_SESSION_KEY] = selected_source
-    _render_snapshot_status(selected_source)
+    try:
+        _render_snapshot_status(selected_source)
+    except SnapshotStorageError as error:
+        st.error(str(error))
+        return
 
     try:
         symbols = _load_symbols(source, uploaded_file)
-    except ValueError as error:
+    except (ValueError, OSError, SnapshotStorageError) as error:
         st.error(f"Could not read the stock universe: {error}")
         symbols = []
 
@@ -154,7 +180,7 @@ def render_setup_page() -> None:
             key="stock_count",
             help="The included universe is ordered by stored market-cap rank.",
         )
-        metadata = STOCK_UNIVERSE.metadata()
+        metadata = _stock_universe().metadata()
         st.success(f"{len(symbols):,} ranked symbols are available.")
         if metadata.get("refreshed_at"):
             st.caption(f"Active universe refreshed: {metadata['refreshed_at']}")

@@ -37,6 +37,30 @@ class FakeQuoteProvider:
 
 
 class MarketDataRefreshTests(unittest.TestCase):
+    def test_missing_quotes_preserve_previous_fundamentals_with_status(self):
+        universe = pd.DataFrame({"Symbol": ["OLD.NS", "NEW.NS"],
+                                 "Company Name": ["Old", "New"]})
+        previous = pd.DataFrame({"symbol": ["OLD.NS"], "market_cap": [1000],
+                                 "pe": [15], "industry": ["Software"]})
+        with patch.object(refresh_market_data, "YahooFinanceMarketCapProvider") as provider:
+            provider.return_value.quotes.return_value = {}
+            result = refresh_market_data.build_fundamentals(
+                universe, profit_growth_3y_by_symbol={}, existing_fundamentals=previous
+            ).set_index("symbol")
+        self.assertEqual(result.loc["OLD.NS", "pe"], 15)
+        self.assertEqual(result.loc["OLD.NS", "quote_status"], "retained_previous_snapshot")
+        self.assertEqual(result.loc["NEW.NS", "quote_status"], "unavailable")
+        self.assertTrue(pd.isna(result.loc["NEW.NS", "pe"]))
+
+    def test_retained_pe_uses_refreshed_screener_growth_for_peg(self):
+        universe = pd.DataFrame({"Symbol": ["OLD.NS"]})
+        previous = pd.DataFrame({"symbol": ["OLD.NS"], "pe": [15], "peg_ratio": [99]})
+        with patch.object(refresh_market_data, "YahooFinanceMarketCapProvider") as provider:
+            provider.return_value.quotes.return_value = {}
+            result = refresh_market_data.build_fundamentals(universe,
+                        profit_growth_3y_by_symbol={"OLD.NS": 5}, existing_fundamentals=previous)
+        self.assertEqual(result.iloc[0]["peg_ratio"], 3)
+
     def test_loads_profit_growth_from_active_screener_snapshot(self):
         with TemporaryDirectory() as directory, patch.object(
             refresh_market_data, "MARKET_ROOT", Path(directory)
