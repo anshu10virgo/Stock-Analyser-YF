@@ -19,8 +19,9 @@
 - Candidates now pass full remote hash verification before pointer activation.
 - The latest universe refresh did not publish because Yahoo rate-limited market
   caps. Retain the existing valid universe until a complete refresh succeeds.
-- Migration changes are local and must be reviewed and published to GitHub before
-  the hosted application or scheduled workflows can use them.
+- Migration changes are published on `deploy/r2-scheduled-refresh` for review in
+  [PR #19](https://github.com/anshu10virgo/Stock-Analyser-YF/pull/19). The production
+  schedule changes only after merge to `main`.
 
 ## Implementation and rollout order
 

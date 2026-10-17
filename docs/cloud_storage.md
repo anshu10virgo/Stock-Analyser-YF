@@ -160,7 +160,8 @@ support, not delivery of the S&P 500 universe, SEC parser, or US financial rules
 2. Prepare the package locally and validate source file hashes. Windows line
    endings are normalized only if that reproduces the exact manifest hash.
 3. Upload new immutable objects, validating size/hash metadata before activation.
-4. Upload the complete immutable catalog.
+4. Upload the complete immutable catalog and read back every referenced object
+   to verify size and SHA-256 before activation.
 5. Replace `current.json` with an ETag conditional write. A competing publisher
    causes failure rather than overwriting its active pointer.
 6. Pin the app session to that catalog. Download required objects into a
