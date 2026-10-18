@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import pandas as pd
 
-from core.indicators import Indicators
-from core.slope_analyzer import SlopeAnalyzer
 from models.backtest import BacktestRun, BacktestSignal, HORIZON_SESSIONS
 from models.scan_config import ScanConfig
-from services.scan_service import ScanService
+from stock_analyser.domain.scanning.indicators import Indicators, SlopeAnalyzer
+from stock_analyser.domain.scanning.reversal_rules import evaluate_long_ma_reversal
 
 
 class BacktestService:
@@ -18,7 +17,6 @@ class BacktestService:
         config.validate()
         self.config = config
         self.screener_provider = screener_provider
-        self._scanner = ScanService(config)
 
     def _qualifies(self, history: pd.DataFrame) -> bool:
         latest = history.iloc[-1]
@@ -26,13 +24,15 @@ class BacktestService:
             return False
         if SlopeAnalyzer.calculate_slope(history["MA_SHORT"], 5) <= 0:
             return False
-        reversal = self._scanner._long_ma_reversal(history)
+        reversal = evaluate_long_ma_reversal(history)
         if reversal is None:
             return False
-        _, _, _, trough, _, duration, decline, _, recovering = reversal
-        if duration < self.config.min_long_ma_decline_duration or decline < self.config.min_long_ma_decline:
+        if (
+            reversal.decline_duration < self.config.min_long_ma_decline_duration
+            or reversal.decline_percent < self.config.min_long_ma_decline
+        ):
             return False
-        if not recovering or latest["Close"] <= latest["MA_LONG"]:
+        if not reversal.recovering or latest["Close"] <= latest["MA_LONG"]:
             return False
         premium = Indicators.distance_from_ma(latest["Close"], latest["MA_LONG"])
         return premium <= self.config.max_price_premium

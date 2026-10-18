@@ -1,18 +1,5 @@
-"""Structured rejection and processing-failure records."""
+"""Compatibility import for structured scanner failures."""
 
-from dataclasses import asdict, dataclass
+from stock_analyser.domain.scanning.models import FailureResult
 
-
-@dataclass
-class FailureResult:
-
-    symbol: str
-
-    stage: str
-
-    reason: str
-
-    check_type: str = "mandatory"
-
-    def as_dict(self) -> dict:
-        return asdict(self)
+__all__ = ("FailureResult",)
