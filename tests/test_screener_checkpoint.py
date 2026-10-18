@@ -117,6 +117,50 @@ class DurableScreenerTests(unittest.TestCase):
             self.assertEqual(index["checkpoint"]["completed_symbols"], ["A.NS"])
             self.assertEqual(provider.fetched, ["A.NS"])
 
+    def test_retry_failed_and_pending_preserves_successes_and_replaces_failure_audit(self):
+        client = MemoryS3()
+        symbols = ["A.NS", "B.NS", "C.NS", "D.NS"]
+        with TemporaryDirectory() as first, TemporaryDirectory() as second:
+            provider = InterruptingProvider("D.NS")
+            provider.failed = {"B.NS"}
+            with self.assertRaises(KeyboardInterrupt):
+                refresh(symbols=symbols, root=Path(first), provider=provider,
+                        batch_size=1, sleep_seconds=0, checkpoint_store=self.store(client))
+            retry = FakeProvider(failed={"D.NS"})
+            manifest = refresh(symbols=symbols, root=Path(second), provider=retry,
+                               batch_size=1, sleep_seconds=0,
+                               checkpoint_store=self.store(client), retry_failed=True)
+            self.assertEqual(retry.fetched, ["B.NS", "D.NS"])
+            self.assertEqual(manifest["successful_symbol_count"], 3)
+            self.assertEqual(manifest["failed_symbol_count"], 1)
+            import pandas as pd
+            summary = pd.read_csv(Path(second) / manifest["summary_file"]["path"])
+            failures = pd.read_csv(Path(second) / manifest["coverage_file"]["path"])
+            self.assertEqual(set(summary["symbol"]), {"A.NS", "B.NS", "C.NS"})
+            self.assertEqual(failures["symbol"].tolist(), ["D.NS"])
+            index = json.loads(client.objects[self.store(client).key])["checkpoint"]
+            self.assertEqual(index["successful_symbol_count"], 3)
+            self.assertEqual(index["failed_symbol_count"], 1)
+
+    def test_interrupted_retry_keeps_recovered_successes_on_next_runner(self):
+        client = MemoryS3()
+        symbols = ["A.NS", "B.NS", "C.NS"]
+        with TemporaryDirectory() as first, TemporaryDirectory() as second, TemporaryDirectory() as third:
+            provider = InterruptingProvider("C.NS")
+            provider.failed = {"B.NS"}
+            with self.assertRaises(KeyboardInterrupt):
+                refresh(symbols=symbols, root=Path(first), provider=provider,
+                        batch_size=1, sleep_seconds=0, checkpoint_store=self.store(client))
+            with self.assertRaises(KeyboardInterrupt):
+                refresh(symbols=symbols, root=Path(second), provider=InterruptingProvider("C.NS"),
+                        batch_size=1, sleep_seconds=0, checkpoint_store=self.store(client), retry_failed=True)
+            provider = FakeProvider()
+            manifest = refresh(symbols=symbols, root=Path(third), provider=provider,
+                               batch_size=1, sleep_seconds=0,
+                               checkpoint_store=self.store(client), retry_failed=True)
+            self.assertEqual(provider.fetched, ["C.NS"])
+            self.assertEqual(manifest["successful_symbol_count"], 3)
+
     def test_exhausted_network_retries_stop_run_but_missing_company_is_auditable(self):
         session = Mock()
         session.get.side_effect = requests.Timeout("temporary")

@@ -37,12 +37,15 @@ def stage_source_snapshot(storage, staging):
 
 
 def run_daily_refresh(project_root, configuration, publisher_configuration, run_command=subprocess.run,
-                      refresh_universe=False, dataset="market", mode=None, config_source="streamlit"):
+                      refresh_universe=False, dataset="market", mode=None, config_source="streamlit",
+                      retry_failed=False):
     mode = mode or ("refresh" if dataset == "screener" else "incremental")
     allowed = {"market": {"incremental", "classifications", "validate"},
                "screener": {"refresh", "validate"}}
     if dataset not in allowed or mode not in allowed[dataset] or (refresh_universe and (dataset != "market" or mode != "incremental")):
         raise ValueError("Unsupported cloud refresh combination")
+    if retry_failed and (dataset != "screener" or mode != "refresh"):
+        raise ValueError("Failed-record retries require a Screener refresh")
     latest_configuration = dict(configuration)
     latest_configuration.pop("snapshot_ids", None)
     source = configured_cloud_storage(latest_configuration, project_root)
@@ -76,6 +79,8 @@ def run_daily_refresh(project_root, configuration, publisher_configuration, run_
         for screener_mode in (("validate",) if mode == "validate" else ("refresh", "validate")):
             checkpoint_arguments = (["--durable-checkpoint", "--config-source", config_source]
                                     if screener_mode == "refresh" else [])
+            if screener_mode == "refresh" and retry_failed:
+                checkpoint_arguments.append("--retry-failed")
             run_command([sys.executable, "-u", str(project_root / "scripts/refresh_screener_fundamentals.py"),
                          "--mode", screener_mode, "--data-root", str(staging), *checkpoint_arguments], check=True)
         if mode != "validate":
@@ -132,12 +137,14 @@ def main():
     parser.add_argument("--mode", choices=("incremental", "classifications", "refresh", "validate"))
     parser.add_argument("--refresh-universe", action="store_true",
                         help="Rebuild NSE universe and synchronize its market data before publication")
+    parser.add_argument("--retry-failed", action="store_true",
+                        help="Retry failed Screener checkpoint records as well as pending stocks")
     arguments = parser.parse_args()
     configuration, publisher = load_refresh_configuration(PROJECT_ROOT, arguments.config_source)
     result = run_daily_refresh(PROJECT_ROOT, configuration, publisher,
                                refresh_universe=arguments.refresh_universe,
                                dataset=arguments.dataset, mode=arguments.mode,
-                               config_source=arguments.config_source)
+                               config_source=arguments.config_source, retry_failed=arguments.retry_failed)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
             stream.write(f"### R2 {result['dataset']} refresh\n\n"

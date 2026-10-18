@@ -13,6 +13,11 @@ on:
         options:
           - refresh
           - validate
+      retry_failed:
+        description: "Retry failed checkpoint records along with pending stocks"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -43,8 +48,14 @@ jobs:
       - name: Refresh or validate Screener snapshot
         env:
           REFRESH_MODE: ${{ github.event.inputs.mode || 'refresh' }}
+          RETRY_FAILED: ${{ github.event.inputs.retry_failed || 'false' }}
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
-        run: python -u scripts/refresh_cloud_market_data.py --config-source github --dataset screener --mode "$REFRESH_MODE"
+        run: |
+          OPTIONS=()
+          if [ "$RETRY_FAILED" = "true" ] && [ "$REFRESH_MODE" = "refresh" ]; then
+            OPTIONS+=(--retry-failed)
+          fi
+          python -u scripts/refresh_cloud_market_data.py --config-source github --dataset screener --mode "$REFRESH_MODE" "${OPTIONS[@]}"
 
       - name: Report R2 storage usage
         env:

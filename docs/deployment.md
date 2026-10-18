@@ -103,6 +103,17 @@ checkpoint, skips completed batches, and continues pending stocks. Progress logs
 show separate processed, successful, and failed counts. An interrupted batch may
 be fetched again; a completed durable batch is reused.
 
+To retry recorded failures as well as pending stocks while keeping successful
+records, dispatch with `retry_failed=true`, or run locally:
+
+```powershell
+python -u scripts/refresh_cloud_market_data.py --dataset screener --mode refresh --retry-failed
+```
+
+Each symbol is attempted at most once per invocation. New attempts replace older
+failure outcomes in the final coverage audit; successful checkpoint records are
+not requested again.
+
 Checkpoint files are maintenance state, not an active data snapshot. The current
 catalog changes only after the complete run and supporting fundamentals pass
 validation. Exhausted request retries stop the run without converting all

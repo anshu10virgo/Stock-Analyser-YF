@@ -50,6 +50,8 @@ def parse_arguments():
     )
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--durable-checkpoint", action="store_true")
+    parser.add_argument("--retry-failed", action="store_true",
+                        help="Retry failed checkpoint records while keeping successful records")
     parser.add_argument("--config-source", choices=("streamlit", "github"), default="streamlit")
     parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
                         help="Project-style root for an isolated refresh")
@@ -123,18 +125,19 @@ def _write_batch(
 
 
 def _load_staged(staging: Path):
-    summaries = [
-        pd.read_csv(path)
-        for path in sorted((staging / "batches").glob("*_summary.csv"))
-    ]
-    histories = [
-        pd.read_parquet(path)
-        for path in sorted((staging / "batches").glob("*_history.parquet"))
-    ]
-    failures = [
-        pd.read_csv(path)
-        for path in sorted((staging / "batches").glob("*_failures.csv"))
-    ]
+    # New batches can retry a prior failed symbol. Only its latest completed
+    # attempt contributes to the final snapshot and coverage audit.
+    summaries, histories, failures, resolved = [], [], [], set()
+    for path in sorted((staging / "batches").glob("*_summary.csv"), reverse=True):
+        prefix = path.name.removesuffix("_summary.csv")
+        summary = pd.read_csv(path)
+        history = pd.read_parquet(path.with_name(f"{prefix}_history.parquet"))
+        failure = pd.read_csv(path.with_name(f"{prefix}_failures.csv"))
+        current = (set(summary["symbol"]) | set(failure["symbol"])) - resolved
+        summaries.append(summary.loc[summary["symbol"].isin(current)])
+        histories.append(history.loc[history["symbol"].isin(current)])
+        failures.append(failure.loc[failure["symbol"].isin(current)])
+        resolved.update(current)
     return (
         pd.concat(summaries, ignore_index=True)
         if summaries
@@ -318,6 +321,7 @@ def refresh(
     restart: bool = False,
     sleep=time.sleep,
     checkpoint_store=None,
+    retry_failed=False,
 ) -> dict:
     """Run one resumable refresh for every Screener-derived metric."""
     if batch_size < 1:
@@ -365,11 +369,14 @@ def refresh(
         checkpoint_store.save(staging)
 
     completed = set(checkpoint["completed_symbols"])
-    pending = [symbol for symbol in symbols if symbol not in completed]
     provider = provider or ScreenerFundamentalsProvider()
     generated_at = datetime.now(timezone.utc).isoformat()
     staged_summary, _, staged_failures = _load_staged(staging)
     success_count, failure_count = len(staged_summary), len(staged_failures)
+    failed_symbols = set(staged_failures["symbol"])
+    pending = [symbol for symbol in symbols if symbol not in completed
+               or (retry_failed and symbol in failed_symbols)]
+    logger.info("Retry failed records: %s", len(failed_symbols) if retry_failed else 0)
     logger.info("Resume state: processed=%s/%s, successful=%s, failed=%s, pending=%s",
                 len(completed), len(symbols), success_count, failure_count, len(pending))
 
@@ -409,13 +416,15 @@ def refresh(
         ]
         checkpoint["next_batch_number"] += 1
         checkpoint["updated_at"] = datetime.now(timezone.utc).isoformat()
-        checkpoint["successful_symbol_count"] = success_count + len(summaries)
-        checkpoint["failed_symbol_count"] = failure_count + len(failures)
+        success_count += len(summaries)
+        failure_count += len(failures) - len(set(batch) & failed_symbols)
+        failed_symbols.difference_update(batch)
+        failed_symbols.update(record["symbol"] for record in failures)
+        checkpoint["successful_symbol_count"] = success_count
+        checkpoint["failed_symbol_count"] = failure_count
         _atomic_json(checkpoint_file, checkpoint)
         if checkpoint_store is not None:
             checkpoint_store.save(staging)
-        success_count += len(summaries)
-        failure_count += len(failures)
         logger.info(
             "Processed %s/%s Screener symbols; successful=%s, failed=%s; checkpoint=%s",
             len(completed), len(symbols), success_count, failure_count,
@@ -480,4 +489,5 @@ if __name__ == "__main__":
             sleep_seconds=arguments.sleep_seconds,
             restart=arguments.restart,
             checkpoint_store=checkpoint_store,
+            retry_failed=arguments.retry_failed,
         )
