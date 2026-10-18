@@ -20,6 +20,9 @@ Yahoo Finance, Screener Snapshots, Cache, and Observability
 flowchart TB
     UI["Streamlit application\nSetup · Strategy · Live Scan · Results · Backtester"]
     TICKSY["Ticksy\nSession chat · Local explanations · Confirmed actions"]
+    CONTEXT["Application context\nAllow-listed copied state"]
+    REGISTRY["Agent tool registry\nContracts · Policy · Audit"]
+    TOOLS["Local analysis tools\nRead-only deterministic adapters"]
     SCAN["Scan service\nOrchestration · Progress · Structured outcomes"]
     BACKTEST["Backtest service\nHistorical Golden Cross signals · Return horizons"]
     RULES["Deterministic analysis\nIndicators · Golden Cross rules · Optional filters"]
@@ -30,9 +33,13 @@ flowchart TB
     UI --> SCAN
     UI --> BACKTEST
     UI --> TICKSY
-    TICKSY -->|"Read-only local context"| SCAN
+    TICKSY --> CONTEXT
+    CONTEXT --> REGISTRY
+    REGISTRY --> TOOLS
+    TOOLS -->|"Existing query services"| SCAN
     TICKSY -->|"Confirmed request only"| UI
-    TICKSY -->|"Bounded conversation and local results"| PROVIDER
+    TICKSY -->|"Bounded context and local declarations"| PROVIDER
+    PROVIDER -->|"Requested allow-listed calls"| TICKSY
     SCAN --> RULES
     BACKTEST --> RULES
     RULES --> LOCAL
@@ -42,14 +49,57 @@ flowchart TB
     classDef application fill:#e7eef5,stroke:#2563a6,color:#102a43;
     classDef service fill:#dff3ed,stroke:#0f8b8d,color:#102a43;
     classDef external fill:#fff1d6,stroke:#e59f23,color:#102a43;
-    class UI,TICKSY application;
-    class SCAN,BACKTEST,RULES,LOCAL service;
+    class UI,TICKSY,CONTEXT application;
+    class REGISTRY,TOOLS,SCAN,BACKTEST,RULES,LOCAL service;
     class YAHOO,PROVIDER external;
 ```
 
 Ticksy can call the configured model provider only with bounded conversation
 context and approved local results. It has no browser, news, RAG, or external
 market-data tools; all calculations and rule decisions remain in Python.
+
+## Agentic Application Boundary
+
+The agentic foundation is deliberately an application layer, not a second
+calculation engine. `ApplicationContext` copies only approved scan, Backtester,
+settings, timing, and snapshot fields. Agent tools receive that read-only
+snapshot and call existing deterministic query functions; they do not receive
+Streamlit state, secrets, providers, filesystem access, or network clients.
+
+Every discoverable operation declares an effect and approval level. The
+central policy requires no approval for read-only queries, user confirmation
+for session mutation, expensive computation, or external side effects, and
+administrator confirmation for production operations. The registry rejects a
+tool definition that weakens this policy, validates each call's arguments, and
+returns a structured result. Its audit boundary records sanitized arguments,
+approval, status, timing, and snapshot identity without storing credentials.
+
+Ticksy can now let its configured provider select from the registered
+read-only analysis tools. The application validates and executes no more than
+three calls, then supplies their structured results for the final response.
+Existing scan and Backtester actions continue through the current explicit-
+confirmation flow. Planning, email, refresh, Git, and deployment tools remain
+unavailable until separately designed and tested.
+
+## Package Structure and Migration Rule
+
+```text
+app.py                  Streamlit composition root
+application/            Application context and assistant orchestration
+agents/                 Tool contracts, policy, audit, registry, and adapters
+core/                   Deterministic indicators and scanner compatibility
+models/                 Domain and request/result contracts
+providers/              Yahoo, Screener, repository, and storage adapters
+services/               Scan, Backtester, reporting, and domain workflows
+ui/                     Streamlit rendering and session interaction
+scripts/                Operational refresh and verification entrypoints
+tests/                  Regression and boundary tests
+```
+
+The migration is incremental. New orchestration belongs in `application/`,
+while stable scanner and data modules stay in place until a focused refactor
+has regression coverage. This avoids a high-risk mass move that would change
+imports without improving runtime behaviour.
 
 ## Current Components
 
@@ -60,6 +110,18 @@ market-data tools; all calculations and rule decisions remain in Python.
   page with fixed return horizons and chart exploration.
 - `ui/ticksy.py`: session-only Ticksy conversation UI, local explanations,
   action confirmation, and provider-disabled state.
+- `application/context.py`: allow-listed, copied application state for agent
+  tools and hosted-provider context construction.
+- `agents/contracts.py`, `agents/policies.py`, and `agents/registry.py`: typed
+  tool contracts, centralized effect-to-approval policy, validation, and
+  controlled execution.
+- `agents/audit.py`: sanitized runtime-local audit events with snapshot and
+  timing metadata.
+- `agents/tools/local_analysis.py`: read-only adapters over existing local
+  scan and Backtester query functions.
+- `application/assistant_runtime.py`: session-isolated orchestration boundary
+  for provider tool selection, validated local execution, grounding, and data-
+  used metadata.
 - `models/scan_config.py`: immutable scan configuration and validation.
 - `models/optional_filter.py`: immutable optional-filter definitions,
   thresholds, market-cap ranges, and Screener dependency classification.
@@ -90,8 +152,8 @@ market-data tools; all calculations and rule decisions remain in Python.
   The Streamlit UI supplies completed results and deployment-managed secrets;
   recipients are never persisted.
 - `services/assistant_provider.py`: Gemini Flash and OpenAI provider boundary
-  with a safe disabled provider, no external tool configuration, and a shared
-  local-data-only system instruction.
+  with a safe disabled provider, registered local-function declarations, no
+  external tools, and a shared local-data-only system instruction.
 - `services/assistant_tools.py`, `services/assistant_context.py`,
   `services/assistant_explanations.py`, and `services/assistant_actions.py`:
   bounded local context, deterministic explanations, and confirmed scan or
@@ -145,3 +207,6 @@ market-data tools; all calculations and rule decisions remain in Python.
   to its configured model provider. Its Python tools never browse, fetch
   market data, use news, or use RAG; calculations remain deterministic Python
   services.
+- Agent tools never receive raw Streamlit session state or secrets. New tools
+  must declare their effect and cannot use an approval weaker than the central
+  policy permits.

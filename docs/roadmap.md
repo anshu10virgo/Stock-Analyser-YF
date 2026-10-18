@@ -1,6 +1,6 @@
 # Roadmap
 
-Reviewed against the current implementation on October 17, 2026. Remaining work
+Reviewed against the current implementation on October 19, 2026. Remaining work
 is proposed; release dates are not committed. Operational instructions live in
 the [deployment and storage guide](deployment.md).
 
@@ -10,8 +10,93 @@ the [deployment and storage guide](deployment.md).
 2. Improve failed-stock exploration and surface existing scan diagnostics.
 3. Add persistent strategy profiles and completed scan history. These provide
    the stored comparisons needed for Ticksy daily-change explanations.
-4. Refactor scanner, Backtester, and Ticksy workflows with regression coverage.
+4. Complete the active Ticksy read-only tool integration, then refactor the
+   scanner and Backtester workflows with regression coverage.
 5. Choose advanced Backtesting or US expansion as the next major feature.
+
+## Active Sprint — Ticksy Read-Only Tool Integration
+
+### Goal
+
+Let Ticksy select and execute approved local read-only tools while keeping all
+answers grounded in deterministic application data and preserving existing
+confirmation boundaries.
+
+### Scope
+
+- Publish only registered local function declarations to Gemini or OpenAI;
+  browser, search, news, RAG, and provider-hosted tools remain unavailable.
+- Allow no more than three local tool calls for one user request.
+- Validate every provider-generated function name and argument through the
+  central registry before execution.
+- Feed successful structured tool results into the final response context.
+- Return a deterministic unavailable-data answer instead of asking the model
+  to fill missing stock or Backtester information.
+- Show compact scan time, snapshot identity, and tool names beneath grounded
+  Ticksy responses.
+- Keep each tool runtime and its sanitized audit records isolated to the
+  active Streamlit session.
+- Add readable rejection summaries shared by the Results UI and Ticksy.
+
+### Deliberately Deferred
+
+- Agent-triggered scans, Backtests, strategy changes, email, refresh, Git, or
+  deployment through the registry.
+- Multi-step planning, durable assistant memory, and cross-snapshot analysis.
+- Any change to financial formulas, rules, scoring, or data providers.
+
+### Acceptance Criteria
+
+- Provider payloads expose only the allow-listed local function catalogue.
+- Unknown tools and invalid arguments cannot reach Python handlers.
+- Unavailable local data never becomes a model-generated value.
+- Existing confirmed actions retain their current user-confirmation flow.
+- Focused provider, registry, runtime, and UI-state tests pass.
+
+## Completed — Agentic Foundation and Code Revamp
+
+### Goal
+
+Introduce a safe application boundary for future agents without changing scan
+qualification, scoring, Backtester outputs, refresh jobs, or the current
+Ticksy user experience.
+
+### Scope
+
+- Add an allow-listed `ApplicationContext` so assistant code receives copied,
+  explicit application state instead of unrestricted Streamlit session state.
+- Add typed tool definitions, calls, results, effects, and approval levels.
+- Add a central tool registry that validates arguments and permission policy
+  before executing deterministic Python handlers.
+- Add sanitized, in-memory audit events containing tool identity, approval,
+  timing, status, and active market-data snapshot identity.
+- Register the first read-only local tools for scan summary, stock status,
+  market condition, Backtester records, calculation trace, data health, and
+  rejection summaries.
+- Route Ticksy's existing hosted-provider context through the bounded
+  application snapshot while preserving deterministic local routing and the
+  existing explicit confirmation flow.
+- Document the target agentic boundary and add focused regression tests.
+
+### Deliberately Deferred
+
+- Multi-step planning and model-directed state-changing operations.
+- Agent-triggered scans, Backtests, email, refreshes, Git operations, or
+  production deployment through the new registry.
+- Durable audit storage, persistent user memory, and cross-snapshot analysis.
+- Changes to financial formulas, strategy defaults, scoring, or data sources.
+
+### Acceptance Criteria
+
+- Secret and unrelated Streamlit state cannot enter the assistant context.
+- Read-only tools operate only on copied local scan and Backtester state.
+- State-changing, expensive, external-side-effect, and production tools cannot
+  be registered with weaker-than-required approval.
+- Every attempted registered tool call returns a structured result and creates
+  a sanitized audit event.
+- Existing Ticksy requests and confirmations continue to behave as before.
+- Focused tests, the full test suite, changed-file lint, and
+  `git diff --check` pass.
 
 
 ## Completed — Historical Valuation Foundation

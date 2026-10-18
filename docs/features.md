@@ -69,6 +69,19 @@
   selected-universe lookup, plain-English local reports, and session notes
 - Gemini Flash initial provider with a disabled state when no configured key is
   available and an OpenAI-ready provider setting
+- Allow-listed application context that copies only approved local scan,
+  Backtester, settings, timing, and snapshot fields
+- Typed local-tool registry with argument validation, centralized approval
+  policy, structured results, and sanitized runtime audit events
+- Initial read-only tools for scan summaries, stock status, market condition,
+  Backtester records, calculation traces, data health, and readable rejection
+  summaries
+- Provider-directed selection of at most three registered local functions,
+  followed by registry validation and a grounded final response
+- Compact Data used metadata containing the available scan time, immutable
+  snapshot identity, and executed local tool names
+- Deterministic unavailable-data responses that prevent the provider from
+  inventing missing current-scan or Backtester values
 
 ## Charts
 
