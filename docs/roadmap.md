@@ -10,11 +10,48 @@ the [deployment and storage guide](deployment.md).
 2. Improve failed-stock exploration and surface existing scan diagnostics.
 3. Add persistent strategy profiles and completed scan history. These provide
    the stored comparisons needed for Ticksy daily-change explanations.
-4. Complete the active Ticksy read-only tool integration, then refactor the
-   scanner and Backtester workflows with regression coverage.
+4. Add application commands, queries, and ports before moving infrastructure.
 5. Choose advanced Backtesting or US expansion as the next major feature.
 
-## Active Sprint — Ticksy Read-Only Tool Integration
+## Completed — Package Foundation and Scanning Domain Extraction
+
+### Goal
+
+Introduce the installable package boundary and extract deterministic scanning
+rules without changing the application interface, calculations, defaults, or
+runtime providers.
+
+### Scope
+
+- Create `src/stock_analyser` with domain, application, agents,
+  infrastructure, presentation, and jobs package boundaries.
+- Add `pyproject.toml` and retain a thin root Streamlit Cloud entrypoint.
+- Make `stock_analyser.domain.scanning` the canonical home for scan models,
+  indicators, Post-Cross rules, Impending rules, reversal rules, optional
+  rules, and scoring.
+- Keep `ScanService` as the temporary provider-aware orchestration facade.
+- Preserve legacy import paths through explicit compatibility modules.
+- Keep existing scripts aligned and add a repeatable 1,500-symbol before/after
+  parity check using the same local immutable snapshot.
+
+### Deliberately Deferred
+
+- Application commands, queries, workflows, and port implementations.
+- Moving Yahoo, Screener, R2, SMTP, Gemini, or OpenAI adapters.
+- Moving the remaining Streamlit pages or operational jobs.
+- Any UI, strategy, scoring, default, or financial-formula change.
+
+### Acceptance Criteria
+
+- The package installs from `pyproject.toml` and root `app.py` remains a thin
+  Streamlit bootstrap.
+- Existing jobs and tests continue to resolve their current import paths.
+- Domain scanning modules have no Streamlit, Yahoo, R2, SMTP, or email imports.
+- The same top 1,500 ranked symbols and configuration produce identical Post-
+  Cross, Impending, failure, and scoring outputs before and after extraction.
+- Focused tests, the full suite, and `git diff --check` pass.
+
+## Completed — Ticksy Read-Only Tool Integration
 
 ### Goal
 

@@ -6,9 +6,14 @@ configurable NSE technical screening using Yahoo Finance market data.
 ## Run locally
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -e .
 python -m streamlit run app.py
 ```
+
+`pyproject.toml` defines the installable `src/stock_analyser` package and reads
+the existing `requirements.txt` dependency list. Root `app.py` remains the
+Streamlit Cloud entrypoint but delegates rendering to the packaged presentation
+module. Legacy imports remain available temporarily while migration continues.
 
 Production datasets are stored in R2 and are not included in Git checkouts.
 Configure the read-only `[storage]` section in Streamlit Secrets before starting.

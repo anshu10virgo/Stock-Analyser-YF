@@ -84,22 +84,30 @@ unavailable until separately designed and tested.
 ## Package Structure and Migration Rule
 
 ```text
-app.py                  Streamlit composition root
-application/            Application context and assistant orchestration
-agents/                 Tool contracts, policy, audit, registry, and adapters
-core/                   Deterministic indicators and scanner compatibility
-models/                 Domain and request/result contracts
-providers/              Yahoo, Screener, repository, and storage adapters
-services/               Scan, Backtester, reporting, and domain workflows
-ui/                     Streamlit rendering and session interaction
-scripts/                Operational refresh and verification entrypoints
-tests/                  Regression and boundary tests
+app.py                              Thin Streamlit Cloud bootstrap
+src/stock_analyser/
+    domain/scanning/                Pure scan models, indicators, rules, and scoring
+    application/                    Future commands, queries, workflows, and ports
+    agents/                         Future packaged agent runtime
+    infrastructure/                 Future external-system adapters
+    presentation/streamlit/app.py   Current packaged Streamlit composition root
+    jobs/                           Future packaged operational entrypoints
+stock_analyser/                     Temporary source-checkout package shim
+application/, agents/               Existing agentic application boundary
+core/, models/                      Temporary compatibility imports
+providers/, services/, ui/         Existing adapters, orchestration, and UI modules
+scripts/                            Existing operational entrypoints
+tests/                              Regression and boundary tests
 ```
 
-The migration is incremental. New orchestration belongs in `application/`,
-while stable scanner and data modules stay in place until a focused refactor
-has regression coverage. This avoids a high-risk mass move that would change
-imports without improving runtime behaviour.
+The installable package uses the `src` layout declared in `pyproject.toml`.
+Migration remains incremental: existing imports are compatibility facades or
+unchanged modules until their own focused sprint. The scanner's pure models,
+indicators, Post-Cross rules, Impending rules, reversal rules, optional rules,
+and scoring now live under `stock_analyser.domain.scanning`; `ScanService`
+remains the temporary provider-aware orchestration facade. A parity script runs
+the refactored and pre-refactor scanners against the same ranked universe and
+snapshot before this compatibility layer is retired.
 
 ## Current Components
 
@@ -122,18 +130,17 @@ imports without improving runtime behaviour.
 - `application/assistant_runtime.py`: session-isolated orchestration boundary
   for provider tool selection, validated local execution, grounding, and data-
   used metadata.
-- `models/scan_config.py`: immutable scan configuration and validation.
-- `models/optional_filter.py`: immutable optional-filter definitions,
-  thresholds, market-cap ranges, and Screener dependency classification.
-- `models/scan_run.py`: typed Post-Cross, Impending-Cross, and failed outcomes
-  with dataframe adapters for the UI.
+- `src/stock_analyser/domain/scanning/models.py`: canonical immutable scan and
+  optional-filter configuration plus typed Post-Cross, Impending-Cross, and
+  failed outcomes. Existing `models/` paths re-export these contracts.
+- `src/stock_analyser/domain/scanning/`: provider-independent indicators,
+  Post-Cross, Impending, reversal, optional-filter, and scoring rules.
 - `services/scan_service.py`: scan orchestration with injected provider
   dependencies, structured failures, and optional accumulated-result callbacks
   for batched UI progress updates. Mandatory technical rules run before
   selected fundamental filters.
-- `services/fundamental_filters.py`: isolated three-state (`pass`, `fail`, or
-  `not evaluated`) evaluation for valuation, growth, quality, leverage, and
-  market-cap filters.
+- `services/fundamental_filters.py`: temporary compatibility path for the
+  canonical three-state optional rules.
 - `providers/yahoo_finance.py`: retrying, TTL-cached Yahoo price batches with
   observable request, cache, retry, and failure counters.
 - `providers/repository_data.py`: committed annual price partitions,

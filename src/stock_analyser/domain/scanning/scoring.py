@@ -1,0 +1,74 @@
+"""Pure scoring rules for qualified Post Golden Cross stocks."""
+
+
+class ScoringEngine:
+    MAX_SCORE = 85
+
+    @staticmethod
+    def score_breakdown(days_since_cross, slope_label, distance, fundamentals):
+        return {
+            "score_cross": ScoringEngine.score_cross(days_since_cross),
+            "score_slope": ScoringEngine.score_slope(slope_label),
+            "score_distance": ScoringEngine.score_distance(distance),
+            "score_pe": ScoringEngine.score_pe(fundamentals["pe"]),
+            "score_eps": ScoringEngine.score_eps(fundamentals["eps"]),
+            "score_market_cap": ScoringEngine.score_market_cap(
+                fundamentals["market_cap"]
+            ),
+        }
+
+    @staticmethod
+    def score_cross(days_since_cross):
+        if days_since_cross is None:
+            return 0
+        if days_since_cross <= 10:
+            return 20
+        if days_since_cross <= 30:
+            return 15
+        return 10
+
+    @staticmethod
+    def score_slope(slope_label):
+        return {
+            "STRONG_POSITIVE": 20,
+            "POSITIVE": 15,
+            "FLAT": 5,
+            "NEGATIVE": 0,
+        }.get(slope_label, 0)
+
+    @staticmethod
+    def score_distance(distance):
+        distance = abs(distance)
+        if distance <= 2:
+            return 15
+        if distance <= 5:
+            return 10
+        if distance <= 10:
+            return 5
+        return 0
+
+    @staticmethod
+    def score_pe(pe):
+        if pe is None:
+            return 0
+        if pe < 20:
+            return 10
+        if pe < 40:
+            return 5
+        return 0
+
+    @staticmethod
+    def score_eps(eps):
+        if eps is None:
+            return 0
+        return 10 if eps > 0 else 0
+
+    @staticmethod
+    def score_market_cap(market_cap):
+        if market_cap is None:
+            return 0
+        if market_cap > 200_000_000_000:
+            return 10
+        if market_cap > 50_000_000_000:
+            return 5
+        return 0

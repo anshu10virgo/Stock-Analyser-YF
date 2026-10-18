@@ -8,14 +8,17 @@ from pathlib import Path
 import pandas as pd
 
 from core.data_loader import DataLoader
-from core.golden_cross import GoldenCrossDetector
-from core.indicators import Indicators
-from core.slope_analyzer import SlopeAnalyzer
 from models.scan_config import ScanConfig
 from models.scan_run import ScanRun
 from services.scan_service import ScanService
 from services.data_source import SNAPSHOT_SOURCE, build_data_services
 from services.stock_universe import StockUniverse
+from stock_analyser.domain.scanning.indicators import (
+    GoldenCrossDetector,
+    Indicators,
+    SlopeAnalyzer,
+)
+from stock_analyser.domain.scanning.reversal_rules import evaluate_long_ma_reversal
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -89,36 +92,26 @@ def _metrics_row(service: ScanService, batch_data, symbol: str) -> dict:
             }
         )
 
-        reversal = service._long_ma_reversal(history)
+        reversal = evaluate_long_ma_reversal(history)
         if reversal is None:
             row["long_ma_reversal_status"] = "Insufficient Long-MA history for 52-week high"
             return row
-
-        (
-            peak_value,
-            peak_date,
-            peak_age,
-            trough_value,
-            trough_date,
-            decline_duration,
-            decline_percent,
-            recovery_slope,
-            recovering,
-        ) = reversal
         row.update(
             {
                 "long_ma_reversal_status": "Calculated",
-                "long_ma_52_week_high": _value(peak_value, 2),
-                "long_ma_high_date": _date(peak_date),
-                "long_ma_high_age_sessions": peak_age,
-                "long_ma_trough": _value(trough_value, 2),
-                "long_ma_trough_date": _date(trough_date),
-                "long_ma_decline_duration_sessions": decline_duration,
+                "long_ma_52_week_high": _value(reversal.peak_value, 2),
+                "long_ma_high_date": _date(reversal.peak_date),
+                "long_ma_high_age_sessions": reversal.peak_age,
+                "long_ma_trough": _value(reversal.trough_value, 2),
+                "long_ma_trough_date": _date(reversal.trough_date),
+                "long_ma_decline_duration_sessions": reversal.decline_duration,
                 "long_ma_high_to_trough_decline_percent": _value(
-                    decline_percent, 2
+                    reversal.decline_percent, 2
                 ),
-                "post_trough_5_session_slope": _value(recovery_slope, 4),
-                "long_ma_recovering": recovering,
+                "post_trough_5_session_slope": _value(
+                    reversal.recovery_slope, 4
+                ),
+                "long_ma_recovering": reversal.recovering,
             }
         )
     except Exception as error:  # Keep the report useful if one calculation is bad.
