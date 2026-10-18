@@ -363,7 +363,9 @@ class CloudSnapshotTests(unittest.TestCase):
         def execute(arguments, check):
             operations.append((Path(arguments[2]).name, arguments[4]))
             if arguments[4] == "refresh":
-                path = Path(arguments[-1]) / "data/market_data/screener/manifest.json"
+                self.assertIn("--durable-checkpoint", arguments)
+                self.assertEqual(arguments[arguments.index("--config-source") + 1], "github")
+                path = Path(arguments[arguments.index("--data-root") + 1]) / "data/market_data/screener/manifest.json"
                 manifest = json.loads(path.read_text())
                 manifest["successful_symbol_count"] = 1
                 manifest["generated_at"] = "new-screener"
@@ -374,7 +376,8 @@ class CloudSnapshotTests(unittest.TestCase):
 
         with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", side_effect=storage_for), \
              patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client):
-            result = run_daily_refresh(self.root, configuration, configuration, execute, dataset="screener")
+            result = run_daily_refresh(self.root, configuration, configuration, execute,
+                                       dataset="screener", config_source="github")
         self.assertEqual([mode for _, mode in operations], ["refresh", "validate", "fundamentals", "validate"])
         self.assertEqual(result["status"], "published")
         self.assertEqual(self.storage().read_json("market_data/screener/manifest.json")["generated_at"], "new-screener")

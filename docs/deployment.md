@@ -95,6 +95,21 @@ valuation history, scanner outputs, and Backtest signals. Acceptance also covers
 no-change runs, failed refreshes preserving the pointer, competing publishers
 being rejected, and dataset dates distinguishing retained from refreshed values.
 
+Screener refreshes save each complete batch to
+`markets/IN/maintenance/screener/<checkpoint-id>/` in R2. The ID binds the ordered
+universe and source Screener version. Re-run the same refresh command or dispatch
+the workflow again after interruption: a fresh runner verifies and restores the
+checkpoint, skips completed batches, and continues pending stocks. Progress logs
+show separate processed, successful, and failed counts. An interrupted batch may
+be fetched again; a completed durable batch is reused.
+
+Checkpoint files are maintenance state, not an active data snapshot. The current
+catalog changes only after the complete run and supporting fundamentals pass
+validation. Exhausted request retries stop the run without converting all
+remaining stocks into failures. A different universe or source Screener version
+starts a separate checkpoint. The workflow also saves local staging as an
+artifact when available; R2 is the primary recovery source, including on timeout.
+
 ## Physical bucket layout
 
 Bucket: `stock-analyser-data` (private, R2 Standard). `<version>` below means a complete SHA-256 hash in the actual filename.

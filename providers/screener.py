@@ -46,6 +46,10 @@ class ScreenerDataError(RuntimeError):
     """Raised when a Screener response cannot satisfy the data contract."""
 
 
+class ScreenerUnavailableError(ScreenerDataError):
+    """A provider outage or access limit must stop the run, preserving its checkpoint."""
+
+
 @dataclass(frozen=True)
 class ScreenerCompanySnapshot:
     """One company's summary metrics and chart observations."""
@@ -179,11 +183,14 @@ class ScreenerFundamentalsProvider:
                 return response
             except requests.RequestException as error:
                 last_error = error
+                if getattr(error.response, "status_code", None) == 404:
+                    self._metrics["failures"] += 1
+                    raise ScreenerDataError(f"Screener company is unavailable: {url}") from error
                 if attempt < self.MAX_RETRIES - 1:
                     self._metrics["retries"] += 1
                     self.sleep(2 ** attempt)
         self._metrics["failures"] += 1
-        raise ScreenerDataError(f"Screener request failed: {url}") from last_error
+        raise ScreenerUnavailableError(f"Screener request failed after bounded retries: {url}") from last_error
 
     @staticmethod
     def _history_frame(datasets, metric, value_column):

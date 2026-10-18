@@ -37,7 +37,7 @@ def stage_source_snapshot(storage, staging):
 
 
 def run_daily_refresh(project_root, configuration, publisher_configuration, run_command=subprocess.run,
-                      refresh_universe=False, dataset="market", mode=None):
+                      refresh_universe=False, dataset="market", mode=None, config_source="streamlit"):
     mode = mode or ("refresh" if dataset == "screener" else "incremental")
     allowed = {"market": {"incremental", "classifications", "validate"},
                "screener": {"refresh", "validate"}}
@@ -74,8 +74,10 @@ def run_daily_refresh(project_root, configuration, publisher_configuration, run_
         print("Universe validated; synchronizing price history and supporting data", flush=True)
     if dataset == "screener":
         for screener_mode in (("validate",) if mode == "validate" else ("refresh", "validate")):
+            checkpoint_arguments = (["--durable-checkpoint", "--config-source", config_source]
+                                    if screener_mode == "refresh" else [])
             run_command([sys.executable, "-u", str(project_root / "scripts/refresh_screener_fundamentals.py"),
-                         "--mode", screener_mode, "--data-root", str(staging)], check=True)
+                         "--mode", screener_mode, "--data-root", str(staging), *checkpoint_arguments], check=True)
         if mode != "validate":
             previous = json.loads(screener_before).get("successful_symbol_count", 0)
             refreshed = json.loads(screener_path.read_bytes()).get("successful_symbol_count", 0)
@@ -134,7 +136,8 @@ def main():
     configuration, publisher = load_refresh_configuration(PROJECT_ROOT, arguments.config_source)
     result = run_daily_refresh(PROJECT_ROOT, configuration, publisher,
                                refresh_universe=arguments.refresh_universe,
-                               dataset=arguments.dataset, mode=arguments.mode)
+                               dataset=arguments.dataset, mode=arguments.mode,
+                               config_source=arguments.config_source)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
             stream.write(f"### R2 {result['dataset']} refresh\n\n"

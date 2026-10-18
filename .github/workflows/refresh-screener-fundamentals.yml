@@ -58,6 +58,7 @@ jobs:
           name: r2-screener-refresh-report
           path: |
             .snapshot-cache/screener-refresh/IN/*/refresh_report.json
+            .snapshot-cache/screener-refresh/IN/*/data/market_data/screener/.staging/**
             .snapshot-cache/refresh_failure.json
             .snapshot-cache/housekeeping-report.json
           include-hidden-files: true

@@ -1,4 +1,4 @@
-"""Refresh the Git-backed Screener fundamentals and valuation snapshot."""
+"""Refresh Screener fundamentals with local or durable R2 batch checkpoints."""
 
 from __future__ import annotations
 
@@ -24,9 +24,13 @@ from providers.screener import (
     HISTORY_COLUMNS,
     SUMMARY_COLUMNS,
     ScreenerDataError,
+    ScreenerUnavailableError,
     ScreenerFundamentalsProvider,
 )
 from services.stock_universe import StockUniverse
+from services.screener_checkpoint import ScreenerCheckpointStore, checkpoint_identity
+from services.refresh_config import load_refresh_configuration
+from services.storage_config import create_storage_client, market_storage_prefix
 
 
 SCREENER_ROOT = PROJECT_ROOT / "data" / "market_data" / "screener"
@@ -45,6 +49,8 @@ def parse_arguments():
         default="refresh",
     )
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    parser.add_argument("--durable-checkpoint", action="store_true")
+    parser.add_argument("--config-source", choices=("streamlit", "github"), default="streamlit")
     parser.add_argument("--data-root", type=Path, default=PROJECT_ROOT,
                         help="Project-style root for an isolated refresh")
     parser.add_argument(
@@ -311,6 +317,7 @@ def refresh(
     sleep_seconds: float = DEFAULT_BATCH_SLEEP_SECONDS,
     restart: bool = False,
     sleep=time.sleep,
+    checkpoint_store=None,
 ) -> dict:
     """Run one resumable refresh for every Screener-derived metric."""
     if batch_size < 1:
@@ -326,9 +333,14 @@ def refresh(
     universe_sha256 = universe.metadata().get("sha256") if universe else None
 
     staging = _staging_root(root)
+    if restart and checkpoint_store is not None:
+        raise ValueError("Durable progress cannot be discarded with --restart")
     if restart and staging.exists():
         shutil.rmtree(staging)
     checkpoint_file = _checkpoint_file(root)
+    if checkpoint_store is not None:
+        if checkpoint_store.restore(staging):
+            logger.info("Restored verified Screener batches from R2")
     if checkpoint_file.is_file():
         checkpoint = json.loads(checkpoint_file.read_text(encoding="utf-8"))
         if (
@@ -349,10 +361,17 @@ def refresh(
         }
         _atomic_json(checkpoint_file, checkpoint)
 
+    if checkpoint_store is not None:
+        checkpoint_store.save(staging)
+
     completed = set(checkpoint["completed_symbols"])
     pending = [symbol for symbol in symbols if symbol not in completed]
     provider = provider or ScreenerFundamentalsProvider()
     generated_at = datetime.now(timezone.utc).isoformat()
+    staged_summary, _, staged_failures = _load_staged(staging)
+    success_count, failure_count = len(staged_summary), len(staged_failures)
+    logger.info("Resume state: processed=%s/%s, successful=%s, failed=%s, pending=%s",
+                len(completed), len(symbols), success_count, failure_count, len(pending))
 
     for start in range(0, len(pending), batch_size):
         batch = pending[start : start + batch_size]
@@ -364,7 +383,11 @@ def refresh(
                 snapshot = provider.fetch(symbol, refreshed_at=generated_at)
                 summaries.append(snapshot.summary)
                 histories.append(snapshot.history)
+            except ScreenerUnavailableError:
+                logger.error("Screener unavailable; stopped before advancing this batch. Prior batches remain saved.")
+                raise
             except (ScreenerDataError, ValueError, TypeError) as error:
+                logger.warning("Screener record failed for %s: %s", symbol, error)
                 failures.append(
                     {
                         "symbol": symbol,
@@ -386,9 +409,17 @@ def refresh(
         ]
         checkpoint["next_batch_number"] += 1
         checkpoint["updated_at"] = datetime.now(timezone.utc).isoformat()
+        checkpoint["successful_symbol_count"] = success_count + len(summaries)
+        checkpoint["failed_symbol_count"] = failure_count + len(failures)
         _atomic_json(checkpoint_file, checkpoint)
+        if checkpoint_store is not None:
+            checkpoint_store.save(staging)
+        success_count += len(summaries)
+        failure_count += len(failures)
         logger.info(
-            "Processed %s/%s Screener symbols", len(completed), len(symbols)
+            "Processed %s/%s Screener symbols; successful=%s, failed=%s; checkpoint=%s",
+            len(completed), len(symbols), success_count, failure_count,
+            "R2 verified" if checkpoint_store is not None else "local",
         )
         if start + len(batch) < len(pending) and sleep_seconds:
             sleep(sleep_seconds)
@@ -435,9 +466,18 @@ if __name__ == "__main__":
             result["successful_symbol_count"],
         )
     else:
+        checkpoint_store = None
+        if arguments.durable_checkpoint:
+            _, publisher = load_refresh_configuration(PROJECT_ROOT, arguments.config_source)
+            _, symbols = active_universe()
+            identity = checkpoint_identity(symbols, (SCREENER_ROOT / "manifest.json").read_bytes())
+            checkpoint_store = ScreenerCheckpointStore(create_storage_client(publisher),
+                publisher["bucket"], market_storage_prefix(publisher), identity)
+            logger.info("Durable checkpoint: markets/IN/maintenance/screener/%s", identity)
         refresh(
             root=SCREENER_ROOT,
             batch_size=arguments.batch_size,
             sleep_seconds=arguments.sleep_seconds,
             restart=arguments.restart,
+            checkpoint_store=checkpoint_store,
         )
