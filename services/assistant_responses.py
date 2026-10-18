@@ -11,6 +11,7 @@ from services.assistant_tools import (
     data_dictionary,
     market_condition_summary,
     parameter_help,
+    rejection_summary,
     scan_summary,
     stock_status,
     symbols_from_prompt,
@@ -23,13 +24,34 @@ def local_response(session_state: MutableMapping, prompt: str) -> str | None:
     lower = prompt.lower()
     symbols = symbols_from_prompt(session_state, prompt)
     symbol = symbols[0] if symbols else None
-    if _contains(lower, "crossover", "when will", "when might", "estimated cross") and symbol:
+    if (
+        _contains(lower, "crossover", "when will", "when might", "estimated cross")
+        and symbol
+    ):
         return _crossover_response(session_state, symbol)
-    if _contains(lower, "market condition", "market setup", "market summary", "explain results", "current scan"):
+    if _contains(
+        lower,
+        "market condition",
+        "market setup",
+        "market summary",
+        "explain results",
+        "current scan",
+    ):
         return _market_response(session_state)
+    if _contains(lower, "common rejection", "rejection reason", "why stocks failed"):
+        return _rejection_response(session_state)
     if "compare" in lower and len(symbols) >= 2:
         return _comparison_response(session_state, symbols)
-    if _contains(lower, "what is", "what does", "explain parameter", "slope", "premium", "cross age", "ma decline"):
+    if _contains(
+        lower,
+        "what is",
+        "what does",
+        "explain parameter",
+        "slope",
+        "premium",
+        "cross age",
+        "ma decline",
+    ):
         return _parameter_response(session_state, prompt, symbol)
     if _contains(lower, "formula", "calculation", "calculate", "trace") and symbol:
         return _trace_response(session_state, symbol)
@@ -43,7 +65,9 @@ def local_response(session_state: MutableMapping, prompt: str) -> str | None:
         return _universe_response(session_state, prompt)
     if _contains(lower, "report", "summary for email", "email summary"):
         return _report_response(session_state)
-    if _contains(lower, "historical signal", "previous golden", "past golden", "backtest history"):
+    if _contains(
+        lower, "historical signal", "previous golden", "past golden", "backtest history"
+    ):
         return _history_response(session_state, symbols)
     if _contains(lower, "how do i", "guide me", "help me use", "workflow"):
         return _guide_response()
@@ -68,6 +92,17 @@ def _market_response(session_state: MutableMapping) -> str:
     )
 
 
+def _rejection_response(session_state: MutableMapping) -> str:
+    summary = rejection_summary(session_state)
+    if not summary.get("available"):
+        return summary["reason"]
+    lines = [f"**Most common rejection reasons ({summary['total_rejected']} stocks)**"]
+    lines.extend(
+        f"- {item['reason']}: {item['count']:,}" for item in summary["reasons"]
+    )
+    return "\n".join(lines)
+
+
 def _comparison_response(session_state: MutableMapping, symbols: list[str]) -> str:
     lines = ["**Current local comparison**"]
     for symbol in symbols[:5]:
@@ -83,7 +118,11 @@ def _comparison_response(session_state: MutableMapping, symbols: list[str]) -> s
     records = backtest_records(session_state, symbols)
     if records:
         lines.append(f"- Local Backtester records available: {len(records)}.")
-    return "\n".join(lines) if len(lines) > 1 else "The requested stocks are not available in the current local results."
+    return (
+        "\n".join(lines)
+        if len(lines) > 1
+        else "The requested stocks are not available in the current local results."
+    )
 
 
 def _crossover_response(session_state: MutableMapping, symbol: str) -> str:
@@ -99,7 +138,9 @@ def _crossover_response(session_state: MutableMapping, symbol: str) -> str:
     )
 
 
-def _parameter_response(session_state: MutableMapping, prompt: str, symbol: str | None) -> str:
+def _parameter_response(
+    session_state: MutableMapping, prompt: str, symbol: str | None
+) -> str:
     values = parameter_help(session_state, prompt, symbol)
     lines = ["**Parameter guide**"]
     for name, details in values.items():
@@ -234,4 +275,8 @@ def _contains(text: str, *terms: str) -> bool:
 
 def _value(record: dict, key: str) -> str:
     value = record.get(key)
-    return f"{value:.2f}" if isinstance(value, float) else str(value if value is not None else "not available")
+    return (
+        f"{value:.2f}"
+        if isinstance(value, float)
+        else str(value if value is not None else "not available")
+    )

@@ -8,20 +8,43 @@ from pathlib import Path
 import requests
 import streamlit as st
 
-from models.assistant import AssistantMessage, AssistantRequest
+from application.assistant_runtime import AssistantAnswer, AssistantRuntime
+from models.assistant import AssistantMessage
 from models.assistant_action import AssistantAction
 from services.assistant_actions import apply_action, propose_action
-from services.assistant_context import build_local_context
 from services.assistant_explanations import explain_stock_prompt
-from services.assistant_provider import DisabledProvider, build_provider, load_assistant_settings
+from services.assistant_provider import (
+    DisabledProvider,
+    build_provider,
+    load_assistant_settings,
+)
 from services.assistant_responses import local_response
 
 
 SESSION_KEY = "ticksy_messages"
 PROMPT_KEY = "ticksy_prompt"
 ACTION_KEY = "ticksy_pending_action"
+RUNTIME_KEY = "ticksy_runtime"
 LEGACY_GREETING = "I can explain local scan results and Backtester outputs. I do not use internet data."
 TICKSY_ICON = Path(__file__).parents[1] / "assets" / "ticksy-icon.svg"
+
+
+def _runtime() -> AssistantRuntime:
+    """Return the tool runtime isolated to the current Streamlit session."""
+    runtime = st.session_state.get(RUNTIME_KEY)
+    if not isinstance(runtime, AssistantRuntime):
+        runtime = AssistantRuntime()
+        st.session_state[RUNTIME_KEY] = runtime
+    return runtime
+
+
+def _ground_local_response(response: str) -> str:
+    context = AssistantRuntime.context(st.session_state)
+    return AssistantAnswer(
+        response,
+        scan_time=str(context.get("scan_time")) if context.get("scan_time") else None,
+        snapshot_identity=context.snapshot_identity,
+    ).render()
 
 
 def _messages() -> list[AssistantMessage]:
@@ -44,6 +67,7 @@ def _render_ticksy_panel() -> None:
         header.subheader("TICKSY")
         if reset.button("New chat", key="ticksy_new_chat"):
             st.session_state.pop(SESSION_KEY, None)
+            st.session_state.pop(RUNTIME_KEY, None)
             st.rerun()
         st.info(
             "Ticksy is a local-data-only market assistant that explains Golden Cross, "
@@ -56,7 +80,9 @@ def _render_ticksy_panel() -> None:
         settings = load_assistant_settings(st.secrets)
         provider = build_provider(settings)
         if isinstance(provider, DisabledProvider):
-            st.info("Chat is disabled until the selected provider API key is configured.")
+            st.info(
+                "Chat is disabled until the selected provider API key is configured."
+            )
         st.caption("QUICK ACTIONS")
         quick_left, quick_right = st.columns(2)
         if quick_left.button("Explain results", use_container_width=True):
@@ -74,7 +100,9 @@ def _render_ticksy_panel() -> None:
         if isinstance(action, AssistantAction):
             st.warning(f"Proposed action: {action.summary}")
             confirm, cancel = st.columns(2)
-            if confirm.button("Apply and run", type="primary", use_container_width=True):
+            if confirm.button(
+                "Apply and run", type="primary", use_container_width=True
+            ):
                 try:
                     message = apply_action(action, st.session_state)
                 except ValueError as error:
@@ -87,8 +115,15 @@ def _render_ticksy_panel() -> None:
                 st.session_state.pop(ACTION_KEY, None)
                 st.rerun()
         with st.form("ticksy_message", clear_on_submit=True):
-            prompt = st.text_input("Ask Ticksy", placeholder="Why did TCS qualify?", label_visibility="collapsed", key=PROMPT_KEY)
-            sent = st.form_submit_button("Send", type="primary", use_container_width=True)
+            prompt = st.text_input(
+                "Ask Ticksy",
+                placeholder="Why did TCS qualify?",
+                label_visibility="collapsed",
+                key=PROMPT_KEY,
+            )
+            sent = st.form_submit_button(
+                "Send", type="primary", use_container_width=True
+            )
         if sent and prompt.strip():
             messages = _messages()
             messages.append(AssistantMessage("user", prompt.strip()))
@@ -102,9 +137,22 @@ def _render_ticksy_panel() -> None:
                     response = explain_stock_prompt(st.session_state, prompt)
                 if response is None:
                     try:
-                        response = provider.respond(AssistantRequest(tuple(messages), build_local_context(st.session_state, prompt)))
+                        response = (
+                            _runtime()
+                            .answer(
+                                provider,
+                                st.session_state,
+                                tuple(messages),
+                                prompt,
+                            )
+                            .render()
+                        )
                     except requests.HTTPError as error:
-                        status_code = error.response.status_code if error.response is not None else None
+                        status_code = (
+                            error.response.status_code
+                            if error.response is not None
+                            else None
+                        )
                         if status_code in {500, 502, 503, 504}:
                             response = "Ticksy's configured provider is temporarily unavailable. Please try again in a moment. Your local app data remains unchanged."
                         elif status_code == 429:
@@ -117,6 +165,8 @@ def _render_ticksy_panel() -> None:
                         response = "Ticksy could not reach the configured provider. Your local app data remains unchanged."
                     except RuntimeError as error:
                         response = f"Ticksy could not complete that response: {error}"
+                else:
+                    response = _ground_local_response(response)
             messages.append(AssistantMessage("model", response))
             st.rerun()
 
