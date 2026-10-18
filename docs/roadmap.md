@@ -1,5 +1,19 @@
 # Roadmap
 
+Reviewed against the current implementation on October 17, 2026. Remaining work
+is proposed; release dates are not committed. Operational instructions live in
+the [deployment and storage guide](deployment.md).
+
+## Recommended next work
+
+1. Verify a scheduled changed-data R2 publication and finish hosted smoke checks.
+2. Improve failed-stock exploration and surface existing scan diagnostics.
+3. Add persistent strategy profiles and completed scan history. These provide
+   the stored comparisons needed for Ticksy daily-change explanations.
+4. Refactor scanner, Backtester, and Ticksy workflows with regression coverage.
+5. Choose advanced Backtesting or US expansion as the next major feature.
+
+
 ## Completed — Historical Valuation Foundation
 
 ### Goal
@@ -15,7 +29,7 @@ changing current scan qualification or result columns.
 - Calculate PEG in the daily Yahoo refresh using stored Screener 3-year profit
   growth.
 - Process 10 stocks per batch and wait five seconds between batches by default.
-- Publish Git-backed, versioned Screener snapshots through an atomic manifest.
+- Publish versioned Screener snapshots through an atomic manifest in R2.
 - Show historical P/E and TTM EPS only in the selected-stock chart.
 - Keep growth, debt, ROE, OPM, daily PEG, and historical P/E summary fields
   backend-only.
@@ -45,7 +59,7 @@ technical qualification, technical scoring, or the two result groups.
 - Use the current median Industry P/E for the relative valuation rule.
 - Compare current P/E with the stock's own available 3Y/5Y/10Y average P/E.
 - Apply three-state evaluation with lenient missing-data handling.
-- Load the committed Screener summary once only when selected filters need it.
+- Load the stored Screener summary once only when selected filters need it.
 - Retain incomplete-data stocks with filter-level availability labels.
 - Remove the legacy optional ten-post-cross-session rule.
 - Persist optional settings only in active Streamlit session strategies.
@@ -104,7 +118,7 @@ prices for selected Setup-universe stocks, without changing Live Scan results.
 
 ### Scope
 
-- Commit the refreshed ranked stock-universe snapshot and change the Setup
+- Use the refreshed ranked stock-universe snapshot and change the Setup
   default from 1,500 to 2,000 stocks, capped by the available universe.
 - Add Backtester as the fifth workflow option and rename Results to Golden
   Cross Results.
@@ -140,32 +154,44 @@ prices for selected Setup-universe stocks, without changing Live Scan results.
   return horizons, historical P/E selection, multi-stock selection, and the
   Setup default handoff.
 
-## Release 1.1 — Reliability and Auditability
+## Partially delivered: Reliability and Auditability
 
-- Structured failure results for every symbol and scanner stage.
-- Dashboard view for failed stocks and aggregated failure counts.
-- Enforce any future optional scanner rules consistently and expose structured
-  rejection reasons.
-- Derive minimum history requirements from the configured moving averages.
-- Automated tests for data loading, scanner rules, and failure handling.
+Delivered: typed per-symbol failures with stage/reason, optional-rule rejection
+reasons, moving-average-dependent history requests, aggregated rejection
+insights, and scanner/data-loading regression tests.
 
-## Release 1.2 — Performance and Data Resilience
+Remaining:
 
-- TTL caching for price history, chart data, and fundamentals.
-- Batch-level download diagnostics and controlled retry/throttling.
-- Data-provider abstraction to support an alternative provider or local store.
-- Scan execution metrics: duration, symbols processed, data failures, and
-  cache usage.
+- Add a searchable failed-stock view with stage/reason filtering.
+- Make failure counts and data availability easier to inspect without Ticksy.
+- Extend diagnostics for new rules, preserving existing qualification.
 
-## Release 1.3 — Reporting and User Experience
+## Partially delivered: Performance and Data Resilience
 
-- Filters-first Excel email reports for both qualified result groups.
-- Maximum-period chart snapshots with safe attachment batching.
-- Saved scan configuration profiles.
-- Filters, sorting, and mobile-friendly result exploration.
-- Clear scan history and result timestamping.
+Delivered: live/snapshot provider selection, batched price downloads, chart TTL
+caching, verified R2 object reuse, bounded refresh retries/throttling, and scan
+metrics for timing and data-source diagnostics.
 
-## Release 2.0 — Ticksy Local-Data AI Assistant
+Remaining:
+
+- Surface existing duration, data-failure, and source/cache diagnostics in the UI.
+- Measure scan and chart performance before choosing further optimizations.
+- Review expiry and invalidation across live-provider data caches. Immutable
+  snapshots already use content hashes and snapshot-specific cache keys.
+
+## Partially delivered: Reporting and User Experience
+
+Delivered: filters-first Excel email reports, both qualified result groups,
+size-bounded chart attachments, scan timestamps, and up to five session-only
+named strategies.
+
+Remaining:
+
+- Persist saved strategy profiles beyond the active session.
+- Store completed scan history with strategy, source, and snapshot identity.
+- Improve result filtering, sorting, and mobile exploration where needed.
+
+## Completed: Ticksy Local-Data AI Assistant
 
 ### Goal
 
@@ -217,6 +243,30 @@ calculation logic.
 - Changing between Gemini Flash and OpenAI preserves the same local tools and
   deterministic calculation results.
 
+## Delivered: Cloudflare R2 Storage
+
+- Private R2 storage with separate IN/US namespaces. India is active; US
+  ingestion remains future work.
+- Immutable files and catalogs, hash verification, per-symbol reads, local
+  caching, snapshot pinning, and verified rollback.
+- Hosted reads use Streamlit Secrets. Scheduled publishers use the approved
+  GitHub Actions Secret with read-only repository permissions.
+- Daily market-data and monthly Screener workflows validate before activation.
+  No-change runs retain the active snapshot; concurrent updates are guarded.
+- Production datasets are removed from the current Git tree. Development uses
+  explicit downloads; tests generate fixtures without cloud credentials.
+- Retention previews, cache-cleanup commands, and storage-usage reports exist.
+- Python calculations and Ticksy's local-data-only boundary are preserved.
+
+Operational follow-up:
+
+- Observe a scheduled run publishing changed data. The confirmed normal refresh
+  returned `no_new_data`.
+- Complete remaining hosted scan, chart, Backtester, Ticksy, and export checks.
+- Monitor refresh and storage reports as additional snapshots accumulate.
+
+See the [deployment and storage guide](deployment.md) for commands.
+
 ## Future — Advanced Backtesting
 
 ### Goal
@@ -243,11 +293,48 @@ measurement into optional trade and portfolio simulation.
 - Fixed-horizon Backtester results remain available independently of this
   optional simulation mode.
 
-## Future — Production Operations
+## Partially delivered: Production Operations
 
-- Continuous integration for tests and linting.
-- Deployment health checks, structured logs, and error monitoring.
-- Release tags, changelog, and rollback procedure.
+Delivered: offline test CI, refresh-failure email notifications, refresh/storage
+reports, guarded R2 publication, and documented snapshot rollback.
+
+Remaining:
+
+- Add automated linting to CI.
+- Add ongoing deployment health checks and centralized error monitoring.
+- Standardize release tags, changelog entries, and application-code rollback.
+- Finish the R2 operational follow-up listed above.
+
+## Future — Code Quality and Maintainability
+
+### Goal
+
+Make the application easier to understand and change without altering its
+financial rules, local-data guardrails, or user-visible behaviour.
+
+### Scope
+
+- Split the scanner's per-symbol workflow into focused Post Golden Cross,
+  Impending Golden Cross, shared-validation, and result-building helpers.
+- Separate Ticksy panel rendering, pending-action confirmation, prompt
+  routing, and provider-error presentation into small UI helpers.
+- Separate Backtester data loading, execution, results rendering, and chart
+  rendering into focused functions.
+- Refactor the market-data refresh entrypoint into clear mode, preparation,
+  persistence, and manifest-update stages; keep operational scripts aligned
+  with every application change that affects them.
+- Simplify Ticksy action routing by extracting repeated strategy session-state
+  updates and making intent conditions explicit.
+- Keep the existing Results-page helper structure and conservative
+  Screener/filter validation logic unless a specific readability issue arises.
+
+### Acceptance Criteria
+
+- Refactors do not change scan qualification, scoring, Backtester outcomes,
+  data-refresh outputs, or Ticksy guardrails.
+- Each refactored workflow has focused tests for its existing behaviour.
+- Function names, state transitions, and error paths make the workflow clear
+  without requiring readers to trace unrelated UI or provider code.
 
 ## Future — United States Market Expansion
 
