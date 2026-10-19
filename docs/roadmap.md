@@ -52,6 +52,7 @@ src/stock_analyser/
 │       └── model_provider.py
 ├── agents/
 │   ├── orchestrator.py
+│   ├── contracts.py
 │   ├── tool_registry.py
 │   ├── policies.py
 │   ├── approvals.py
@@ -101,13 +102,13 @@ src/stock_analyser/
 | `application/ports` | Complete | Market data, fundamentals, storage, mail, and model-provider contracts exist. |
 | Infrastructure Phase 1 | Complete | Yahoo, Screener, local/R2 storage, repository providers, and SMTP are canonical infrastructure adapters. |
 | Infrastructure Phase 2 | Complete | OpenAI and Gemini are canonical infrastructure adapters; the existing service path is now a configuration and compatibility facade. |
-| Packaged agents | Partial | Working agent contracts, registry, policies, audit, and tools remain under root `agents/` and `application/`. |
+| Packaged agents | Complete | Orchestration, execution context, contracts, registry, approvals, policies, audit, prompts, and focused tools are canonical under `src/stock_analyser/agents`. |
 | Packaged presentation | Partial | The composition root is packaged; Streamlit pages and components remain under root `ui/`. |
 | Packaged jobs | Not started | Scheduled and operational entrypoints remain under root `scripts/`. |
 | Structured tests | Not started | Coverage exists and passes, but tests remain in one flat root directory. |
 | Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
 
-The structural migration is approximately 65% complete. This percentage
+The structural migration is approximately 72% complete. This percentage
 describes package placement and dependency direction, not product feature
 completion.
 
@@ -286,12 +287,14 @@ scores, defaults, or financial calculations.
 
 ### Sprint E — Package the Agent Runtime
 
-**Status:** Next.
+**Status:** Complete.
 
 #### Scope
 
 - Move `application/assistant_runtime.py` into `agents/orchestrator.py` and keep
   a compatibility export during migration.
+- Move typed tool contracts into `agents/contracts.py` and keep the root
+  contract path as a compatibility export.
 - Move `agents/registry.py` into `agents/tool_registry.py`.
 - Move approval classification and execution checks into `agents/approvals.py`.
 - Move bounded copied state into `agents/execution_context.py`, using the
@@ -319,7 +322,7 @@ scores, defaults, or financial calculations.
 
 ### Sprint F — Complete the Domain Layer
 
-**Status:** Planned after the agent package boundary is stable.
+**Status:** Next. Deliver as the smaller F1-F4 sub-sprints below.
 
 This sprint should be delivered as small sub-sprints, not one large move.
 
@@ -504,13 +507,12 @@ A legacy path can be deleted only when:
 
 ## Immediate Execution Order
 
-1. Sprint E — packaged agent runtime and focused tools.
-2. Sprint F1/F2 — markets and fundamentals domain boundaries.
-3. Sprint F3/F4 — Backtesting and reporting domains.
-4. Sprint G — Streamlit presentation migration.
-5. Sprint H — packaged operational jobs and GitHub Actions cutover.
-6. Sprint I — test-directory migration and architecture quality gates.
-7. Sprint J — compatibility retirement and final cleanup.
+1. Sprint F1/F2 — markets and fundamentals domain boundaries.
+2. Sprint F3/F4 — Backtesting and reporting domains.
+3. Sprint G — Streamlit presentation migration.
+4. Sprint H — packaged operational jobs and GitHub Actions cutover.
+5. Sprint I — test-directory migration and architecture quality gates.
+6. Sprint J — compatibility retirement and final cleanup.
 
 Product-feature work that materially touches these modules should either wait
 for the owning migration sprint or be implemented through the new canonical

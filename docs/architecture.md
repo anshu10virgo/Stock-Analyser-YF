@@ -62,11 +62,12 @@ market-data tools; all calculations and rule decisions remain in Python.
 
 ## Agentic Application Boundary
 
-The agentic foundation is deliberately an application layer, not a second
+The agentic foundation is deliberately an orchestration layer, not a second
 calculation engine. `ApplicationContext` copies only approved scan, Backtester,
-settings, timing, and snapshot fields. Agent tools receive that read-only
-snapshot and call existing deterministic query functions; they do not receive
-Streamlit state, secrets, providers, filesystem access, or network clients.
+settings, timing, and snapshot fields; the packaged `ExecutionContext` wraps
+that contract for agent use. Agent tools receive only this read-only snapshot
+and call deterministic application queries. They do not receive Streamlit
+state, secrets, providers, filesystem access, or network clients.
 
 Every discoverable operation declares an effect and approval level. The
 central policy requires no approval for read-only queries, user confirmation
@@ -90,12 +91,12 @@ app.py                              Thin Streamlit Cloud bootstrap
 src/stock_analyser/
     domain/scanning/                Pure scan models, indicators, rules, and scoring
     application/                    Commands, queries, workflows, context, and ports
-    agents/                         Future packaged agent runtime
+    agents/                         Canonical orchestrator, policy, audit, and tools
     infrastructure/                 Yahoo, Screener, R2/local, SMTP, and model adapters
     presentation/streamlit/app.py   Current packaged Streamlit composition root
     jobs/                           Future packaged operational entrypoints
 stock_analyser/                     Temporary source-checkout package shim
-application/, agents/               Existing agentic application boundary
+application/, agents/               Temporary compatibility exports
 core/, models/                      Temporary compatibility imports
 providers/, services/, ui/         Compatibility exports, orchestration, and UI modules
 scripts/                            Existing operational entrypoints
@@ -107,6 +108,10 @@ Migration remains incremental: existing imports are compatibility facades or
 unchanged modules until their own focused sprint. Streamlit now invokes scan,
 Backtest, strategy-update, and report-delivery commands/workflows. Registered
 Ticksy tools invoke packaged application queries instead of service helpers.
+The packaged agent runtime owns orchestration, execution context, contracts,
+approval decisions, policy, audit, provider-neutral prompts, and focused local
+tools. Root `agents/`, `application/assistant_runtime.py`, and
+`services/assistant_context.py` retain compatibility exports only.
 The scanner's pure models,
 indicators, Post-Cross rules, Impending rules, reversal rules, optional rules,
 and scoring now live under `stock_analyser.domain.scanning`; `ScanService`
@@ -156,18 +161,23 @@ snapshot before this compatibility layer is retired.
   responsible for provider request conversion, local-tool declarations,
   response parsing, and transport-error normalization. Neither adapter enables
   provider-hosted search, browsing, code execution, or file retrieval.
-- `src/stock_analyser/infrastructure/model_support.py`: shared local-data-only
-  provider instructions and provider-neutral tool-schema conversion helpers.
-- `agents/contracts.py`, `agents/policies.py`, and `agents/registry.py`: typed
-  tool contracts, centralized effect-to-approval policy, validation, and
-  controlled execution.
-- `agents/audit.py`: sanitized runtime-local audit events with snapshot and
-  timing metadata.
-- `agents/tools/local_analysis.py`: read-only adapters over packaged
-  application queries; it no longer imports scan helper services directly.
-- `application/assistant_runtime.py`: session-isolated orchestration boundary
+- `src/stock_analyser/infrastructure/model_support.py`: provider-neutral tool-
+  schema conversion helpers shared by the model adapters.
+- `src/stock_analyser/agents/orchestrator.py`: session-isolated orchestration
   for provider tool selection, validated local execution, grounding, and data-
   used metadata.
+- `src/stock_analyser/agents/execution_context.py`: agent-facing wrapper over
+  the allow-listed copied `ApplicationContext`, including bounded provider
+  context serialization.
+- `src/stock_analyser/agents/tool_registry.py`, `approvals.py`, `policies.py`,
+  and `contracts.py`: typed discovery, validation, effect classification, and
+  centralized approval enforcement.
+- `src/stock_analyser/agents/audit_log.py`: sanitized session-local audit
+  events with snapshot and timing metadata.
+- `src/stock_analyser/agents/prompts/`: versioned local-data-only provider
+  instructions shared by Gemini and OpenAI adapters.
+- `src/stock_analyser/agents/tools/`: focused scan, Backtester, explanation,
+  data-health, and reserved reporting tool modules over application queries.
 - `src/stock_analyser/domain/scanning/models.py`: canonical immutable scan and
   optional-filter configuration plus typed Post-Cross, Impending-Cross, and
   failed outcomes. Existing `models/` paths re-export these contracts.

@@ -1,1 +1,1 @@
-"""Controlled agent runtime built on deterministic application services."""
+"""Compatibility package for the canonical ``stock_analyser.agents`` runtime."""
