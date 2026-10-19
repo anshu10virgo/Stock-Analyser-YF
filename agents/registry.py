@@ -17,7 +17,7 @@ from agents.contracts import (
     ToolValidationError,
 )
 from agents.policies import validate_tool_policy
-from application.context import ApplicationContext
+from stock_analyser.application.context import ApplicationContext
 
 
 ToolHandler = Callable[[ApplicationContext, dict[str, Any]], Any]

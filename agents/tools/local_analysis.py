@@ -9,14 +9,15 @@ from agents.contracts import (
     ToolEffect,
 )
 from agents.registry import ToolRegistry
-from application.context import ApplicationContext
-from services.assistant_tools import (
-    backtest_records,
-    calculation_trace,
-    market_condition_summary,
-    rejection_summary,
-    scan_summary,
-    stock_status,
+from stock_analyser.application.context import ApplicationContext
+from stock_analyser.application.queries import (
+    explain_failure_summary,
+    get_backtest_results,
+    get_calculation_trace,
+    get_data_health,
+    get_market_condition,
+    get_scan_summary,
+    get_stock_status,
 )
 
 
@@ -25,38 +26,35 @@ def _state(context: ApplicationContext):
 
 
 def _scan_summary(context, _arguments):
-    return scan_summary(_state(context))
+    return get_scan_summary(_state(context))
 
 
 def _stock_status(context, arguments):
-    return stock_status(_state(context), arguments["symbol"])
+    return get_stock_status(_state(context), arguments["symbol"])
 
 
 def _market_condition(context, _arguments):
-    return market_condition_summary(_state(context))
+    return get_market_condition(_state(context))
 
 
 def _backtest_results(context, arguments):
     symbols = arguments.get("symbols") or None
-    return backtest_records(_state(context), symbols)
+    return get_backtest_results(_state(context), symbols)
 
 
 def _calculation_trace(context, arguments):
-    return calculation_trace(_state(context), arguments["symbol"])
+    return get_calculation_trace(_state(context), arguments["symbol"])
 
 
 def _data_health(context, _arguments):
-    summary = scan_summary(_state(context))
-    return {
-        **summary,
-        "metrics": context.get("scan_metrics", {}),
-        "snapshot_identity": context.snapshot_identity,
-    }
+    return get_data_health(
+        _state(context), snapshot_identity=context.snapshot_identity
+    )
 
 
 def _rejection_summary(context, arguments):
     limit = max(1, min(10, arguments.get("limit", 5)))
-    return rejection_summary(_state(context), limit)
+    return explain_failure_summary(_state(context), limit)
 
 
 def build_local_tool_registry() -> ToolRegistry:

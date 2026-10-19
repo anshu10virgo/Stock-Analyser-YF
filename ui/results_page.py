@@ -8,13 +8,17 @@ from core.indicators import Indicators
 from providers.repository_data import SnapshotUnavailableError
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services, snapshot_source_label
 from services.scan_report import (
+    ConfiguredSmtpMailer,
     MailConfiguration,
     build_chart_archives,
     build_messages,
     build_price_chart_png,
     build_workbook,
     parse_recipients,
-    send_messages,
+)
+from stock_analyser.application.commands.send_report import (
+    SendReport,
+    SendReportCommand,
 )
 from ui.stock_detail import render_pe_eps_chart, render_stock_detail
 
@@ -614,7 +618,9 @@ def _render_email_report(post_cross, impending, scan_time, settings):
             workbook,
             archives,
         )
-        send_messages(messages, credentials)
+        SendReport(ConfiguredSmtpMailer(credentials)).execute(
+            SendReportCommand(tuple(messages))
+        )
     except Exception as error:
         status.update(label="Email report failed", state="error", expanded=True)
         st.error(f"The report could not be sent: {error}")

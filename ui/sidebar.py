@@ -17,26 +17,16 @@ from models.optional_filter import (
     RETURN_ON_EQUITY,
     SALES_GROWTH,
 )
+from stock_analyser.application.commands.update_strategy import (
+    DEFAULT_SCAN_SETTINGS,
+    OPTIONAL_SEQUENCE_KEY,
+    default_scan_settings,
+)
 
-
-DEFAULT_SCAN_SETTINGS = {
-    "short_ma": 50,
-    "long_ma": 200,
-    "cross_age": 80,
-    "max_price_premium": 10,
-    "min_long_ma_decline_duration": 60,
-    "min_long_ma_decline": 10,
-    "include_impending_crosses": False,
-    "impending_max_gap_pct": 10,
-    "pre_cross_validation_sessions": 20,
-    "optional_filters": [],
-    "adjusted_prices": False,
-}
 
 PRESET_FIELDS = tuple(DEFAULT_SCAN_SETTINGS)
 PRESETS_SESSION_KEY = "user_scan_presets"
 MAX_USER_PRESETS = 5
-OPTIONAL_SEQUENCE_KEY = "scan_config_optional_sequence"
 
 OPTIONAL_FILTER_DEFINITIONS = {
     RELATIVE_INDUSTRY_PE: {
@@ -134,11 +124,6 @@ MARKET_CAP_LABELS = {
     "small": "Small Cap — ₹500 to ₹5,000 Cr",
     "micro": "Micro Cap — below ₹500 Cr",
 }
-
-
-def default_scan_settings() -> dict:
-    """Return a fresh copy so widget changes cannot mutate system defaults."""
-    return deepcopy(DEFAULT_SCAN_SETTINGS)
 
 
 def _widget_key(field: str) -> str:

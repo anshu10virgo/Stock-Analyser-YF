@@ -10,10 +10,10 @@ from typing import Any
 from agents.contracts import ToolCall, ToolResult, ToolStatus
 from agents.registry import ToolRegistry
 from agents.tools.local_analysis import build_local_tool_registry
-from application.context import ApplicationContext
+from stock_analyser.application.context import ApplicationContext
 from models.assistant import AssistantMessage, AssistantRequest
 from services.assistant_context import build_local_context
-from services.assistant_provider import AssistantProvider
+from stock_analyser.application.ports.model_provider import ModelProviderPort
 
 
 @dataclass(frozen=True)
@@ -70,7 +70,7 @@ class AssistantRuntime:
 
     def answer(
         self,
-        provider: AssistantProvider,
+        provider: ModelProviderPort,
         session_state: Mapping[str, Any],
         messages: tuple[AssistantMessage, ...],
         stock_query: str = "",

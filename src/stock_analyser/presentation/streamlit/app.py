@@ -10,7 +10,6 @@ from core.data_loader import DataLoader
 from models.optional_filter import OptionalFilterConfig
 from models.scan_config import ScanConfig
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services, snapshot_source_label
-from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
 from services.snapshot_storage import ScopedSnapshotStorage, SnapshotStorageError
 from services.storage_config import application_snapshot_storage
@@ -22,6 +21,8 @@ from ui.sidebar import render_scan_configuration
 from ui.ticksy import render_ticksy
 from ui.theme import apply_app_theme, render_app_header, scroll_to_top
 from stock_analyser import PROJECT_ROOT
+from stock_analyser.application.commands.run_scan import RunScanCommand
+from stock_analyser.application.workflows.scan_workflow import ScanWorkflow
 
 
 HERO_IMAGE = PROJECT_ROOT / "assets" / "stock-market-bull-bear.webp"
@@ -331,18 +332,13 @@ def render_live_scan_page() -> None:
         "stock_market": "India — NSE",
         "stock_count": len(symbols),
     }
-    scan_run = ScanService(
-        _build_config(settings),
-        data_provider=data_services.history,
-        fundamentals_provider=data_services.fundamentals,
-        industry_valuation_service=data_services.industry_valuation,
-        screener_provider=data_services.screener,
-    ).scan(
-        symbols,
+    workflow_result = ScanWorkflow(data_services).execute(
+        RunScanCommand.create(symbols, _build_config(settings)),
         result_callback=lambda current, total, run: _live_update(
             current, total, run, placeholders
         ),
     )
+    scan_run = workflow_result.run
     frames = scan_run.as_dataframes()
     st.session_state["scan_results"] = frames["passed"]
     st.session_state["scan_impending_results"] = frames["impending"]

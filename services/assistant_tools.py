@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from collections import Counter
 from collections.abc import Mapping
 from functools import lru_cache
 from math import ceil
@@ -11,7 +10,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from services.rejection_reasons import friendly_rejection
+from stock_analyser.application.queries import (
+    explain_failure_summary,
+    get_backtest_results,
+    get_calculation_trace,
+    get_market_condition,
+    get_scan_summary,
+    get_stock_status,
+)
 
 
 RESULT_SETS = (
@@ -41,57 +47,12 @@ def active_strategy(session_state: Mapping) -> dict:
 
 def scan_summary(session_state: Mapping) -> dict:
     """Return local result-group counts and the completed scan timestamp."""
-
-    def count(key: str) -> int:
-        frame = session_state.get(key)
-        return int(len(frame)) if isinstance(frame, pd.DataFrame) else 0
-
-    return {
-        "scan_time": str(session_state.get("scan_time"))
-        if session_state.get("scan_time")
-        else None,
-        "post_golden_cross_count": count("scan_results"),
-        "impending_golden_cross_count": count("scan_impending_results"),
-        "failed_count": count("scan_failed_results"),
-    }
+    return get_scan_summary(session_state)
 
 
 def stock_status(session_state: Mapping, stock_query: str) -> dict:
     """Return a rule-value record for one locally available stock query."""
-    query = stock_query.strip().upper()
-    if not query:
-        return {"available": False, "reason": "No stock was provided."}
-    for key, status in RESULT_SETS:
-        frame = session_state.get(key)
-        if not isinstance(frame, pd.DataFrame) or frame.empty:
-            continue
-        symbol_column = "symbol" if "symbol" in frame.columns else "Stock"
-        company_column = (
-            "company_name" if "company_name" in frame.columns else "Company"
-        )
-        symbol_match = (
-            frame[symbol_column]
-            .astype(str)
-            .str.upper()
-            .str.contains(query, regex=False)
-        )
-        company_match = (
-            frame[company_column]
-            .astype(str)
-            .str.upper()
-            .str.contains(query, regex=False)
-            if company_column in frame.columns
-            else False
-        )
-        matches = frame.loc[symbol_match | company_match]
-        if matches.empty:
-            continue
-        record = matches.iloc[0].where(pd.notna(matches.iloc[0]), None).to_dict()
-        return {"available": True, "status": status, "record": record}
-    return {
-        "available": False,
-        "reason": "The stock is not available in the current local results.",
-    }
+    return get_stock_status(session_state, stock_query)
 
 
 def stock_query_from_prompt(session_state: Mapping, prompt: str) -> str | None:
@@ -171,76 +132,17 @@ def backtest_records(
     session_state: Mapping, symbols: list[str] | None = None
 ) -> list[dict]:
     """Return local Backtester records, optionally limited to symbols."""
-    frame = session_state.get("backtest_results")
-    if not isinstance(frame, pd.DataFrame) or frame.empty:
-        return []
-    selected = frame
-    if symbols and "Stock" in frame.columns:
-        selected = frame.loc[frame["Stock"].isin(symbols)]
-    return selected.where(pd.notna(selected), None).to_dict("records")
+    return get_backtest_results(session_state, symbols)
 
 
 def market_condition_summary(session_state: Mapping) -> dict:
     """Summarise the current local scan without comparing historical snapshots."""
-    summary = scan_summary(session_state)
-    passed = session_state.get("scan_results")
-    impending = session_state.get("scan_impending_results")
-    failed = session_state.get("scan_failed_results")
-    above_long = 0
-    for frame in (passed, impending):
-        if isinstance(frame, pd.DataFrame) and "price_above_long_ma_percent" in frame:
-            above_long += int(
-                (
-                    pd.to_numeric(frame["price_above_long_ma_percent"], errors="coerce")
-                    > 0
-                ).sum()
-            )
-    recent_crosses = 0
-    if isinstance(passed, pd.DataFrame) and "days_since_cross" in passed:
-        recent_crosses = int(
-            (pd.to_numeric(passed["days_since_cross"], errors="coerce") <= 20).sum()
-        )
-    summary.update(
-        {
-            "above_long_ma_count": above_long,
-            "recent_cross_count": recent_crosses,
-            "failed_with_reason_count": int(len(failed))
-            if isinstance(failed, pd.DataFrame)
-            else 0,
-        }
-    )
-    return summary
+    return get_market_condition(session_state)
 
 
 def rejection_summary(session_state: Mapping, limit: int = 5) -> dict:
     """Return readable rejection counts from the completed local scan."""
-    frame = session_state.get("scan_failed_results")
-    if not isinstance(frame, pd.DataFrame) or frame.empty:
-        return {
-            "available": False,
-            "reason": "No failed-stock records are available in the current scan.",
-        }
-    if "reason" in frame and frame["reason"].notna().any():
-        values = (
-            friendly_rejection(reason)
-            for reason in frame["reason"].dropna().astype(str)
-        )
-    elif "stage" in frame and frame["stage"].notna().any():
-        values = frame["stage"].dropna().astype(str)
-    else:
-        return {
-            "available": False,
-            "reason": "Rejection reasons are unavailable in the current scan.",
-        }
-    counts = Counter(values)
-    return {
-        "available": True,
-        "total_rejected": int(len(frame)),
-        "reasons": [
-            {"reason": reason, "count": count}
-            for reason, count in counts.most_common(max(1, limit))
-        ],
-    }
+    return explain_failure_summary(session_state, limit)
 
 
 def crossover_window(session_state: Mapping, symbol: str) -> dict:
@@ -275,39 +177,7 @@ def crossover_window(session_state: Mapping, symbol: str) -> dict:
 
 def calculation_trace(session_state: Mapping, symbol: str) -> dict:
     """Return local formula inputs for key displayed technical measures."""
-    status = stock_status(session_state, symbol)
-    if not status.get("available"):
-        return {"available": False, "reason": status.get("reason")}
-    record = status["record"]
-    close = _number(record.get("close"))
-    short_ma = _number(record.get("ma_short"))
-    long_ma = _number(record.get("ma_long"))
-    return {
-        "available": True,
-        "symbol": symbol,
-        "price_premium": {
-            "formula": "(Close - Long MA) / Long MA × 100",
-            "inputs": {"close": close, "long_ma": long_ma},
-            "value": record.get("price_above_long_ma_percent"),
-        },
-        "ma_gap": {
-            "formula": "(Long MA - Short MA) / Long MA × 100",
-            "inputs": {"short_ma": short_ma, "long_ma": long_ma},
-            "value": record.get("impending_gap_percent"),
-        },
-        "slope": {
-            "formula": "Moving-average change over the configured five-session window",
-            "inputs": {
-                "short_ma_slope": record.get("short_ma_slope"),
-                "long_ma_slope": record.get("long_ma_slope"),
-            },
-        },
-        "pe": {
-            "formula": "Share price / trailing earnings per share",
-            "value": record.get("pe"),
-            "source": record.get("pe_source"),
-        },
-    }
+    return get_calculation_trace(session_state, symbol)
 
 
 def parameter_help(

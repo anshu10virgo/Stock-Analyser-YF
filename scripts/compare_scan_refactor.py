@@ -25,8 +25,9 @@ if str(PROJECT_ROOT) not in sys.path:
 from core.data_loader import DataLoader
 from models.scan_config import ScanConfig
 from services.data_source import SNAPSHOT_SOURCE, build_data_services
-from services.scan_service import ScanService
 from services.stock_universe import StockUniverse
+from stock_analyser.application.commands.run_scan import RunScanCommand
+from stock_analyser.application.workflows.scan_workflow import ScanWorkflow
 
 
 def _baseline_service(git_ref: str):
@@ -44,7 +45,7 @@ def _baseline_service(git_ref: str):
     return module.ScanService
 
 
-def _scan(service_type, config: ScanConfig, symbols: list[str]):
+def _scan_service(service_type, config: ScanConfig, symbols: list[str]):
     data = build_data_services(SNAPSHOT_SOURCE, PROJECT_ROOT)
     return service_type(
         config,
@@ -53,6 +54,13 @@ def _scan(service_type, config: ScanConfig, symbols: list[str]):
         industry_valuation_service=data.industry_valuation,
         screener_provider=data.screener,
     ).scan(symbols).as_dataframes()
+
+
+def _scan_application(config: ScanConfig, symbols: list[str]):
+    data = build_data_services(SNAPSHOT_SOURCE, PROJECT_ROOT)
+    return ScanWorkflow(data).execute(
+        RunScanCommand.create(symbols, config)
+    ).run.as_dataframes()
 
 
 def compare(git_ref: str, stock_count: int) -> None:
@@ -67,8 +75,8 @@ def compare(git_ref: str, stock_count: int) -> None:
         max_price_premium=10,
         include_impending_crosses=True,
     )
-    baseline = _scan(_baseline_service(git_ref), config, symbols)
-    current = _scan(ScanService, config, symbols)
+    baseline = _scan_service(_baseline_service(git_ref), config, symbols)
+    current = _scan_application(config, symbols)
     for group in ("passed", "impending", "failed"):
         assert_frame_equal(
             baseline[group].reset_index(drop=True),
