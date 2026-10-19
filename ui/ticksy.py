@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 from pathlib import Path
 
-import requests
 import streamlit as st
 
 from application.assistant_runtime import AssistantAnswer, AssistantRuntime
@@ -20,6 +19,10 @@ from services.assistant_provider import (
     load_assistant_settings,
 )
 from services.assistant_responses import local_response
+from stock_analyser.application.ports.model_provider import (
+    ModelProviderError,
+    ModelProviderTransportError,
+)
 
 
 SESSION_KEY = "ticksy_messages"
@@ -148,23 +151,19 @@ def _render_ticksy_panel() -> None:
                             )
                             .render()
                         )
-                    except requests.HTTPError as error:
-                        status_code = (
-                            error.response.status_code
-                            if error.response is not None
-                            else None
-                        )
+                    except ModelProviderTransportError as error:
+                        status_code = error.status_code
                         if status_code in {500, 502, 503, 504}:
                             response = "Ticksy's configured provider is temporarily unavailable. Please try again in a moment. Your local app data remains unchanged."
                         elif status_code == 429:
                             response = "Ticksy's configured provider is currently rate-limited. Please try again shortly. Your local app data remains unchanged."
                         elif status_code in {401, 403}:
                             response = "Ticksy's configured provider rejected its API key or access settings. Check the provider key and its project permissions. Your local app data remains unchanged."
-                        else:
+                        elif status_code is not None:
                             response = "Ticksy could not complete the configured provider request. Your local app data remains unchanged."
-                    except requests.RequestException:
-                        response = "Ticksy could not reach the configured provider. Your local app data remains unchanged."
-                    except RuntimeError as error:
+                        else:
+                            response = "Ticksy could not reach the configured provider. Your local app data remains unchanged."
+                    except ModelProviderError as error:
                         response = f"Ticksy could not complete that response: {error}"
                 else:
                     response = _ground_local_response(response)
