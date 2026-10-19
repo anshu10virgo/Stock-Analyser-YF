@@ -5,17 +5,19 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 
 from services.assistant_tools import (
-    backtest_records,
-    calculation_trace,
     crossover_window,
     data_dictionary,
-    market_condition_summary,
     parameter_help,
-    rejection_summary,
-    scan_summary,
-    stock_status,
     symbols_from_prompt,
     universe_lookup,
+)
+from stock_analyser.application.queries import (
+    explain_failure_summary as rejection_summary,
+    get_backtest_results as backtest_records,
+    get_calculation_trace as calculation_trace,
+    get_market_condition as market_condition_summary,
+    get_scan_summary as scan_summary,
+    get_stock_status as stock_status,
 )
 
 

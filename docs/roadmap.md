@@ -10,7 +10,7 @@ the [deployment and storage guide](deployment.md).
 2. Improve failed-stock exploration and surface existing scan diagnostics.
 3. Add persistent strategy profiles and completed scan history. These provide
    the stored comparisons needed for Ticksy daily-change explanations.
-4. Add application commands, queries, and ports before moving infrastructure.
+4. Move external systems behind the new application ports.
 5. Choose advanced Backtesting or US expansion as the next major feature.
 
 ## Completed — Package Foundation and Scanning Domain Extraction
@@ -50,6 +50,44 @@ runtime providers.
 - The same top 1,500 ranked symbols and configuration produce identical Post-
   Cross, Impending, failure, and scoring outputs before and after extraction.
 - Focused tests, the full suite, and `git diff --check` pass.
+
+## Completed — Application Commands, Queries, Workflows, and Ports
+
+### Goal
+
+Make UI and agent entrypoints depend on explicit use cases rather than directly
+constructing scanner services or calling helper modules, without changing any
+calculation, qualification, score, or visible workflow.
+
+### Scope
+
+- Add scan, Backtest, strategy-update, and report-delivery commands.
+- Add scan-summary, stock-status, failure-explanation, calculation-trace, and
+  data-health queries over bounded local application state.
+- Add scan, Backtest, and refresh workflow boundaries.
+- Define provider contracts for market data, fundamentals, storage, mail, and
+  hosted-model access.
+- Route Streamlit scan/Backtest execution and Ticksy's registered tools through
+  the application layer.
+- Preserve existing services and imports as temporary compatibility paths.
+
+### Deliberately Deferred
+
+- Moving Yahoo, Screener, R2, SMTP, Gemini, and OpenAI implementations into
+  `infrastructure/`.
+- Moving remaining root agent modules, Streamlit components, and jobs.
+- New agent capabilities or state-changing tools.
+- Any UI, rule, score, default, or financial-formula change.
+
+### Acceptance Criteria
+
+- Streamlit does not construct `ScanService` or `BacktestService` directly.
+- Registered Ticksy tools call application queries rather than service helpers.
+- Strategy commands have no Streamlit dependency and retain confirmation.
+- Existing outputs remain identical under focused, full-suite, and 1,500-stock
+  parity regression checks.
+- Operational verification scripts use the application workflows where they
+  exercise normal scan and Backtest execution.
 
 ## Completed — Ticksy Read-Only Tool Integration
 

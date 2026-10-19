@@ -7,8 +7,12 @@ from collections.abc import Mapping
 
 import pandas as pd
 
-from application.context import ApplicationContext
-from services.assistant_tools import active_strategy, scan_summary, stock_status
+from stock_analyser.application.context import ApplicationContext
+from services.assistant_tools import active_strategy
+from stock_analyser.application.queries import (
+    get_scan_summary as scan_summary,
+    get_stock_status as stock_status,
+)
 
 
 def _records(frame: object, columns: list[str], limit: int = 5) -> list[dict]:

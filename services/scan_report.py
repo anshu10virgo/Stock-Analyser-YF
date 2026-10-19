@@ -65,6 +65,16 @@ class MailConfiguration:
     port: int = SMTP_PORT
 
 
+@dataclass(frozen=True)
+class ConfiguredSmtpMailer:
+    """Temporary adapter for the application mailer port."""
+
+    configuration: MailConfiguration
+
+    def send(self, messages: list[EmailMessage]) -> None:
+        send_messages(messages, self.configuration)
+
+
 def parse_recipients(raw_recipients: str) -> tuple[str, ...]:
     """Validate, trim, and de-duplicate comma-separated email addresses."""
     candidates = [value.strip() for value in raw_recipients.split(",") if value.strip()]

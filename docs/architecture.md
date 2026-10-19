@@ -5,11 +5,11 @@ Stock Analyser YF is organized as a production-oriented layered application.
 ```text
 Streamlit UI
     ↓
-Scan Application Service
+Application Commands and Workflows
     ↓
-Scanner Rules and Scoring
+Temporary Service Facades and Domain Rules
     ↓
-Market Data and Fundamentals Providers
+Provider Ports and Current Adapters
     ↓
 Yahoo Finance, Screener Snapshots, Cache, and Observability
 ```
@@ -22,7 +22,8 @@ flowchart TB
     TICKSY["Ticksy\nSession chat · Local explanations · Confirmed actions"]
     CONTEXT["Application context\nAllow-listed copied state"]
     REGISTRY["Agent tool registry\nContracts · Policy · Audit"]
-    TOOLS["Local analysis tools\nRead-only deterministic adapters"]
+    TOOLS["Application queries\nSummary · Status · Failures · Data health"]
+    USECASES["Application use cases\nCommands · Queries · Workflows · Ports"]
     SCAN["Scan service\nOrchestration · Progress · Structured outcomes"]
     BACKTEST["Backtest service\nHistorical Golden Cross signals · Return horizons"]
     RULES["Deterministic analysis\nIndicators · Golden Cross rules · Optional filters"]
@@ -30,13 +31,14 @@ flowchart TB
     YAHOO["Yahoo Finance\nLive prices and current fundamentals"]
     PROVIDER["Configured model provider\nGemini Flash or OpenAI"]
 
-    UI --> SCAN
-    UI --> BACKTEST
+    UI --> USECASES
+    USECASES --> SCAN
+    USECASES --> BACKTEST
     UI --> TICKSY
     TICKSY --> CONTEXT
     CONTEXT --> REGISTRY
     REGISTRY --> TOOLS
-    TOOLS -->|"Existing query services"| SCAN
+    TOOLS --> USECASES
     TICKSY -->|"Confirmed request only"| UI
     TICKSY -->|"Bounded context and local declarations"| PROVIDER
     PROVIDER -->|"Requested allow-listed calls"| TICKSY
@@ -50,7 +52,7 @@ flowchart TB
     classDef service fill:#dff3ed,stroke:#0f8b8d,color:#102a43;
     classDef external fill:#fff1d6,stroke:#e59f23,color:#102a43;
     class UI,TICKSY,CONTEXT application;
-    class REGISTRY,TOOLS,SCAN,BACKTEST,RULES,LOCAL service;
+    class REGISTRY,TOOLS,USECASES,SCAN,BACKTEST,RULES,LOCAL service;
     class YAHOO,PROVIDER external;
 ```
 
@@ -87,7 +89,7 @@ unavailable until separately designed and tested.
 app.py                              Thin Streamlit Cloud bootstrap
 src/stock_analyser/
     domain/scanning/                Pure scan models, indicators, rules, and scoring
-    application/                    Future commands, queries, workflows, and ports
+    application/                    Commands, queries, workflows, context, and ports
     agents/                         Future packaged agent runtime
     infrastructure/                 Future external-system adapters
     presentation/streamlit/app.py   Current packaged Streamlit composition root
@@ -102,7 +104,10 @@ tests/                              Regression and boundary tests
 
 The installable package uses the `src` layout declared in `pyproject.toml`.
 Migration remains incremental: existing imports are compatibility facades or
-unchanged modules until their own focused sprint. The scanner's pure models,
+unchanged modules until their own focused sprint. Streamlit now invokes scan,
+Backtest, strategy-update, and report-delivery commands/workflows. Registered
+Ticksy tools invoke packaged application queries instead of service helpers.
+The scanner's pure models,
 indicators, Post-Cross rules, Impending rules, reversal rules, optional rules,
 and scoring now live under `stock_analyser.domain.scanning`; `ScanService`
 remains the temporary provider-aware orchestration facade. A parity script runs
@@ -118,15 +123,27 @@ snapshot before this compatibility layer is retired.
   page with fixed return horizons and chart exploration.
 - `ui/ticksy.py`: session-only Ticksy conversation UI, local explanations,
   action confirmation, and provider-disabled state.
-- `application/context.py`: allow-listed, copied application state for agent
-  tools and hosted-provider context construction.
+- `src/stock_analyser/application/context.py`: canonical allow-listed, copied
+  application state for agent tools and hosted-provider context construction.
+  The root `application/context.py` is a temporary compatibility export.
+- `src/stock_analyser/application/commands/`: explicit scan, Backtest,
+  strategy-update, and report-delivery use cases. Scan and Backtest commands
+  temporarily delegate calculation to the existing service facades.
+- `src/stock_analyser/application/queries/`: deterministic scan summary, stock
+  status, failure explanation, calculation trace, and data-health queries used
+  by Ticksy's registered local tools.
+- `src/stock_analyser/application/workflows/`: provider-bundle orchestration for
+  scans and Backtests plus provider-independent refresh sequencing.
+- `src/stock_analyser/application/ports/`: structural contracts for market
+  data, fundamentals, storage, mail, and hosted-model providers. Concrete
+  adapters remain in their legacy locations until the infrastructure sprint.
 - `agents/contracts.py`, `agents/policies.py`, and `agents/registry.py`: typed
   tool contracts, centralized effect-to-approval policy, validation, and
   controlled execution.
 - `agents/audit.py`: sanitized runtime-local audit events with snapshot and
   timing metadata.
-- `agents/tools/local_analysis.py`: read-only adapters over existing local
-  scan and Backtester query functions.
+- `agents/tools/local_analysis.py`: read-only adapters over packaged
+  application queries; it no longer imports scan helper services directly.
 - `application/assistant_runtime.py`: session-isolated orchestration boundary
   for provider tool selection, validated local execution, grounding, and data-
   used metadata.

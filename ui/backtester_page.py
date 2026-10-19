@@ -6,13 +6,13 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from core.indicators import Indicators
 from models.scan_config import ScanConfig
-from services.backtest_service import BacktestService
 from services.data_source import LIVE_SOURCE, build_data_services
 from services.stock_universe import StockUniverse
 from services.snapshot_storage import ScopedSnapshotStorage
 from services.storage_config import application_snapshot_storage
+from stock_analyser.application.commands.run_backtest import RunBacktestCommand
+from stock_analyser.application.workflows.backtest_workflow import BacktestWorkflow
 from ui.stock_detail import PRICE_RANGE_BUTTONS
 
 
@@ -68,18 +68,11 @@ def render_backtester_page(project_root) -> None:
             st.session_state.get("selected_market_data_source", LIVE_SOURCE), project_root
         )
         years = int(period[:-1])
-        batch = services.history.download_batch(selected, years=years + 2, adjusted_prices=False)
-        engine = BacktestService(config, services.screener)
-        rows = []
-        charts = {}
-        for symbol in selected:
-            history = services.history.get_symbol_history(batch, symbol)
-            charts[symbol] = Indicators.add_moving_averages(history, config.short_ma, config.long_ma)
-            run = engine.replay_symbol(symbol, history)
-            for signal in run.signals:
-                rows.append({"Stock": symbol, "Company": names.get(symbol), "Cross date": signal.cross_date.date(), "Signal date": signal.signal_date.date(), "Entry": signal.entry_price, "P/E": signal.pe, **signal.returns})
-        st.session_state["backtest_results"] = pd.DataFrame(rows)
-        st.session_state["backtest_charts"] = charts
+        execution = BacktestWorkflow(services).execute(
+            RunBacktestCommand(tuple(selected), years, config, names)
+        )
+        st.session_state["backtest_results"] = execution.results
+        st.session_state["backtest_charts"] = execution.charts
     results = st.session_state.get("backtest_results")
     if results is not None:
         st.subheader("Historical results")

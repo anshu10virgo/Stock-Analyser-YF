@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from services.assistant_tools import active_strategy, stock_query_from_prompt, stock_status
+from services.assistant_tools import active_strategy, stock_query_from_prompt
+from stock_analyser.application.queries import get_stock_status as stock_status
 
 
 def _value(record: dict, key: str, suffix: str = "") -> str:

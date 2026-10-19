@@ -15,12 +15,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from models.scan_config import ScanConfig
-from services.backtest_service import BacktestService
 from services.data_source import SNAPSHOT_SOURCE, build_data_services
-from services.scan_service import ScanService
 from services.snapshot_storage import LocalSnapshotStorage, ScopedSnapshotStorage
 from services.stock_universe import StockUniverse
 from services.storage_config import configured_cloud_storage
+from stock_analyser.application.commands.run_backtest import RunBacktestCommand
+from stock_analyser.application.commands.run_scan import RunScanCommand
+from stock_analyser.application.workflows.backtest_workflow import BacktestWorkflow
+from stock_analyser.application.workflows.scan_workflow import ScanWorkflow
 
 
 def verify(root_layout=False, data_root=PROJECT_ROOT, snapshot_id=""):
@@ -44,18 +46,18 @@ def verify(root_layout=False, data_root=PROJECT_ROOT, snapshot_id=""):
         services.history.fallback = None
         services.fundamentals.fallback = None
         services.industry_valuation.fallback = None
-        batch = services.history.download_batch(symbols, years=10, adjusted_prices=False)
-        scan = ScanService(config, services.history, services.fundamentals,
-                           services.industry_valuation, services.screener).scan(symbols)
+        scan = ScanWorkflow(services).execute(
+            RunScanCommand.create(symbols, config)
+        ).run
         scans.append(scan.as_dataframes())
-        engine = BacktestService(config, services.screener)
-        signals.append({symbol: engine.replay_symbol(
-            symbol, services.history.get_symbol_history(batch, symbol)
-        ).signals for symbol in symbols})
+        signals.append(
+            BacktestWorkflow(services).execute(
+                RunBacktestCommand(tuple(symbols), 8, config)
+            ).results
+        )
     for group in scans[0]:
         pd.testing.assert_frame_equal(scans[0][group], scans[1][group])
-    if signals[0] != signals[1]:
-        raise AssertionError("Cloud and local Backtest signals differ")
+    pd.testing.assert_frame_equal(signals[0], signals[1])
     for symbol in symbols:
         batches = [services.history.download_batch([symbol], years=10) for services in providers]
         pd.testing.assert_frame_equal(*batches)
@@ -64,7 +66,7 @@ def verify(root_layout=False, data_root=PROJECT_ROOT, snapshot_id=""):
         pd.testing.assert_frame_equal(*[services.screener.valuation_history(symbol) for services in providers])
     print(json.dumps({"snapshot_id": cloud.snapshot_id, "universe_rows": len(frames[0]),
                       "compared_symbols": symbols, "scan_and_backtest_match": True,
-                      "backtest_signals": sum(len(rows) for rows in signals[0].values())}, indent=2))
+                      "backtest_signals": len(signals[0])}, indent=2))
     return cloud.snapshot_id
 
 

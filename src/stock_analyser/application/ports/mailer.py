@@ -1,0 +1,10 @@
+"""Outbound report-delivery contract."""
+
+from __future__ import annotations
+
+from email.message import EmailMessage
+from typing import Protocol
+
+
+class MailerPort(Protocol):
+    def send(self, messages: list[EmailMessage]) -> None: ...

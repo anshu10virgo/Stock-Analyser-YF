@@ -11,7 +11,8 @@ import streamlit as st
 from application.assistant_runtime import AssistantAnswer, AssistantRuntime
 from models.assistant import AssistantMessage
 from models.assistant_action import AssistantAction
-from services.assistant_actions import apply_action, propose_action
+from services.assistant_actions import propose_action
+from stock_analyser.application.commands.update_strategy import apply_action
 from services.assistant_explanations import explain_stock_prompt
 from services.assistant_provider import (
     DisabledProvider,
