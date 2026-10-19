@@ -7,7 +7,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from application.assistant_runtime import AssistantAnswer, AssistantRuntime
 from models.assistant import AssistantMessage
 from models.assistant_action import AssistantAction
 from services.assistant_actions import propose_action
@@ -19,6 +18,7 @@ from services.assistant_provider import (
     load_assistant_settings,
 )
 from services.assistant_responses import local_response
+from stock_analyser.agents.orchestrator import AssistantAnswer, AssistantRuntime
 from stock_analyser.application.ports.model_provider import (
     ModelProviderError,
     ModelProviderTransportError,
@@ -145,7 +145,7 @@ def _render_ticksy_panel() -> None:
                             _runtime()
                             .answer(
                                 provider,
-                                st.session_state,
+                                AssistantRuntime.context(st.session_state),
                                 tuple(messages),
                                 prompt,
                             )

@@ -1,1 +1,1 @@
-"""Agent policies, registries, and tool adapters."""
+"""Packaged Ticksy runtime, policies, registry, and deterministic tools."""

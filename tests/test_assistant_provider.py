@@ -7,8 +7,6 @@ import pandas as pd
 import requests
 
 from models.assistant import AssistantMessage, AssistantRequest
-from agents.tools.local_analysis import build_local_tool_registry
-from services.assistant_context import build_local_context
 from services.assistant_actions import apply_action, propose_action
 from services.assistant_explanations import explain_stock_prompt
 from services.assistant_provider import (
@@ -25,6 +23,8 @@ from services.assistant_tools import (
     scan_summary,
     stock_status,
 )
+from stock_analyser.agents.execution_context import build_local_context
+from stock_analyser.agents.tools import build_local_tool_registry
 from stock_analyser.application.ports.model_provider import (
     ModelProviderPort,
     ModelProviderResponseError,

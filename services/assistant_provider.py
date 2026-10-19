@@ -10,14 +10,14 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 
-from agents.contracts import ToolCall, ToolDefinition
 from models.assistant import AssistantRequest, AssistantSettings
-from stock_analyser.application.ports.model_provider import ModelProviderPort
-from stock_analyser.infrastructure.gemini.provider import GeminiProvider
-from stock_analyser.infrastructure.model_support import (
+from stock_analyser.agents.contracts import ToolCall, ToolDefinition
+from stock_analyser.agents.prompts import (
     SYSTEM_INSTRUCTION,
     TOOL_SELECTION_INSTRUCTION,
 )
+from stock_analyser.application.ports.model_provider import ModelProviderPort
+from stock_analyser.infrastructure.gemini.provider import GeminiProvider
 from stock_analyser.infrastructure.openai.provider import OpenAIProvider
 
 

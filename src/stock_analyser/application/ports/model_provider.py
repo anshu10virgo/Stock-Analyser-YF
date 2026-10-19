@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from agents.contracts import ToolCall, ToolDefinition
 from models.assistant import AssistantRequest
+from stock_analyser.agents.contracts import ToolCall, ToolDefinition
 
 
 class ModelProviderError(RuntimeError):

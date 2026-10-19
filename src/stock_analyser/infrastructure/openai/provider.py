@@ -7,8 +7,8 @@ from collections.abc import Mapping
 
 import requests
 
-from agents.contracts import ToolCall, ToolDefinition
 from models.assistant import AssistantRequest
+from stock_analyser.agents.contracts import ToolCall, ToolDefinition
 from stock_analyser.application.ports.model_provider import (
     ModelProviderResponseError,
     ModelProviderTransportError,

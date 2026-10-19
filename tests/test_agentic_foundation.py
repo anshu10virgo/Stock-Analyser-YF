@@ -7,19 +7,26 @@ from json import loads
 
 import pandas as pd
 
-from agents.audit import InMemoryAuditLog, sanitized_arguments
-from agents.contracts import (
+from agents.audit import InMemoryAuditLog as LegacyAuditLog
+from agents.registry import ToolRegistry as LegacyToolRegistry
+from application.assistant_runtime import AssistantRuntime as LegacyAssistantRuntime
+from services.assistant_context import build_local_context as legacy_local_context
+from stock_analyser.agents.audit_log import InMemoryAuditLog, sanitized_arguments
+from stock_analyser.agents.contracts import (
     ApprovalLevel,
     ToolCall,
     ToolDefinition,
     ToolEffect,
     ToolStatus,
 )
-from agents.registry import ToolRegistry
-from agents.tools.local_analysis import build_local_tool_registry
-from application.context import ApplicationContext
-from application.assistant_runtime import AssistantRuntime
-from services.assistant_context import build_local_context
+from stock_analyser.agents.execution_context import (
+    ExecutionContext,
+    build_local_context,
+)
+from stock_analyser.agents.orchestrator import AssistantRuntime
+from stock_analyser.agents.tool_registry import ToolRegistry
+from stock_analyser.agents.tools import build_local_tool_registry
+from stock_analyser.application.context import ApplicationContext
 
 
 class AgenticFoundationTests(unittest.TestCase):
@@ -58,13 +65,20 @@ class AgenticFoundationTests(unittest.TestCase):
         }
 
     def test_context_copies_only_allow_listed_application_state(self):
-        context = ApplicationContext.from_session_state(self.state)
+        application_context = ApplicationContext.from_session_state(self.state)
+        context = ExecutionContext.from_application_context(application_context)
 
         self.assertEqual(context.snapshot_identity, "snapshot-123")
         self.assertNotIn("GEMINI_API_KEY", context.as_mapping())
         self.assertNotIn("ticksy_pending_action", context.as_mapping())
         context.get("scan_results").loc[0, "symbol"] = "CHANGED.NS"
         self.assertEqual(self.state["scan_results"].loc[0, "symbol"], "TCS.NS")
+
+    def test_legacy_agent_paths_are_compatibility_exports(self):
+        self.assertIs(LegacyAuditLog, InMemoryAuditLog)
+        self.assertIs(LegacyToolRegistry, ToolRegistry)
+        self.assertIs(LegacyAssistantRuntime, AssistantRuntime)
+        self.assertIs(legacy_local_context, build_local_context)
 
     def test_provider_context_is_built_from_the_bounded_snapshot(self):
         content = build_local_context(self.state, "TCS")
@@ -74,7 +88,7 @@ class AgenticFoundationTests(unittest.TestCase):
 
     def test_registered_read_only_tool_returns_structured_result_and_audit(self):
         registry = build_local_tool_registry()
-        context = ApplicationContext.from_session_state(self.state)
+        context = ExecutionContext.from_application_state(self.state)
 
         result = registry.execute(
             ToolCall("get_stock_status", {"symbol": "TCS"}),
@@ -93,7 +107,7 @@ class AgenticFoundationTests(unittest.TestCase):
 
         result = registry.execute(
             ToolCall("get_rejection_summary", {"limit": 3}),
-            ApplicationContext.from_session_state(self.state),
+            ExecutionContext.from_application_state(self.state),
         )
 
         self.assertEqual(result.status, ToolStatus.SUCCESS)
@@ -109,7 +123,7 @@ class AgenticFoundationTests(unittest.TestCase):
         registry = build_local_tool_registry()
         result = registry.execute(
             ToolCall("get_stock_status", {"unexpected": "TCS"}),
-            ApplicationContext.from_session_state(self.state),
+            ExecutionContext.from_application_state(self.state),
         )
 
         self.assertEqual(result.status, ToolStatus.ERROR)
@@ -127,7 +141,7 @@ class AgenticFoundationTests(unittest.TestCase):
             ),
             lambda _context, _arguments: calls.append("executed"),
         )
-        context = ApplicationContext.from_session_state(self.state)
+        context = ExecutionContext.from_application_state(self.state)
         call = ToolCall("update_strategy")
 
         pending = registry.execute(call, context)
@@ -168,11 +182,11 @@ class AgenticFoundationTests(unittest.TestCase):
 
     def test_runtime_exposes_the_initial_read_only_tool_catalogue(self):
         runtime = AssistantRuntime()
-        definitions = {definition.name for definition in runtime.registry.definitions()}
+        definitions = runtime.registry.definitions()
 
         self.assertEqual(
-            definitions,
-            {
+            tuple(definition.name for definition in definitions),
+            (
                 "get_scan_summary",
                 "get_stock_status",
                 "get_market_condition",
@@ -180,7 +194,16 @@ class AgenticFoundationTests(unittest.TestCase):
                 "get_calculation_trace",
                 "get_data_health",
                 "get_rejection_summary",
-            },
+            ),
+        )
+        self.assertTrue(
+            all(definition.effect == ToolEffect.READ_ONLY for definition in definitions)
+        )
+        self.assertTrue(
+            all(
+                definition.approval == ApprovalLevel.NONE
+                for definition in definitions
+            )
         )
 
     def test_runtime_executes_selected_tools_and_grounds_the_final_request(self):
