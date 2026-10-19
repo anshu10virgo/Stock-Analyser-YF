@@ -24,7 +24,7 @@ from stock_analyser.infrastructure.yahoo.industry_valuation import (
     YahooIndustryValuationService,
 )
 from stock_analyser.infrastructure.yahoo.providers import YahooFinanceHistoryProvider
-from models.market import market_data_root, market_definition
+from stock_analyser.domain.markets import market_data_root, market_definition
 
 
 LIVE_SOURCE = "Live Yahoo Finance"

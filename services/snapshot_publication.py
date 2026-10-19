@@ -18,7 +18,7 @@ from services.snapshot_storage import (
     CloudSnapshotStorage, LocalSnapshotStorage, SnapshotStorageError, atomic_write, sha256_file,
     validate_catalog, dataset_object_key, TRANSFER_WORKERS,
 )
-from models.market import market_data_root, market_definition
+from stock_analyser.domain.markets import market_data_root, market_definition
 from services.storage_lease import StorageLease
 
 

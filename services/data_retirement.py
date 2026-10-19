@@ -6,7 +6,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from models.market import market_data_root
+from stock_analyser.domain.markets import market_data_root
 from services.snapshot_publication import SnapshotPublisher, json_bytes
 from services.snapshot_storage import LocalSnapshotStorage, SnapshotStorageError, atomic_write, sha256_file
 from services.storage_housekeeping import read_object

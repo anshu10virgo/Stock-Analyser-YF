@@ -12,6 +12,11 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from stock_analyser.domain.fundamentals import (
+    compound_annual_growth_rate,
+    debt_to_equity,
+)
+
 
 SUMMARY_COLUMNS = (
     "symbol",
@@ -78,10 +83,8 @@ def _number(value):
 
 
 def _cagr(start, end, years):
-    """Return conventional CAGR only when both endpoints are positive."""
-    if start is None or end is None or start <= 0 or end <= 0:
-        return None
-    return ((end / start) ** (1 / years) - 1) * 100
+    """Compatibility wrapper for the canonical domain calculation."""
+    return compound_annual_growth_rate(start, end, years)
 
 
 def _table_rows(section) -> tuple[list[str], dict[str, list[float | None]]]:
@@ -308,11 +311,11 @@ class ScreenerFundamentalsProvider:
         equity_capital = balance_rows.get("Equity Capital", [])
         reserves = balance_rows.get("Reserves", [])
         borrowings = balance_rows.get("Borrowings", [])
-        debt_to_equity = None
+        debt_equity_ratio = None
         if equity_capital and reserves and borrowings:
-            equity = (equity_capital[-1] or 0) + (reserves[-1] or 0)
-            if equity > 0 and borrowings[-1] is not None:
-                debt_to_equity = borrowings[-1] / equity
+            debt_equity_ratio = debt_to_equity(
+                borrowings[-1], equity_capital[-1], reserves[-1]
+            )
 
         reporting_date = None
         if balance_headers:
@@ -339,7 +342,7 @@ class ScreenerFundamentalsProvider:
             "eps_growth_3y": eps_growth[3],
             "eps_growth_5y": eps_growth[5],
             "eps_growth_10y": eps_growth[10],
-            "debt_to_equity": debt_to_equity,
+            "debt_to_equity": debt_equity_ratio,
             "roe": roe,
             "opm": opm,
             "source_url": page.url or source_url,

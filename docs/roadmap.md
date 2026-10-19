@@ -95,7 +95,10 @@ src/stock_analyser/
 | Target area | Status | Current position |
 | --- | --- | --- |
 | `domain/scanning` | Complete | Canonical pure models, indicators, Post-Cross, Impending, reversal, optional rules, and scoring are packaged. |
-| Remaining domain packages | Not started | Backtesting, reporting, market definitions, and remaining fundamental-domain logic still live in root services/models. |
+| `domain/markets` | Complete | Market identity, currency, timezone, stock keys, and dataset-root rules are canonical; `models/market.py` is a compatibility export. |
+| `domain/fundamentals` | Complete | Typed comparison and industry-valuation outcomes plus reusable CAGR, P/E, PEG, debt-to-equity, classification, and valuation calculations are canonical. |
+| `domain/backtesting` | Complete | Replay models, fixed horizons, qualification, valuation selection, forward returns, and aggregate metrics are canonical; `services/backtest_service.py` and `models/backtest.py` are compatibility facades. |
+| `domain/reporting` | Complete | Recipient validation, filters-first workbook data, chart specifications, attachment batching, and message content are canonical; rendering and transport remain outside the domain. |
 | `application/commands` | Complete | Scan, Backtest, strategy update, and report delivery use cases exist. |
 | `application/queries` | Complete | Stock status, failure explanation, scan summary, calculation trace, and data health exist. |
 | `application/workflows` | Complete | Scan, Backtest, and refresh workflow boundaries exist. |
@@ -108,7 +111,7 @@ src/stock_analyser/
 | Structured tests | Not started | Coverage exists and passes, but tests remain in one flat root directory. |
 | Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
 
-The structural migration is approximately 72% complete. This percentage
+The structural migration is approximately 85% complete. This percentage
 describes package placement and dependency direction, not product feature
 completion.
 
@@ -322,19 +325,23 @@ scores, defaults, or financial calculations.
 
 ### Sprint F — Complete the Domain Layer
 
-**Status:** Next. Deliver as the smaller F1-F4 sub-sprints below.
+**Status:** Complete.
 
 This sprint should be delivered as small sub-sprints, not one large move.
 
 #### F1 — Markets
 
-- Create `domain/markets/` for market identifiers, exchange suffixes, trading-
-  session assumptions, and market-specific configuration contracts.
+**Status:** Complete.
+
+- Create `domain/markets/` for market identifiers, currency, timezone, stock
+  keys, and market-specific dataset-location rules.
 - Move pure market definitions out of root `models/market.py`.
 - Do not put Yahoo symbols, API clients, Streamlit settings, or storage paths in
   the market domain.
 
 #### F2 — Fundamentals
+
+**Status:** Complete.
 
 - Create `domain/fundamentals/` for fundamental metric models, missing-data
   states, comparison outcomes, industry valuation results, and pure PEG/growth
@@ -345,6 +352,8 @@ This sprint should be delivered as small sub-sprints, not one large move.
 
 #### F3 — Backtesting
 
+**Status:** Complete.
+
 - Create `domain/backtesting/` for replay models, horizons, event selection,
   return calculations, and aggregate metrics.
 - Remove calculation responsibility from `services/backtest_service.py`.
@@ -352,6 +361,8 @@ This sprint should be delivered as small sub-sprints, not one large move.
   domain and injected ports.
 
 #### F4 — Reporting
+
+**Status:** Complete.
 
 - Create `domain/reporting/` for report models, filters-first workbook data,
   chart snapshot specifications, attachment batching decisions, and message
@@ -507,12 +518,10 @@ A legacy path can be deleted only when:
 
 ## Immediate Execution Order
 
-1. Sprint F1/F2 — markets and fundamentals domain boundaries.
-2. Sprint F3/F4 — Backtesting and reporting domains.
-3. Sprint G — Streamlit presentation migration.
-4. Sprint H — packaged operational jobs and GitHub Actions cutover.
-5. Sprint I — test-directory migration and architecture quality gates.
-6. Sprint J — compatibility retirement and final cleanup.
+1. Sprint G — Streamlit presentation migration.
+2. Sprint H — packaged operational jobs and GitHub Actions cutover.
+3. Sprint I — test-directory migration and architecture quality gates.
+4. Sprint J — compatibility retirement and final cleanup.
 
 Product-feature work that materially touches these modules should either wait
 for the owning migration sprint or be implemented through the new canonical

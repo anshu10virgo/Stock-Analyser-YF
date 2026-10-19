@@ -11,7 +11,12 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from models.market import market_data_root, market_definition, stock_key
+from stock_analyser.domain.markets import (
+    MarketDefinition,
+    market_data_root,
+    market_definition,
+    stock_key,
+)
 from models.scan_config import ScanConfig
 from services.backtest_service import BacktestService
 from services.data_source import SNAPSHOT_SOURCE, build_data_services

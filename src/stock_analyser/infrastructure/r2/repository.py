@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+from stock_analyser.domain.fundamentals import IndustryValuation
 from stock_analyser.infrastructure.r2.storage import LocalSnapshotStorage
 
 import pandas as pd
@@ -249,11 +250,7 @@ class RepositoryIndustryValuationService:
 
     @staticmethod
     def empty_result():
-        return {
-            "industry_weighted_pe": None,
-            "industry_median_pe": None,
-            "industry_peer_count": 0,
-        }
+        return IndustryValuation.unavailable().as_dict()
 
     def _load(self):
         if self._records is not None:

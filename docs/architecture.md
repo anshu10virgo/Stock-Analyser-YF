@@ -90,6 +90,10 @@ unavailable until separately designed and tested.
 app.py                              Thin Streamlit Cloud bootstrap
 src/stock_analyser/
     domain/scanning/                Pure scan models, indicators, rules, and scoring
+    domain/markets/                 Market identity and dataset-location rules
+    domain/fundamentals/            Fundamental outcomes and reusable calculations
+    domain/backtesting/             Historical replay, horizons, returns, and summaries
+    domain/reporting/               Report data, specifications, batching, and content
     application/                    Commands, queries, workflows, context, and ports
     agents/                         Canonical orchestrator, policy, audit, and tools
     infrastructure/                 Yahoo, Screener, R2/local, SMTP, and model adapters
@@ -112,6 +116,20 @@ The packaged agent runtime owns orchestration, execution context, contracts,
 approval decisions, policy, audit, provider-neutral prompts, and focused local
 tools. Root `agents/`, `application/assistant_runtime.py`, and
 `services/assistant_context.py` retain compatibility exports only.
+Market identity, currency, timezone, stock keys, and market-specific dataset
+locations are canonical under `stock_analyser.domain.markets`;
+`models/market.py` is now a compatibility export. Reusable fundamental
+calculations and typed outcomes are canonical under
+`stock_analyser.domain.fundamentals`.
+Historical replay models, Post-Cross qualification, fixed horizons, valuation
+selection, forward-return calculations, and aggregate metrics are canonical
+under `stock_analyser.domain.backtesting`. The application Backtest command
+coordinates market-data and Screener ports directly; `services/backtest_service.py`
+and `models/backtest.py` remain compatibility facades.
+Recipient validation, filters-first workbook data, chart specifications,
+attachment batching, and report-message content are canonical under
+`stock_analyser.domain.reporting`. Excel/PNG/ZIP rendering stays in the
+temporary report service, and SMTP delivery stays in infrastructure.
 The scanner's pure models,
 indicators, Post-Cross rules, Impending rules, reversal rules, optional rules,
 and scoring now live under `stock_analyser.domain.scanning`; `ScanService`
@@ -132,8 +150,9 @@ snapshot before this compatibility layer is retired.
   application state for agent tools and hosted-provider context construction.
   The root `application/context.py` is a temporary compatibility export.
 - `src/stock_analyser/application/commands/`: explicit scan, Backtest,
-  strategy-update, and report-delivery use cases. Scan and Backtest commands
-  temporarily delegate calculation to the existing service facades.
+  strategy-update, and report-delivery use cases. The Backtest command now
+  orchestrates the pure Backtesting domain and injected provider ports; scan
+  orchestration still uses its temporary service facade.
 - `src/stock_analyser/application/queries/`: deterministic scan summary, stock
   status, failure explanation, calculation trace, and data-health queries used
   by Ticksy's registered local tools.
@@ -183,22 +202,37 @@ snapshot before this compatibility layer is retired.
   failed outcomes. Existing `models/` paths re-export these contracts.
 - `src/stock_analyser/domain/scanning/`: provider-independent indicators,
   Post-Cross, Impending, reversal, optional-filter, and scoring rules.
+- `src/stock_analyser/domain/markets/`: explicit India/US market definitions,
+  currency and timezone metadata, country-qualified stock keys, and isolated
+  dataset-root selection. It contains no provider client or network logic.
+- `src/stock_analyser/domain/fundamentals/`: typed three-state comparison and
+  industry-valuation outcomes plus pure CAGR, P/E, PEG, debt-to-equity,
+  financial-company classification, numeric-validation, and peer-valuation
+  calculations.
+- `src/stock_analyser/domain/backtesting/`: typed replay outcomes, fixed
+  trading-session horizons, historical Post-Cross qualification, point-in-time
+  P/E selection, forward returns, and aggregate return metrics.
+- `src/stock_analyser/domain/reporting/`: typed report and chart specifications,
+  recipient validation, filters-first workbook frames, attachment batching,
+  and message subject/body construction without SMTP or rendering dependencies.
 - `services/scan_service.py`: scan orchestration with injected provider
   dependencies, structured failures, and optional accumulated-result callbacks
   for batched UI progress updates. Mandatory technical rules run before
   selected fundamental filters.
 - `services/fundamental_filters.py`: temporary compatibility path for the
-  canonical three-state optional rules.
+  scanning optional rules. Their provider-independent comparison outcomes and
+  reusable calculations come from the Fundamentals domain.
 - `providers/yahoo_finance.py`, `providers/repository_data.py`,
   `providers/screener.py`, `core/fundamentals.py`,
   `services/industry_valuation.py`, `services/snapshot_storage.py`,
   `services/storage_config.py`, and `services/data_source.py`: temporary
   compatibility exports for callers that have not yet migrated to canonical
   infrastructure imports.
-- `services/scan_report.py`: workbook, chart-image, ZIP batching, email
-  validation, and message construction. SMTP delivery is delegated through
-  the infrastructure `MailerPort` adapter. The Streamlit UI supplies completed
-  results and deployment-managed secrets; recipients are never persisted.
+- `services/scan_report.py`: compatibility and rendering facade for XLSX, PNG,
+  ZIP, and `EmailMessage` creation. Report data, validation, batching decisions,
+  and message content come from the Reporting domain; SMTP delivery is delegated
+  through the infrastructure `MailerPort` adapter. The Streamlit UI supplies
+  completed results and deployment-managed secrets; recipients are never persisted.
 - `services/assistant_provider.py`: temporary configuration and compatibility
   facade that selects the canonical Gemini or OpenAI adapter, or a safe
   disabled provider when credentials are unavailable.

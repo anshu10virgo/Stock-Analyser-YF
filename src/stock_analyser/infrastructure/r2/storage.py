@@ -117,7 +117,7 @@ class CloudSnapshotStorage:
 
     def __init__(self, client, bucket: str, prefix: str, cache_root: Path,
                  snapshot_id: str = "", market="IN"):
-        from models.market import market_definition
+        from stock_analyser.domain.markets import market_definition
 
         market_definition(market)
         self.client = client

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import re
 import zipfile
 from datetime import datetime
 from email.message import EmailMessage
@@ -11,6 +10,21 @@ from email.message import EmailMessage
 import pandas as pd
 from PIL import Image, ImageDraw
 from services.data_source import SNAPSHOT_SOURCE, snapshot_source_label
+from stock_analyser.domain.reporting import (
+    EMAIL_PATTERN,
+    OPTIONAL_FILTER_LABELS,
+    SAFE_ATTACHMENT_BYTES,
+    SETTING_LABELS,
+    ReportContext,
+    ReportCounts,
+    attachment_batches,
+    chart_snapshot_spec,
+    export_results,
+    filter_records,
+    message_content,
+    parse_recipients,
+    workbook_frames,
+)
 from stock_analyser.infrastructure.smtp.mailer import (
     ConfiguredSmtpMailer,
     MailConfiguration,
@@ -20,114 +34,28 @@ from stock_analyser.infrastructure.smtp.mailer import (
 )
 
 
-SAFE_ATTACHMENT_BYTES = 12 * 1024 * 1024
-EMAIL_PATTERN = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
-
-OPTIONAL_FILTER_LABELS = {
-    "relative_industry_pe": "Relative Industry P/E",
-    "historical_stock_pe": "P/E vs. Historical Stock P/E",
-    "peg_ratio": "PEG Ratio",
-    "profit_growth": "Multi-Period Profit Growth",
-    "eps_growth": "Multi-Period EPS Growth",
-    "sales_growth": "Multi-Period Sales / Revenue Growth",
-    "return_on_equity": "Return on Equity (ROE)",
-    "debt_to_equity": "Debt-to-Equity (D/E) Ratio",
-    "market_cap": "Market Capitalisation Buckets",
-}
-
-SETTING_LABELS = (
-    ("stock_market", "Stock market"),
-    ("market_data_source", "Market-data source"),
-    ("stock_count", "Stocks analysed"),
-    ("adjusted_prices", "Use adjusted prices"),
-    ("short_ma", "Short-term moving average (days)"),
-    ("long_ma", "Long-term moving average (days)"),
-    ("cross_age", "Golden Cross maximum age (calendar days)"),
-    (
-        "min_long_ma_decline_duration",
-        "Minimum high-to-trough decline duration (trading sessions)",
-    ),
-    ("min_long_ma_decline", "Minimum Long MA decline from 52-week high (%)"),
-    ("max_price_premium", "Maximum price above Long MA (%)"),
-    ("include_impending_crosses", "Include Impending Golden Cross"),
-    ("impending_max_gap_pct", "Maximum Short-to-Long MA gap (%)"),
-    (
-        "pre_cross_validation_sessions",
-        "Pre-cross validation period (trading sessions)",
-    ),
-)
-
-
-def parse_recipients(raw_recipients: str) -> tuple[str, ...]:
-    """Validate, trim, and de-duplicate comma-separated email addresses."""
-    candidates = [value.strip() for value in raw_recipients.split(",") if value.strip()]
-    invalid = [value for value in candidates if not EMAIL_PATTERN.fullmatch(value)]
-    if invalid:
-        raise ValueError("Invalid email address: " + ", ".join(invalid))
-    if not candidates:
-        raise ValueError("Enter at least one recipient email address")
-    return tuple(dict.fromkeys(candidates))
+def _reported_source_label(settings: dict) -> str | None:
+    source = settings.get("market_data_source")
+    if source not in {SNAPSHOT_SOURCE, "Git snapshot"}:
+        return None
+    is_cloud = settings.get("market_data_snapshot", {}).get("access_mode") == "cloud_snapshot"
+    return snapshot_source_label(is_cloud)
 
 
 def filter_rows(settings: dict, scan_time: datetime) -> pd.DataFrame:
     """Create the auditable first worksheet for one completed scan."""
-    rows = [{"Setting": "Scan date and time", "Value": scan_time.isoformat()}]
-    for key, label in SETTING_LABELS:
-        value = settings.get(key, "Not recorded")
-        if key == "market_data_source" and value in {SNAPSHOT_SOURCE, "Git snapshot"}:
-            value = snapshot_source_label(settings.get("market_data_snapshot", {}).get("access_mode") == "cloud_snapshot")
-        if isinstance(value, bool):
-            value = "Yes" if value else "No"
-        rows.append({"Setting": label, "Value": value})
-
-    selected = settings.get("optional_filters", ())
-    rows.append(
-        {
-            "Setting": "Optional filters selected",
-            "Value": len(selected),
-        }
+    return pd.DataFrame(
+        filter_records(
+            settings,
+            scan_time,
+            market_data_source_label=_reported_source_label(settings),
+        )
     )
-    for index, configured in enumerate(selected, start=1):
-        key = configured.get("key", "")
-        label = OPTIONAL_FILTER_LABELS.get(key, key or "Unknown")
-        rows.append({"Setting": f"Optional filter {index}", "Value": label})
-        for field, value in configured.items():
-            if field == "key":
-                continue
-            if isinstance(value, (list, tuple)):
-                value = ", ".join(map(str, value)) or "None"
-            rows.append(
-                {
-                    "Setting": f"Optional filter {index} — {field.replace('_', ' ').title()}",
-                    "Value": "Not set" if value is None else value,
-                }
-            )
-    return pd.DataFrame(rows)
 
 
 def _export_results(frame: pd.DataFrame) -> pd.DataFrame:
     """Make raw scanner output readable and safe for an Excel worksheet."""
-    exported = frame.copy()
-    if "market_cap" in exported:
-        exported["market_cap"] = pd.to_numeric(
-            exported["market_cap"], errors="coerce"
-        ).div(10_000_000)
-        exported.rename(columns={"market_cap": "Market Cap (₹ Cr)"}, inplace=True)
-    exported.rename(
-        columns={
-            column: column.replace("_", " ").title()
-            for column in exported.columns
-            if column != "Market Cap (₹ Cr)"
-        },
-        inplace=True,
-    )
-    for column in exported.columns:
-        exported[column] = exported[column].map(
-            lambda value: ", ".join(map(str, value))
-            if isinstance(value, (list, tuple))
-            else value
-        )
-    return exported
+    return export_results(frame)
 
 
 def build_workbook(
@@ -143,15 +71,15 @@ def build_workbook(
         engine="xlsxwriter",
         datetime_format="yyyy-mm-dd hh:mm:ss",
     ) as writer:
-        filter_rows(settings, scan_time).to_excel(
-            writer, sheet_name="Filters", index=False
+        frames = workbook_frames(
+            settings,
+            scan_time,
+            post_cross,
+            impending,
+            market_data_source_label=_reported_source_label(settings),
         )
-        _export_results(post_cross).to_excel(
-            writer, sheet_name="Post Golden Cross", index=False
-        )
-        _export_results(impending).to_excel(
-            writer, sheet_name="Impending Golden Cross", index=False
-        )
+        for sheet_name, frame in frames.items():
+            frame.to_excel(writer, sheet_name=sheet_name, index=False)
         for worksheet in writer.sheets.values():
             worksheet.autofit()
     return output.getvalue()
@@ -163,6 +91,7 @@ def build_price_chart_png(
     cross_date=None,
 ) -> bytes:
     """Render a compact maximum-period price/MA snapshot for email."""
+    specification = chart_snapshot_spec(symbol, cross_date)
     width, height = 1440, 720
     left, top, right, bottom = 90, 80, 30, 80
     image = Image.new("RGB", (width, height), "#F7F9FC")
@@ -192,7 +121,7 @@ def build_price_chart_png(
         y = top + ((maximum - value) / span) * plot_height
         return x, y
 
-    draw.text((left, 25), f"{symbol} — Maximum available price history", fill="#182033")
+    draw.text((left, 25), specification.title, fill="#182033")
     for grid_index in range(6):
         y = top + (grid_index / 5) * plot_height
         value = maximum - (grid_index / 5) * span
@@ -208,8 +137,8 @@ def build_price_chart_png(
         if len(points) > 1:
             draw.line(points, fill=colour, width=3)
 
-    if cross_date is not None and pd.notna(cross_date):
-        positions = chart_data.index.searchsorted(pd.Timestamp(cross_date))
+    if specification.cross_date is not None and pd.notna(specification.cross_date):
+        positions = chart_data.index.searchsorted(pd.Timestamp(specification.cross_date))
         if positions < len(chart_data):
             cross_x = left + (positions / count) * plot_width
             draw.line(
@@ -219,7 +148,7 @@ def build_price_chart_png(
             )
             draw.text(
                 (min(cross_x + 8, width - 260), top + 8),
-                f"Golden Cross {pd.Timestamp(cross_date):%d %b %Y}",
+                f"Golden Cross {pd.Timestamp(specification.cross_date):%d %b %Y}",
                 fill="#D64545",
             )
 
@@ -243,11 +172,6 @@ def build_chart_archives(
     max_bytes: int = SAFE_ATTACHMENT_BYTES,
 ) -> list[bytes]:
     """Compress charts into bounded ZIP parts without dropping any image."""
-    if max_bytes <= 0:
-        raise ValueError("Archive size limit must be positive")
-    archives: list[bytes] = []
-    current: list[tuple[str, bytes]] = []
-
     def compress(images):
         output = io.BytesIO()
         with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -255,16 +179,12 @@ def build_chart_archives(
                 archive.writestr(filename, payload)
         return output.getvalue()
 
-    for image in chart_images:
-        candidate = compress([*current, image])
-        if current and len(candidate) > max_bytes:
-            archives.append(compress(current))
-            current = [image]
-        else:
-            current.append(image)
-    if current:
-        archives.append(compress(current))
-    return archives
+    batches = attachment_batches(
+        chart_images,
+        lambda images: len(compress(images)),
+        max_bytes=max_bytes,
+    )
+    return [compress(batch) for batch in batches]
 
 
 def build_messages(
@@ -278,20 +198,22 @@ def build_messages(
 ) -> list[EmailMessage]:
     """Create numbered report messages; the workbook is attached to part one."""
     parts = max(1, len(chart_archives))
+    context = ReportContext(
+        scan_time=scan_time,
+        counts=ReportCounts(post_cross=post_count, impending=impending_count),
+    )
     messages = []
     for index in range(parts):
+        content = message_content(
+            context,
+            part_number=index + 1,
+            part_count=parts,
+        )
         message = EmailMessage()
-        suffix = f" — Part {index + 1} of {parts}" if parts > 1 else ""
-        message["Subject"] = f"Stock Analyser scan report — {scan_time:%d %b %Y}{suffix}"
+        message["Subject"] = content.subject
         message["From"] = sender
         message["To"] = ", ".join(recipients)
-        message.set_content(
-            "Completed Stock Analyser report.\n\n"
-            f"Post Golden Cross stocks: {post_count}\n"
-            f"Impending Golden Cross stocks: {impending_count}\n"
-            f"Scan time: {scan_time:%d %b %Y, %I:%M %p}\n"
-            f"Report part: {index + 1} of {parts}\n"
-        )
+        message.set_content(content.body)
         if index == 0:
             message.add_attachment(
                 workbook,

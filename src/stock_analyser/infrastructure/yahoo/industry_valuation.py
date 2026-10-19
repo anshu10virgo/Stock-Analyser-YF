@@ -5,8 +5,11 @@ from __future__ import annotations
 import logging
 from copy import deepcopy
 from numbers import Real
-from statistics import median
 
+from stock_analyser.domain.fundamentals import (
+    IndustryValuation,
+    industry_valuation,
+)
 from stock_analyser.infrastructure.yahoo.providers import YahooFinanceIndustryProvider
 
 
@@ -24,11 +27,7 @@ class YahooIndustryValuationService:
     @staticmethod
     def empty_result():
         """Return a stable unavailable-result contract for scan datasets."""
-        return {
-            "industry_weighted_pe": None,
-            "industry_median_pe": None,
-            "industry_peer_count": 0,
-        }
+        return IndustryValuation.unavailable().as_dict()
 
     @staticmethod
     def _qualifying_nse_quotes(quotes):
@@ -64,15 +63,11 @@ class YahooIndustryValuationService:
             if not peers:
                 result = self.empty_result()
             else:
-                market_cap = sum(quote["marketCap"] for quote in peers)
-                implied_earnings = sum(
-                    quote["marketCap"] / quote["trailingPE"] for quote in peers
-                )
-                result = {
-                    "industry_weighted_pe": round(market_cap / implied_earnings, 2),
-                    "industry_median_pe": round(median(quote["trailingPE"] for quote in peers), 2),
-                    "industry_peer_count": len(peers),
-                }
+                result = industry_valuation(
+                    peers,
+                    market_cap_key="marketCap",
+                    pe_key="trailingPE",
+                ).as_dict()
         except Exception as error:
             self._metrics["failures"] += 1
             logger.warning("Industry valuation unavailable for %s: %s", industry, error)

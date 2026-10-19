@@ -73,6 +73,7 @@ def render_backtester_page(project_root) -> None:
         )
         st.session_state["backtest_results"] = execution.results
         st.session_state["backtest_charts"] = execution.charts
+        st.session_state["backtest_one_year_summary"] = execution.one_year_summary
     results = st.session_state.get("backtest_results")
     if results is not None:
         st.subheader("Historical results")
@@ -80,11 +81,14 @@ def render_backtester_page(project_root) -> None:
             st.warning("No historical signals qualified for the selected stocks and period.")
         else:
             one_year = results["1Y"].dropna()
+            summary = st.session_state.get("backtest_one_year_summary")
             metrics = st.columns(4)
-            metrics[0].metric("Signals", len(results))
-            metrics[1].metric("Signals with 1Y data", len(one_year))
-            metrics[2].metric("Average 1Y return", f"{one_year.mean():+.1f}%" if not one_year.empty else "N/A")
-            metrics[3].metric("Median 1Y return", f"{one_year.median():+.1f}%" if not one_year.empty else "N/A")
+            metrics[0].metric("Signals", summary.signal_count if summary else len(results))
+            metrics[1].metric("Signals with 1Y data", summary.observed_count if summary else len(one_year))
+            average = summary.average_return if summary else (None if one_year.empty else one_year.mean())
+            median = summary.median_return if summary else (None if one_year.empty else one_year.median())
+            metrics[2].metric("Average 1Y return", f"{average:+.1f}%" if average is not None else "N/A")
+            metrics[3].metric("Median 1Y return", f"{median:+.1f}%" if median is not None else "N/A")
             formats = {"Cross date": st.column_config.DateColumn(format="DD MMM YYYY"), "Signal date": st.column_config.DateColumn(format="DD MMM YYYY"), "Entry": st.column_config.NumberColumn(format="%.2f"), "P/E": st.column_config.NumberColumn(format="%.2f")}
             formats.update({horizon: st.column_config.NumberColumn(format="%.2f%%") for horizon in ("1W", "2W", "3W", "1M", "3M", "6M", "1Y")})
             st.dataframe(results, width="stretch", hide_index=True, column_config=formats)

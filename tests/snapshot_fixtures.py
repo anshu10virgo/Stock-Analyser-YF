@@ -5,7 +5,7 @@ import json
 
 import pandas as pd
 
-from models.market import market_definition
+from stock_analyser.domain.markets import market_definition
 
 
 def write_json(path, value):
