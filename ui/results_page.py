@@ -20,6 +20,7 @@ from stock_analyser.application.commands.send_report import (
     SendReport,
     SendReportCommand,
 )
+from stock_analyser.domain.fundamentals import peg_ratio as calculate_peg_ratio
 from ui.stock_detail import render_pe_eps_chart, render_stock_detail
 
 
@@ -147,11 +148,9 @@ def _has_death_cross_after(chart_data, cross_date):
 
 def _peg_ratio(result, screener_summary):
     """Calculate the displayed PEG using current P/E and stored 3Y profit growth."""
-    pe = result.get("pe")
-    growth = screener_summary.get("profit_growth_3y")
-    if pd.isna(pe) or pd.isna(growth) or pe <= 0 or growth <= 0:
-        return None
-    return pe / growth
+    return calculate_peg_ratio(
+        result.get("pe"), screener_summary.get("profit_growth_3y")
+    )
 
 
 def _render_stock_overview(result, screener_summary):

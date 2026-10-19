@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass
-from enum import Enum
-
+from stock_analyser.domain.fundamentals import (
+    EvaluationStatus,
+    FilterEvaluation,
+    finite_number,
+    is_financial_company,
+    peg_ratio,
+)
 from stock_analyser.domain.scanning.models import (
     DEBT_TO_EQUITY,
     EPS_GROWTH,
@@ -33,55 +36,7 @@ FILTER_LABELS = {
 }
 
 
-class EvaluationStatus(str, Enum):
-    """The three outcomes supported by an optional filter."""
-
-    PASS = "pass"
-    FAIL = "fail"
-    NOT_EVALUATED = "not_evaluated"
-
-
-@dataclass(frozen=True)
-class FilterEvaluation:
-    """Auditable outcome for one stock and selected filter."""
-
-    key: str
-    label: str
-    status: EvaluationStatus
-    reason: str
-
-
-def _number(value, *, positive: bool = False, non_negative: bool = False):
-    if value is None:
-        return None
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        return None
-    if not math.isfinite(number):
-        return None
-    if positive and number <= 0:
-        return None
-    if non_negative and number < 0:
-        return None
-    return number
-
-
-def _is_financial_company(fundamentals: dict) -> bool:
-    classification = " ".join(
-        str(fundamentals.get(field) or "").lower()
-        for field in ("sector", "industry")
-    )
-    financial_terms = (
-        "bank",
-        "financial",
-        "insurance",
-        "credit service",
-        "capital market",
-        "asset management",
-        "mortgage",
-    )
-    return any(term in classification for term in financial_terms)
+_number = finite_number
 
 
 class FundamentalFilterEvaluator:
@@ -132,7 +87,7 @@ class FundamentalFilterEvaluator:
         if config.key == RETURN_ON_EQUITY:
             return self._minimum(config, screener.get("roe"), "ROE", "%")
         if config.key == DEBT_TO_EQUITY:
-            if _is_financial_company(fundamentals):
+            if is_financial_company(fundamentals):
                 return self._result(
                     config,
                     EvaluationStatus.PASS,
@@ -227,7 +182,13 @@ class FundamentalFilterEvaluator:
                 EvaluationStatus.NOT_EVALUATED,
                 "Current P/E or 3-year profit growth is unavailable",
             )
-        peg = stock_pe / profit_growth
+        peg = peg_ratio(stock_pe, profit_growth)
+        if peg is None:
+            return self._result(
+                config,
+                EvaluationStatus.NOT_EVALUATED,
+                "Current P/E or 3-year profit growth is unavailable",
+            )
         if peg <= config.threshold:
             return self._result(
                 config,

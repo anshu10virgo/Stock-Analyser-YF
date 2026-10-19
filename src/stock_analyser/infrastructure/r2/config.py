@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from models.market import market_data_root, market_definition
+from stock_analyser.domain.markets import market_data_root, market_definition
 
 from stock_analyser.infrastructure.r2.storage import (
     CloudSnapshotStorage,

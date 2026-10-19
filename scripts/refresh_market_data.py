@@ -17,6 +17,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.data_loader import DataLoader
+from stock_analyser.domain.fundamentals import (
+    industry_valuation,
+    peg_ratio,
+    price_to_earnings,
+)
 from stock_analyser.infrastructure.yahoo.providers import (
     YahooFinanceClassificationProvider,
     YahooFinanceHistoryProvider,
@@ -324,8 +329,7 @@ def build_fundamentals(
                         "quote_status": "retained_previous_snapshot"}
             pe = retained.get("pe")
             growth = profit_growth_3y_by_symbol.get(symbol)
-            retained["peg_ratio"] = (pe / growth if pd.notna(pe) and pe > 0
-                                      and pd.notna(growth) and growth > 0 else None)
+            retained["peg_ratio"] = peg_ratio(pe, growth)
             rows.append(retained)
             continue
         classification = classification_records.get(symbol, {})
@@ -334,17 +338,11 @@ def build_fundamentals(
         market_price = quote.get("regularMarketPrice")
         pe_source = "yahoo_trailing_pe" if pe is not None else None
         if pe is None and eps is not None and eps > 0 and market_price is not None:
-            pe = market_price / eps
-            pe_source = "price_divided_by_trailing_eps"
+            pe = price_to_earnings(market_price, eps)
+            if pe is not None:
+                pe_source = "price_divided_by_trailing_eps"
         profit_growth_3y = profit_growth_3y_by_symbol.get(symbol)
-        peg_ratio = (
-            pe / profit_growth_3y
-            if pe is not None
-            and pe > 0
-            and profit_growth_3y is not None
-            and profit_growth_3y > 0
-            else None
-        )
+        current_peg_ratio = peg_ratio(pe, profit_growth_3y)
         rows.append(
             {
                 "symbol": symbol,
@@ -352,7 +350,7 @@ def build_fundamentals(
                 "market_cap": quote.get("marketCap"),
                 "pe": pe,
                 "pe_source": pe_source,
-                "peg_ratio": peg_ratio,
+                "peg_ratio": current_peg_ratio,
                 "forward_pe": quote.get("forwardPE"),
                 "eps": eps,
                 "sector": classification.get("sector"),
@@ -377,14 +375,11 @@ def calculate_industry_valuations(fundamentals: pd.DataFrame) -> pd.DataFrame:
     eligible = eligible.loc[eligible["pe"].gt(0) & eligible["market_cap"].gt(0)]
     rows = []
     for industry, peers in eligible.groupby("industry"):
-        implied_earnings = (peers["market_cap"] / peers["pe"]).sum()
-        weighted_pe = peers["market_cap"].sum() / implied_earnings
+        valuation = industry_valuation(peers.to_dict("records")).as_dict()
         rows.append(
             {
                 "industry": industry,
-                "industry_weighted_pe": round(weighted_pe, 2),
-                "industry_median_pe": round(peers["pe"].median(), 2),
-                "industry_peer_count": len(peers),
+                **valuation,
             }
         )
     return pd.DataFrame(rows, columns=columns)
