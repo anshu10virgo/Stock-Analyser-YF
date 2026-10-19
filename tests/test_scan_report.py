@@ -105,7 +105,7 @@ class ScanReportTests(unittest.TestCase):
                 filenames.extend(archive.namelist())
         self.assertEqual(filenames, ["one.png", "two.png"])
 
-    @patch("services.scan_report.smtplib.SMTP_SSL")
+    @patch("stock_analyser.infrastructure.smtp.mailer.smtplib.SMTP_SSL")
     def test_messages_send_in_one_authenticated_session(self, smtp_ssl):
         messages = build_messages(
             ("one@example.com", "two@example.com"),

@@ -19,7 +19,7 @@ class FakeIndustryProvider:
 
 class IndustryValuationTests(unittest.TestCase):
     @patch(
-        "providers.yahoo_finance.yf.screen",
+        "stock_analyser.infrastructure.yahoo.providers.yf.screen",
         return_value={"quotes": [{"symbol": "TEST.NS"}], "total": 1},
     )
     def test_normalizes_grouped_industry_name_for_yahoo_screener(self, screen):

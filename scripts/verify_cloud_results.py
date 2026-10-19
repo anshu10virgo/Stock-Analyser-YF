@@ -15,10 +15,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from models.scan_config import ScanConfig
-from services.data_source import SNAPSHOT_SOURCE, build_data_services
-from services.snapshot_storage import LocalSnapshotStorage, ScopedSnapshotStorage
+from stock_analyser.infrastructure.data_services import (
+    SNAPSHOT_SOURCE,
+    build_data_services,
+)
+from stock_analyser.infrastructure.r2.storage import (
+    LocalSnapshotStorage,
+    ScopedSnapshotStorage,
+)
 from services.stock_universe import StockUniverse
-from services.storage_config import configured_cloud_storage
+from stock_analyser.infrastructure.r2.config import configured_cloud_storage
 from stock_analyser.application.commands.run_backtest import RunBacktestCommand
 from stock_analyser.application.commands.run_scan import RunScanCommand
 from stock_analyser.application.workflows.backtest_workflow import BacktestWorkflow

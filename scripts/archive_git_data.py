@@ -12,8 +12,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from services.data_retirement import archive_git_data, restore_git_archive
 from services.refresh_config import load_refresh_configuration
-from services.snapshot_storage import atomic_write
-from services.storage_config import create_storage_client, market_storage_prefix
+from stock_analyser.infrastructure.r2.config import (
+    create_storage_client,
+    market_storage_prefix,
+)
+from stock_analyser.infrastructure.r2.storage import atomic_write
 
 
 def main():

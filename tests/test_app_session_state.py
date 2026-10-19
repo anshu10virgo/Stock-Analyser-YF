@@ -20,8 +20,10 @@ class AppSessionStateTests(unittest.TestCase):
         self.fixture_root = Path(temporary.name)
         create_fixture(self.fixture_root)
         self.storage = LocalSnapshotStorage(self.fixture_root)
-        for name in ("services.storage_config.application_snapshot_storage",
-                     "services.data_source.application_snapshot_storage"):
+        for name in (
+            "services.storage_config.application_snapshot_storage",
+            "stock_analyser.infrastructure.data_services.application_snapshot_storage",
+        ):
             patched = patch(name, return_value=self.storage)
             patched.start()
             self.addCleanup(patched.stop)
@@ -34,8 +36,10 @@ class AppSessionStateTests(unittest.TestCase):
         app.secrets["storage"] = {"provider": "r2"}
         app.secrets["GEMINI_API_KEY"] = ""
         app.secrets["OPENAI_API_KEY"] = ""
-        with patch("services.storage_config.application_snapshot_storage", return_value=storage), \
-             patch("services.data_source.application_snapshot_storage", return_value=storage):
+        with patch(
+            "stock_analyser.infrastructure.data_services.application_snapshot_storage",
+            return_value=storage,
+        ):
             app.run()
             app.radio[0].set_value("2. Strategy").run()
         self.assertEqual(len(app.exception), 0)

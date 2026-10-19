@@ -11,7 +11,10 @@ from core.data_loader import DataLoader
 from models.scan_config import ScanConfig
 from models.scan_run import ScanRun
 from services.scan_service import ScanService
-from services.data_source import SNAPSHOT_SOURCE, build_data_services
+from stock_analyser.infrastructure.data_services import (
+    SNAPSHOT_SOURCE,
+    build_data_services,
+)
 from services.stock_universe import StockUniverse
 from stock_analyser.domain.scanning.indicators import (
     GoldenCrossDetector,

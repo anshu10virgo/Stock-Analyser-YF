@@ -16,8 +16,15 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.snapshot_publication import SnapshotPublisher, prepare_snapshot, retire_legacy_snapshot
-from services.snapshot_storage import CloudSnapshotStorage, SnapshotStorageError
-from services.storage_config import create_storage_client, configured_cloud_storage, market_storage_prefix
+from stock_analyser.infrastructure.r2.config import (
+    configured_cloud_storage,
+    create_storage_client,
+    market_storage_prefix,
+)
+from stock_analyser.infrastructure.r2.storage import (
+    CloudSnapshotStorage,
+    SnapshotStorageError,
+)
 from services.data_retirement import export_cloud_snapshot
 
 

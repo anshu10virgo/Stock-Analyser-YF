@@ -20,7 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.data_loader import DataLoader
-from providers.screener import (
+from stock_analyser.infrastructure.screener.provider import (
     HISTORY_COLUMNS,
     SUMMARY_COLUMNS,
     ScreenerDataError,
@@ -30,7 +30,10 @@ from providers.screener import (
 from services.stock_universe import StockUniverse
 from services.screener_checkpoint import ScreenerCheckpointStore, checkpoint_identity
 from services.refresh_config import load_refresh_configuration
-from services.storage_config import create_storage_client, market_storage_prefix
+from stock_analyser.infrastructure.r2.config import (
+    create_storage_client,
+    market_storage_prefix,
+)
 
 
 SCREENER_ROOT = PROJECT_ROOT / "data" / "market_data" / "screener"

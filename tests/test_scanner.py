@@ -391,7 +391,10 @@ class StockScannerTests(unittest.TestCase):
         provider = YahooFinanceHistoryProvider()
         downloaded = pd.DataFrame({"Close": [100.0]})
 
-        with patch("providers.yahoo_finance.yf.download", return_value=downloaded) as download:
+        with patch(
+            "stock_analyser.infrastructure.yahoo.providers.yf.download",
+            return_value=downloaded,
+        ) as download:
             provider.download_batch(["TEST.NS"])
             provider.download_batch(["TEST.NS"])
 

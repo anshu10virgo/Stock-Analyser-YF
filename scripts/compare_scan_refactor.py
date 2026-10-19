@@ -24,7 +24,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from core.data_loader import DataLoader
 from models.scan_config import ScanConfig
-from services.data_source import SNAPSHOT_SOURCE, build_data_services
+from stock_analyser.infrastructure.data_services import (
+    SNAPSHOT_SOURCE,
+    build_data_services,
+)
 from services.stock_universe import StockUniverse
 from stock_analyser.application.commands.run_scan import RunScanCommand
 from stock_analyser.application.workflows.scan_workflow import ScanWorkflow

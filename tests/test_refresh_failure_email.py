@@ -39,7 +39,7 @@ class RefreshFailureEmailTests(unittest.TestCase):
             message.get_content(),
         )
 
-    @patch("scripts.send_refresh_failure_email.smtplib.SMTP_SSL")
+    @patch("stock_analyser.infrastructure.smtp.mailer.smtplib.SMTP_SSL")
     def test_delivery_uses_authenticated_gmail_smtp(self, smtp_ssl):
         delivered = send_failure_email(self._environment())
 
