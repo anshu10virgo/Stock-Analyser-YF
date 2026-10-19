@@ -91,13 +91,13 @@ src/stock_analyser/
     domain/scanning/                Pure scan models, indicators, rules, and scoring
     application/                    Commands, queries, workflows, context, and ports
     agents/                         Future packaged agent runtime
-    infrastructure/                 Future external-system adapters
+    infrastructure/                 Yahoo, Screener, R2/local, and SMTP adapters
     presentation/streamlit/app.py   Current packaged Streamlit composition root
     jobs/                           Future packaged operational entrypoints
 stock_analyser/                     Temporary source-checkout package shim
 application/, agents/               Existing agentic application boundary
 core/, models/                      Temporary compatibility imports
-providers/, services/, ui/         Existing adapters, orchestration, and UI modules
+providers/, services/, ui/         Compatibility exports, orchestration, and UI modules
 scripts/                            Existing operational entrypoints
 tests/                              Regression and boundary tests
 ```
@@ -135,8 +135,22 @@ snapshot before this compatibility layer is retired.
 - `src/stock_analyser/application/workflows/`: provider-bundle orchestration for
   scans and Backtests plus provider-independent refresh sequencing.
 - `src/stock_analyser/application/ports/`: structural contracts for market
-  data, fundamentals, storage, mail, and hosted-model providers. Concrete
-  adapters remain in their legacy locations until the infrastructure sprint.
+  data, fundamentals, storage, mail, and hosted-model providers. The Phase 1
+  market, fundamentals, storage, and mail contracts are runtime-checkable;
+  hosted-model migration remains deferred.
+- `src/stock_analyser/infrastructure/data_services.py`: the provider
+  composition factory. It returns a bundle typed by application ports and
+  consistently selects live Yahoo or pinned local/cloud snapshot adapters.
+- `src/stock_analyser/infrastructure/yahoo/`: canonical Yahoo history,
+  fundamentals, classification, market-cap, peer-group, and industry-
+  valuation adapters.
+- `src/stock_analyser/infrastructure/screener/`: canonical bounded-retry
+  Screener.in company-page and valuation-history adapter.
+- `src/stock_analyser/infrastructure/r2/`: canonical local, scoped, and
+  R2/S3 snapshot storage plus repository-backed history, fundamentals,
+  industry-valuation, and Screener adapters.
+- `src/stock_analyser/infrastructure/smtp/`: authenticated SMTP implementation
+  of `MailerPort`, shared by report delivery and refresh-failure alerts.
 - `agents/contracts.py`, `agents/policies.py`, and `agents/registry.py`: typed
   tool contracts, centralized effect-to-approval policy, validation, and
   controlled execution.
@@ -158,23 +172,16 @@ snapshot before this compatibility layer is retired.
   selected fundamental filters.
 - `services/fundamental_filters.py`: temporary compatibility path for the
   canonical three-state optional rules.
-- `providers/yahoo_finance.py`: retrying, TTL-cached Yahoo price batches with
-  observable request, cache, retry, and failure counters.
-- `providers/repository_data.py`: committed annual price partitions,
-  fundamentals, industry benchmarks, manifest metadata, and missing-data-only
-  Yahoo fallback. It also reads committed Screener summary/history snapshots.
-  Small symbol requests use Parquet predicate filtering instead of
-  materializing the complete snapshot. Screener summaries are indexed once
-  per filtered scan rather than searched separately for every stock.
-- `providers/screener.py`: bounded-retry parser for Screener company pages and
-  ten-year P/E/TTM-EPS chart data. It calculates backend-only long-term
-  valuation, growth, debt-to-equity, ROE, and latest OPM fields.
-- `services/data_source.py`: constructs one consistent provider set for the
-  source selected on the main screen.
-- `services/scan_report.py`: pure workbook, chart-image, ZIP batching, email
-  validation, message construction, and authenticated SMTP delivery helpers.
-  The Streamlit UI supplies completed results and deployment-managed secrets;
-  recipients are never persisted.
+- `providers/yahoo_finance.py`, `providers/repository_data.py`,
+  `providers/screener.py`, `core/fundamentals.py`,
+  `services/industry_valuation.py`, `services/snapshot_storage.py`,
+  `services/storage_config.py`, and `services/data_source.py`: temporary
+  compatibility exports for callers that have not yet migrated to canonical
+  infrastructure imports.
+- `services/scan_report.py`: workbook, chart-image, ZIP batching, email
+  validation, and message construction. SMTP delivery is delegated through
+  the infrastructure `MailerPort` adapter. The Streamlit UI supplies completed
+  results and deployment-managed secrets; recipients are never persisted.
 - `services/assistant_provider.py`: Gemini Flash and OpenAI provider boundary
   with a safe disabled provider, registered local-function declarations, no
   external tools, and a shared local-data-only system instruction.
@@ -204,9 +211,8 @@ snapshot before this compatibility layer is retired.
   high-to-trough recovery validation.
 - `services/stock_universe.py`: resolves only the manifest-selected validated
   universe; no legacy symbol-file fallback is permitted.
-- `core/fundamentals.py`: retried and cached fundamental-data retrieval.
-- `services/industry_valuation.py`: NSE-only weighted and median industry P/E
-  benchmarks calculated from Yahoo peer groups and cached for each scan.
+- `core/fundamentals.py` and `services/industry_valuation.py`: compatibility
+  exports for the canonical Yahoo adapters.
 - Committed classifications are maintained separately from daily fundamentals,
   preventing routine refreshes from erasing sector and industry values.
 - `models/`: typed scan and failure-result contracts.

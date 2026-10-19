@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from providers.yahoo_finance import YahooFinanceHistoryProvider
+from stock_analyser.infrastructure.yahoo.providers import YahooFinanceHistoryProvider
 
 
 class DataLoader:

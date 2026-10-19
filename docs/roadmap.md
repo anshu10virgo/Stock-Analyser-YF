@@ -10,7 +10,8 @@ the [deployment and storage guide](deployment.md).
 2. Improve failed-stock exploration and surface existing scan diagnostics.
 3. Add persistent strategy profiles and completed scan history. These provide
    the stored comparisons needed for Ticksy daily-change explanations.
-4. Move external systems behind the new application ports.
+4. Migrate Streamlit presentation modules and operational jobs into the
+   installable package while preserving deployed entrypoints.
 5. Choose advanced Backtesting or US expansion as the next major feature.
 
 ## Completed — Package Foundation and Scanning Domain Extraction
@@ -88,6 +89,48 @@ calculation, qualification, score, or visible workflow.
   parity regression checks.
 - Operational verification scripts use the application workflows where they
   exercise normal scan and Backtest execution.
+
+## Completed — Infrastructure Adapters, Phase 1
+
+### Goal
+
+Move Yahoo Finance, Screener.in, local/R2 snapshot storage, and SMTP transport
+behind the application ports without changing UI behaviour, scan rules,
+scores, defaults, or financial calculations.
+
+### Scope
+
+- Add canonical Yahoo history, fundamentals, classifications, market-cap, and
+  industry-valuation adapters under `stock_analyser.infrastructure.yahoo`.
+- Add the canonical bounded-retry Screener provider under
+  `stock_analyser.infrastructure.screener`.
+- Add local, R2/S3, scoped snapshot, and repository-backed provider adapters
+  under `stock_analyser.infrastructure.r2`.
+- Add an authenticated SMTP implementation of `MailerPort` and use it for
+  scan reports and scheduled-refresh failure alerts.
+- Type the provider bundle against the application ports and inject concrete
+  adapter instances from one infrastructure composition factory.
+- Keep existing `providers/`, `core/`, and `services/` import paths as explicit
+  compatibility exports while callers migrate.
+- Point operational scripts directly at canonical infrastructure adapters.
+
+### Deliberately Deferred
+
+- Gemini and OpenAI adapter migration, which requires a separate Ticksy
+  provider regression slice.
+- Moving remaining Streamlit modules and scheduled-job entrypoints into
+  `presentation/` and `jobs/`.
+- Removing compatibility facades before all callers have migrated.
+- Any UI, scan-rule, scoring, default, or financial-formula change.
+
+### Acceptance Criteria
+
+- Concrete market-data, fundamentals, storage, and SMTP adapters satisfy their
+  runtime-checkable application port contracts.
+- Existing imports resolve to the canonical adapter classes.
+- Scripts use canonical Yahoo, Screener, R2, and SMTP paths.
+- Focused infrastructure tests, the full suite, scanner parity, and
+  `git diff --check` pass.
 
 ## Completed — Ticksy Read-Only Tool Integration
 

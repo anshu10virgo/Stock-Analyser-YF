@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import os
-import smtplib
 from email.message import EmailMessage
 
+from stock_analyser.infrastructure.smtp.mailer import MailConfiguration, SmtpMailer
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 465
 DEFAULT_RECIPIENT = "anshu10virgo@gmail.com"
 
 
@@ -67,9 +65,7 @@ def send_failure_email(environment: dict[str, str] | None = None) -> bool:
         return False
 
     message = build_message(environment)
-    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
-        smtp.login(username, password)
-        smtp.send_message(message)
+    SmtpMailer(MailConfiguration(username, password)).send([message])
     print(f"Refresh failure email sent to {message['To']}.")
     return True
 

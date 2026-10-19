@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import pandas as pd
 
 from providers.repository_data import RepositoryScreenerProvider
-from providers.screener import (
+from stock_analyser.infrastructure.screener.provider import (
     HISTORY_COLUMNS,
     SUMMARY_COLUMNS,
     ScreenerCompanySnapshot,

@@ -4,19 +4,22 @@ from __future__ import annotations
 
 import io
 import re
-import smtplib
 import zipfile
-from dataclasses import dataclass
 from datetime import datetime
 from email.message import EmailMessage
 
 import pandas as pd
 from PIL import Image, ImageDraw
 from services.data_source import SNAPSHOT_SOURCE, snapshot_source_label
+from stock_analyser.infrastructure.smtp.mailer import (
+    ConfiguredSmtpMailer,
+    MailConfiguration,
+    SMTP_HOST,
+    SMTP_PORT,
+    SmtpMailer,
+)
 
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 465
 SAFE_ATTACHMENT_BYTES = 12 * 1024 * 1024
 EMAIL_PATTERN = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
 
@@ -53,26 +56,6 @@ SETTING_LABELS = (
         "Pre-cross validation period (trading sessions)",
     ),
 )
-
-
-@dataclass(frozen=True)
-class MailConfiguration:
-    """Credentials and transport details supplied by deployment secrets."""
-
-    username: str
-    password: str
-    host: str = SMTP_HOST
-    port: int = SMTP_PORT
-
-
-@dataclass(frozen=True)
-class ConfiguredSmtpMailer:
-    """Temporary adapter for the application mailer port."""
-
-    configuration: MailConfiguration
-
-    def send(self, messages: list[EmailMessage]) -> None:
-        send_messages(messages, self.configuration)
 
 
 def parse_recipients(raw_recipients: str) -> tuple[str, ...]:
@@ -331,12 +314,5 @@ def send_messages(
     messages: list[EmailMessage],
     configuration: MailConfiguration,
 ) -> None:
-    """Send every prepared report part over one authenticated SMTP session."""
-    with smtplib.SMTP_SSL(
-        configuration.host,
-        configuration.port,
-        timeout=30,
-    ) as smtp:
-        smtp.login(configuration.username, configuration.password)
-        for message in messages:
-            smtp.send_message(message)
+    """Compatibility function delegating transport to the SMTP adapter."""
+    SmtpMailer(configuration).send(messages)

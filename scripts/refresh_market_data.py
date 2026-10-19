@@ -17,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.data_loader import DataLoader
-from providers.yahoo_finance import (
+from stock_analyser.infrastructure.yahoo.providers import (
     YahooFinanceClassificationProvider,
     YahooFinanceHistoryProvider,
     YahooFinanceMarketCapProvider,
