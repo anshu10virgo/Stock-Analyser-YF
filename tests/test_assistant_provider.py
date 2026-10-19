@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import pandas as pd
+import requests
 
 from models.assistant import AssistantMessage, AssistantRequest
 from agents.tools.local_analysis import build_local_tool_registry
@@ -24,9 +25,27 @@ from services.assistant_tools import (
     scan_summary,
     stock_status,
 )
+from stock_analyser.application.ports.model_provider import (
+    ModelProviderPort,
+    ModelProviderResponseError,
+    ModelProviderTransportError,
+)
+from stock_analyser.infrastructure.gemini.provider import (
+    GeminiProvider as CanonicalGeminiProvider,
+)
+from stock_analyser.infrastructure.openai.provider import (
+    OpenAIProvider as CanonicalOpenAIProvider,
+)
 
 
 class AssistantProviderTests(unittest.TestCase):
+    def test_legacy_provider_exports_resolve_to_port_adapters(self):
+        self.assertIs(GeminiProvider, CanonicalGeminiProvider)
+        self.assertIs(OpenAIProvider, CanonicalOpenAIProvider)
+        self.assertIsInstance(GeminiProvider("key", "model"), ModelProviderPort)
+        self.assertIsInstance(OpenAIProvider("key", "model"), ModelProviderPort)
+        self.assertIsInstance(DisabledProvider("gemini"), ModelProviderPort)
+
     def test_uses_gemini_flash_without_a_configured_provider(self):
         settings = load_assistant_settings({})
 
@@ -44,7 +63,7 @@ class AssistantProviderTests(unittest.TestCase):
         )
         self.assertIsInstance(build_provider(configured), OpenAIProvider)
 
-    @patch("services.assistant_provider.requests.post")
+    @patch("stock_analyser.infrastructure.gemini.provider.requests.post")
     def test_gemini_request_does_not_enable_external_tools(self, post):
         response = Mock()
         response.json.return_value = {
@@ -66,7 +85,7 @@ class AssistantProviderTests(unittest.TestCase):
         self.assertEqual(post.call_args.kwargs["headers"]["x-goog-api-key"], "key")
         self.assertNotIn("params", post.call_args.kwargs)
 
-    @patch("services.assistant_provider.requests.post")
+    @patch("stock_analyser.infrastructure.openai.provider.requests.post")
     def test_openai_request_does_not_enable_external_tools(self, post):
         response = Mock()
         response.json.return_value = {"output_text": "Local answer"}
@@ -81,7 +100,41 @@ class AssistantProviderTests(unittest.TestCase):
         self.assertNotIn("tools", post.call_args.kwargs["json"])
         self.assertIn("Do not browse", post.call_args.kwargs["json"]["instructions"])
 
-    @patch("services.assistant_provider.requests.post")
+    @patch("stock_analyser.infrastructure.gemini.provider.requests.post")
+    def test_gemini_normalizes_connection_errors(self, post):
+        post.side_effect = requests.ConnectionError("offline")
+
+        with self.assertRaises(ModelProviderTransportError) as raised:
+            GeminiProvider("key", "gemini-3.7-flash").respond(
+                AssistantRequest((AssistantMessage("user", "Explain TCS"),), "LOCAL")
+            )
+
+        self.assertIsNone(raised.exception.status_code)
+
+    @patch("stock_analyser.infrastructure.openai.provider.requests.post")
+    def test_openai_normalizes_http_errors(self, post):
+        response = Mock(status_code=429)
+        post.return_value.raise_for_status.side_effect = requests.HTTPError(
+            "rate limited", response=response
+        )
+
+        with self.assertRaises(ModelProviderTransportError) as raised:
+            OpenAIProvider("key", "gpt-5.6-terra").respond(
+                AssistantRequest((AssistantMessage("user", "Explain TCS"),), "LOCAL")
+            )
+
+        self.assertEqual(raised.exception.status_code, 429)
+
+    @patch("stock_analyser.infrastructure.openai.provider.requests.post")
+    def test_openai_normalizes_unreadable_responses(self, post):
+        post.return_value.json.return_value = {"output": None}
+
+        with self.assertRaises(ModelProviderResponseError):
+            OpenAIProvider("key", "gpt-5.6-terra").respond(
+                AssistantRequest((AssistantMessage("user", "Explain TCS"),), "LOCAL")
+            )
+
+    @patch("stock_analyser.infrastructure.gemini.provider.requests.post")
     def test_gemini_can_select_only_registered_local_tools(self, post):
         response = Mock()
         response.json.return_value = {
@@ -118,7 +171,7 @@ class AssistantProviderTests(unittest.TestCase):
         )
         self.assertNotIn("googleSearch", post.call_args.kwargs["json"])
 
-    @patch("services.assistant_provider.requests.post")
+    @patch("stock_analyser.infrastructure.openai.provider.requests.post")
     def test_openai_can_select_only_registered_local_tools(self, post):
         response = Mock()
         response.json.return_value = {

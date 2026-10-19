@@ -4,25 +4,146 @@ Reviewed against the current implementation on October 19, 2026. Remaining work
 is proposed; release dates are not committed. Operational instructions live in
 the [deployment and storage guide](deployment.md).
 
-## Recommended next work
+## Architecture Migration Programme
 
-1. Verify a scheduled changed-data R2 publication and finish hosted smoke checks.
-2. Improve failed-stock exploration and surface existing scan diagnostics.
-3. Add persistent strategy profiles and completed scan history. These provide
-   the stored comparisons needed for Ticksy daily-change explanations.
-4. Migrate Streamlit presentation modules and operational jobs into the
-   installable package while preserving deployed entrypoints.
-5. Choose advanced Backtesting or US expansion as the next major feature.
+This is the controlling end-to-end migration plan. Detailed delivered-feature
+history and future product ideas remain below it. Migration phases must preserve
+current scan outcomes, Backtester results, refresh behaviour, email delivery,
+and the hosted Streamlit interface unless a phase explicitly authorizes a
+visible change.
 
-## Completed — Package Foundation and Scanning Domain Extraction
+### Target Package
 
-### Goal
+```text
+src/stock_analyser/
+├── domain/
+│   ├── scanning/
+│   │   ├── models.py
+│   │   ├── indicators.py
+│   │   ├── post_cross_rules.py
+│   │   ├── impending_cross_rules.py
+│   │   ├── reversal_rules.py
+│   │   ├── optional_rules.py
+│   │   └── scoring.py
+│   ├── backtesting/
+│   ├── fundamentals/
+│   ├── reporting/
+│   └── markets/
+├── application/
+│   ├── commands/
+│   │   ├── run_scan.py
+│   │   ├── run_backtest.py
+│   │   ├── update_strategy.py
+│   │   └── send_report.py
+│   ├── queries/
+│   │   ├── get_stock_status.py
+│   │   ├── explain_failure.py
+│   │   ├── get_scan_summary.py
+│   │   └── get_data_health.py
+│   ├── workflows/
+│   │   ├── scan_workflow.py
+│   │   ├── backtest_workflow.py
+│   │   └── refresh_workflow.py
+│   └── ports/
+│       ├── market_data.py
+│       ├── fundamentals.py
+│       ├── storage.py
+│       ├── mailer.py
+│       └── model_provider.py
+├── agents/
+│   ├── orchestrator.py
+│   ├── tool_registry.py
+│   ├── policies.py
+│   ├── approvals.py
+│   ├── execution_context.py
+│   ├── audit_log.py
+│   ├── prompts/
+│   └── tools/
+│       ├── scan_tools.py
+│       ├── backtest_tools.py
+│       ├── explanation_tools.py
+│       ├── reporting_tools.py
+│       └── data_health_tools.py
+├── infrastructure/
+│   ├── yahoo/
+│   ├── screener/
+│   ├── r2/
+│   ├── smtp/
+│   ├── openai/
+│   └── gemini/
+├── presentation/
+│   └── streamlit/
+│       ├── pages/
+│       ├── components/
+│       ├── session_adapter.py
+│       └── app.py
+├── jobs/
+│   ├── market_refresh.py
+│   ├── screener_refresh.py
+│   └── storage_housekeeping.py
+└── tests/
+    ├── domain/
+    ├── application/
+    ├── agents/
+    ├── infrastructure/
+    └── integration/
+```
+
+### Current Position
+
+| Target area | Status | Current position |
+| --- | --- | --- |
+| `domain/scanning` | Complete | Canonical pure models, indicators, Post-Cross, Impending, reversal, optional rules, and scoring are packaged. |
+| Remaining domain packages | Not started | Backtesting, reporting, market definitions, and remaining fundamental-domain logic still live in root services/models. |
+| `application/commands` | Complete | Scan, Backtest, strategy update, and report delivery use cases exist. |
+| `application/queries` | Complete | Stock status, failure explanation, scan summary, calculation trace, and data health exist. |
+| `application/workflows` | Complete | Scan, Backtest, and refresh workflow boundaries exist. |
+| `application/ports` | Complete | Market data, fundamentals, storage, mail, and model-provider contracts exist. |
+| Infrastructure Phase 1 | Complete | Yahoo, Screener, local/R2 storage, repository providers, and SMTP are canonical infrastructure adapters. |
+| Infrastructure Phase 2 | Complete | OpenAI and Gemini are canonical infrastructure adapters; the existing service path is now a configuration and compatibility facade. |
+| Packaged agents | Partial | Working agent contracts, registry, policies, audit, and tools remain under root `agents/` and `application/`. |
+| Packaged presentation | Partial | The composition root is packaged; Streamlit pages and components remain under root `ui/`. |
+| Packaged jobs | Not started | Scheduled and operational entrypoints remain under root `scripts/`. |
+| Structured tests | Not started | Coverage exists and passes, but tests remain in one flat root directory. |
+| Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
+
+The structural migration is approximately 65% complete. This percentage
+describes package placement and dependency direction, not product feature
+completion.
+
+### Migration Rules Applied to Every Phase
+
+- Work on a dedicated feature branch and merge through a passing pull request.
+- Do not combine architecture migration with UI redesign, new scan rules,
+  score changes, new financial formulas, or changed defaults.
+- Keep root compatibility imports until all active application, tests, jobs,
+  and GitHub Actions callers have migrated.
+- Keep domain and application modules independent from Streamlit, Yahoo,
+  Screener, R2, SMTP, OpenAI, and Gemini implementations.
+- Keep Ticksy local-data-only. Model providers may interpret approved local
+  state and tool results but may not browse or retrieve market data.
+- Preserve explicit confirmation before any agent action changes session state
+  or prepares a scan or Backtest.
+- Review and update operational scripts whenever an affected implementation
+  moves.
+- Run focused tests, the full suite, `git diff --check`, and relevant import-
+  boundary checks in every phase.
+- Run the same 1,500-stock parity regression whenever scanning, fundamentals,
+  market data, or provider composition can affect scan outputs.
+
+## Ordered Architecture Sprints
+
+### Sprint A — Package Foundation and Scanning Domain
+
+**Status:** Complete.
+
+#### Goal
 
 Introduce the installable package boundary and extract deterministic scanning
 rules without changing the application interface, calculations, defaults, or
 runtime providers.
 
-### Scope
+#### Scope
 
 - Create `src/stock_analyser` with domain, application, agents,
   infrastructure, presentation, and jobs package boundaries.
@@ -35,14 +156,14 @@ runtime providers.
 - Keep existing scripts aligned and add a repeatable 1,500-symbol before/after
   parity check using the same local immutable snapshot.
 
-### Deliberately Deferred
+#### Deliberately Deferred
 
 - Application commands, queries, workflows, and port implementations.
 - Moving Yahoo, Screener, R2, SMTP, Gemini, or OpenAI adapters.
 - Moving the remaining Streamlit pages or operational jobs.
 - Any UI, strategy, scoring, default, or financial-formula change.
 
-### Acceptance Criteria
+#### Acceptance Criteria
 
 - The package installs from `pyproject.toml` and root `app.py` remains a thin
   Streamlit bootstrap.
@@ -52,15 +173,17 @@ runtime providers.
   Cross, Impending, failure, and scoring outputs before and after extraction.
 - Focused tests, the full suite, and `git diff --check` pass.
 
-## Completed — Application Commands, Queries, Workflows, and Ports
+### Sprint B — Application Use Cases and Ports
 
-### Goal
+**Status:** Complete.
+
+#### Goal
 
 Make UI and agent entrypoints depend on explicit use cases rather than directly
 constructing scanner services or calling helper modules, without changing any
 calculation, qualification, score, or visible workflow.
 
-### Scope
+#### Scope
 
 - Add scan, Backtest, strategy-update, and report-delivery commands.
 - Add scan-summary, stock-status, failure-explanation, calculation-trace, and
@@ -72,7 +195,7 @@ calculation, qualification, score, or visible workflow.
   the application layer.
 - Preserve existing services and imports as temporary compatibility paths.
 
-### Deliberately Deferred
+#### Deliberately Deferred
 
 - Moving Yahoo, Screener, R2, SMTP, Gemini, and OpenAI implementations into
   `infrastructure/`.
@@ -80,7 +203,7 @@ calculation, qualification, score, or visible workflow.
 - New agent capabilities or state-changing tools.
 - Any UI, rule, score, default, or financial-formula change.
 
-### Acceptance Criteria
+#### Acceptance Criteria
 
 - Streamlit does not construct `ScanService` or `BacktestService` directly.
 - Registered Ticksy tools call application queries rather than service helpers.
@@ -90,15 +213,17 @@ calculation, qualification, score, or visible workflow.
 - Operational verification scripts use the application workflows where they
   exercise normal scan and Backtest execution.
 
-## Completed — Infrastructure Adapters, Phase 1
+### Sprint C — Infrastructure Phase 1
 
-### Goal
+**Status:** Complete.
+
+#### Goal
 
 Move Yahoo Finance, Screener.in, local/R2 snapshot storage, and SMTP transport
 behind the application ports without changing UI behaviour, scan rules,
 scores, defaults, or financial calculations.
 
-### Scope
+#### Scope
 
 - Add canonical Yahoo history, fundamentals, classifications, market-cap, and
   industry-valuation adapters under `stock_analyser.infrastructure.yahoo`.
@@ -106,15 +231,15 @@ scores, defaults, or financial calculations.
   `stock_analyser.infrastructure.screener`.
 - Add local, R2/S3, scoped snapshot, and repository-backed provider adapters
   under `stock_analyser.infrastructure.r2`.
-- Add an authenticated SMTP implementation of `MailerPort` and use it for
-  scan reports and scheduled-refresh failure alerts.
+- Add an authenticated SMTP implementation of `MailerPort` and use it for scan
+  reports and scheduled-refresh failure alerts.
 - Type the provider bundle against the application ports and inject concrete
   adapter instances from one infrastructure composition factory.
 - Keep existing `providers/`, `core/`, and `services/` import paths as explicit
   compatibility exports while callers migrate.
 - Point operational scripts directly at canonical infrastructure adapters.
 
-### Deliberately Deferred
+#### Deliberately Deferred
 
 - Gemini and OpenAI adapter migration, which requires a separate Ticksy
   provider regression slice.
@@ -123,7 +248,7 @@ scores, defaults, or financial calculations.
 - Removing compatibility facades before all callers have migrated.
 - Any UI, scan-rule, scoring, default, or financial-formula change.
 
-### Acceptance Criteria
+#### Acceptance Criteria
 
 - Concrete market-data, fundamentals, storage, and SMTP adapters satisfy their
   runtime-checkable application port contracts.
@@ -131,6 +256,272 @@ scores, defaults, or financial calculations.
 - Scripts use canonical Yahoo, Screener, R2, and SMTP paths.
 - Focused infrastructure tests, the full suite, scanner parity, and
   `git diff --check` pass.
+
+### Sprint D — OpenAI and Gemini Infrastructure
+
+**Status:** Complete.
+
+#### Scope
+
+- Create `infrastructure/openai/` and `infrastructure/gemini/`.
+- Move provider-specific request conversion, tool declaration conversion,
+  response parsing, transport handling, and error normalization out of
+  `services/assistant_provider.py`.
+- Make both adapters satisfy `ModelProviderPort`.
+- Keep settings/secrets loading and disabled-provider selection in a small
+  composition layer until the agent and presentation migrations are complete.
+- Retain `services/assistant_provider.py` as a compatibility facade.
+- Preserve the maximum of three registered local tool calls per request.
+- Preserve the local-data-only system instruction and prohibit hosted search,
+  browser, code execution, file retrieval, and provider-native external tools.
+
+#### Acceptance Criteria
+
+- OpenAI and Gemini adapters pass the same request, tool-selection, response,
+  unavailable-data, and error-handling tests as before migration.
+- `ModelProviderPort` has no Streamlit dependency.
+- Provider credentials remain in deployment secrets and never enter logs,
+  context snapshots, audit records, or Git.
+- Ticksy behaviour and visible UI remain unchanged.
+
+### Sprint E — Package the Agent Runtime
+
+**Status:** Next.
+
+#### Scope
+
+- Move `application/assistant_runtime.py` into `agents/orchestrator.py` and keep
+  a compatibility export during migration.
+- Move `agents/registry.py` into `agents/tool_registry.py`.
+- Move approval classification and execution checks into `agents/approvals.py`.
+- Move bounded copied state into `agents/execution_context.py`, using the
+  application context contract rather than raw Streamlit session state.
+- Move sanitized audit events into `agents/audit_log.py`.
+- Keep policy declarations in `agents/policies.py`.
+- Move embedded provider-neutral system instructions into versioned files under
+  `agents/prompts/`.
+- Split the current local-analysis adapter into focused tools:
+  `scan_tools.py`, `backtest_tools.py`, `explanation_tools.py`,
+  `reporting_tools.py`, and `data_health_tools.py`.
+- Keep tool handlers thin; commands and queries remain the only application
+  entrypoints and Python remains the calculation source of truth.
+
+#### Acceptance Criteria
+
+- Agent code receives only an allow-listed copied execution context.
+- Unknown tools, invalid arguments, and unapproved side effects cannot reach
+  application handlers.
+- Read-only tools remain distinguishable from confirmation-required actions.
+- Agent audit data contains no secrets and remains scoped to the active
+  session unless a future persistence feature is explicitly approved.
+- Root `agents/` and `application/assistant_runtime.py` are compatibility
+  exports only.
+
+### Sprint F — Complete the Domain Layer
+
+**Status:** Planned after the agent package boundary is stable.
+
+This sprint should be delivered as small sub-sprints, not one large move.
+
+#### F1 — Markets
+
+- Create `domain/markets/` for market identifiers, exchange suffixes, trading-
+  session assumptions, and market-specific configuration contracts.
+- Move pure market definitions out of root `models/market.py`.
+- Do not put Yahoo symbols, API clients, Streamlit settings, or storage paths in
+  the market domain.
+
+#### F2 — Fundamentals
+
+- Create `domain/fundamentals/` for fundamental metric models, missing-data
+  states, comparison outcomes, industry valuation results, and pure PEG/growth
+  calculations.
+- Keep Yahoo and Screener retrieval/parsing in infrastructure.
+- Move only provider-independent rules out of scanning optional rules when the
+  ownership is genuinely fundamental and reused outside scanning.
+
+#### F3 — Backtesting
+
+- Create `domain/backtesting/` for replay models, horizons, event selection,
+  return calculations, and aggregate metrics.
+- Remove calculation responsibility from `services/backtest_service.py`.
+- Keep `application/commands/run_backtest.py` as orchestration over the pure
+  domain and injected ports.
+
+#### F4 — Reporting
+
+- Create `domain/reporting/` for report models, filters-first workbook data,
+  chart snapshot specifications, attachment batching decisions, and message
+  content construction.
+- Keep SMTP transport under infrastructure.
+- Keep presentation-specific rendering out of the reporting domain.
+
+#### Acceptance Criteria
+
+- Every domain package can run without Streamlit or network credentials.
+- Pure calculations use typed inputs and deterministic outputs.
+- Backtester and report outputs are byte- or record-equivalent where practical;
+  documented formatting-only differences require explicit approval.
+- `services/backtest_service.py` and `services/scan_report.py` become thin
+  compatibility facades before eventual removal.
+
+### Sprint G — Streamlit Presentation Migration
+
+**Status:** Planned after application, agent, and domain boundaries are stable.
+
+#### Scope
+
+- Create `presentation/streamlit/pages/` for Setup, Strategy, Live Scan,
+  Results, Backtester, and Introduction page controllers.
+- Create `presentation/streamlit/components/` for shared theme, header,
+  navigation, filters, insights, stock detail, charts, email form, and Ticksy
+  panel components.
+- Add `session_adapter.py` as the only translation boundary between Streamlit
+  session state and application commands/queries.
+- Keep `presentation/streamlit/app.py` as the composition root that constructs
+  infrastructure adapters and application workflows.
+- Keep root `app.py` as a minimal Streamlit Cloud bootstrap.
+- Convert root `ui/` modules into compatibility exports until deployed imports
+  and tests use the package paths.
+
+#### Acceptance Criteria
+
+- Presentation modules do not import Yahoo, Screener, boto3/R2, SMTP, Gemini,
+  or OpenAI implementations directly.
+- Page controllers do not contain scan, Backtester, scoring, or financial
+  calculations.
+- Session state is read and written through the session adapter.
+- Desktop and mobile workflows, navigation, result expansion, charts, saved
+  session strategies, email reporting, and Ticksy pass UI smoke tests.
+- No visible design change is introduced by the move itself.
+
+### Sprint H — Operational Jobs Migration
+
+**Status:** Planned after infrastructure and application workflows are stable.
+
+#### Scope
+
+- Create `jobs/market_refresh.py`, `jobs/screener_refresh.py`, and
+  `jobs/storage_housekeeping.py` as packaged operational entrypoints.
+- Make jobs call application refresh workflows with injected infrastructure
+  adapters.
+- Keep root scripts as thin command-line compatibility wrappers during rollout.
+- Preserve refresh replay, checkpointing, validation, manifest publication,
+  atomic pointer updates, leases, retention, and failure-alert behaviour.
+- Update GitHub Actions to invoke packaged jobs only after local and manual
+  workflow verification succeeds.
+- Retain auxiliary archive, restore, verification, parity, and export commands
+  as focused maintenance tools; place shared logic below application or
+  infrastructure rather than duplicating it in scripts.
+
+#### Acceptance Criteria
+
+- Existing scheduled workflow inputs, secrets, permissions, and output
+  artifacts remain compatible.
+- Dry-run or fixture-based refresh tests prove that no external write happens
+  before validation succeeds.
+- Changed-data and no-change runs both complete correctly.
+- R2 publication remains atomic and the hosted app cannot observe a partially
+  published snapshot.
+- Failure email is verified without exposing credentials.
+
+### Sprint I — Test Structure and Quality Gates
+
+**Status:** Planned once canonical package paths are stable.
+
+#### Scope
+
+- Reorganize tests into `tests/domain`, `tests/application`, `tests/agents`,
+  `tests/infrastructure`, and `tests/integration`.
+- Keep fast pure unit tests separate from network-free adapter contract tests,
+  snapshot integration tests, and Streamlit smoke tests.
+- Add import-boundary tests that prohibit domain-to-infrastructure,
+  application-to-presentation, and agent-to-raw-Streamlit dependencies.
+- Add compatibility-export tests until the retirement sprint is complete.
+- Add coverage reporting and linting to CI with agreed thresholds.
+- Keep all CI tests deterministic and independent of live Yahoo, Screener,
+  OpenAI, Gemini, SMTP, and R2 services.
+
+#### Acceptance Criteria
+
+- Test discovery mirrors the target architecture.
+- CI clearly reports unit, integration, parity, and presentation failures.
+- The 1,500-stock parity check remains available as a deliberate regression
+  job even if it is not run on every small commit.
+- Hosted smoke-test instructions remain documented for changes that cannot be
+  completely proven in CI.
+
+### Sprint J — Compatibility Retirement and Final Cleanup
+
+**Status:** Final architecture sprint.
+
+#### Scope
+
+- Search application code, tests, scripts, and workflows for every legacy
+  import before removing a compatibility module.
+- Remove obsolete root implementations under `agents/`, `application/`,
+  `core/`, `domain/`, `models/`, `providers/`, `services/`, and `ui/` only when
+  they no longer own behaviour and have no active callers.
+- Remove root script wrappers only after GitHub Actions and documented local
+  commands use packaged jobs.
+- Remove the source-checkout `stock_analyser/` shim only after editable,
+  standard, Streamlit Cloud, job, and test installations all resolve the
+  `src` package correctly.
+- Remove stale generated caches and local-only artifacts without committing
+  them. Keep `wireframe-work/` outside Git unless explicitly requested.
+- Update README, architecture, business rules, deployment, data pipeline, and
+  roadmap documentation to reference canonical paths only.
+
+#### Removal Gate
+
+A legacy path can be deleted only when:
+
+1. `rg` finds no active import outside an intentional compatibility test.
+2. Focused and full tests pass from a clean environment.
+3. Operational scripts and GitHub Actions use canonical entrypoints.
+4. Streamlit Cloud starts successfully from the thin root bootstrap.
+5. Scanner parity and required Backtester/report comparisons pass.
+6. The deletion does not remove local user artifacts, snapshots, secrets, or
+   deployment state.
+
+### Final Definition of Done
+
+- The target package tree is populated by real modules rather than empty
+  placeholder directories.
+- Domain code is deterministic and independent of frameworks and providers.
+- Application code depends only on domain contracts and ports.
+- Agents call application commands and queries through controlled policies and
+  approvals; they never become a second calculation engine.
+- Infrastructure contains every external-system implementation.
+- Presentation depends on application use cases, not provider implementations.
+- Jobs are thin, repeatable entrypoints over application workflows.
+- Tests mirror architectural boundaries and enforce dependency direction.
+- Root `app.py` remains a thin Streamlit Cloud entrypoint.
+- Compatibility wrappers have been removed or are explicitly documented with
+  a scheduled retirement reason.
+- The full suite, hosted smoke tests, operational workflow tests, and scanner
+  parity checks pass on the release candidate.
+
+## Immediate Execution Order
+
+1. Sprint E — packaged agent runtime and focused tools.
+2. Sprint F1/F2 — markets and fundamentals domain boundaries.
+3. Sprint F3/F4 — Backtesting and reporting domains.
+4. Sprint G — Streamlit presentation migration.
+5. Sprint H — packaged operational jobs and GitHub Actions cutover.
+6. Sprint I — test-directory migration and architecture quality gates.
+7. Sprint J — compatibility retirement and final cleanup.
+
+Product-feature work that materially touches these modules should either wait
+for the owning migration sprint or be implemented through the new canonical
+boundary so it does not create additional legacy dependencies.
+
+## Delivered Feature History and Product Roadmap
+
+The entries below cover delivered user-facing capabilities, reliability and
+operations work, and future product ideas. Architecture-only sprints are kept
+exclusively in the migration programme above so functional delivery and code-
+placement progress are not mixed together.
 
 ## Completed — Ticksy Read-Only Tool Integration
 

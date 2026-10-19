@@ -91,7 +91,7 @@ src/stock_analyser/
     domain/scanning/                Pure scan models, indicators, rules, and scoring
     application/                    Commands, queries, workflows, context, and ports
     agents/                         Future packaged agent runtime
-    infrastructure/                 Yahoo, Screener, R2/local, and SMTP adapters
+    infrastructure/                 Yahoo, Screener, R2/local, SMTP, and model adapters
     presentation/streamlit/app.py   Current packaged Streamlit composition root
     jobs/                           Future packaged operational entrypoints
 stock_analyser/                     Temporary source-checkout package shim
@@ -136,8 +136,8 @@ snapshot before this compatibility layer is retired.
   scans and Backtests plus provider-independent refresh sequencing.
 - `src/stock_analyser/application/ports/`: structural contracts for market
   data, fundamentals, storage, mail, and hosted-model providers. The Phase 1
-  market, fundamentals, storage, and mail contracts are runtime-checkable;
-  hosted-model migration remains deferred.
+  market, fundamentals, storage, and mail contracts and the hosted-model
+  contract are runtime-checkable and independent from concrete providers.
 - `src/stock_analyser/infrastructure/data_services.py`: the provider
   composition factory. It returns a bundle typed by application ports and
   consistently selects live Yahoo or pinned local/cloud snapshot adapters.
@@ -151,6 +151,13 @@ snapshot before this compatibility layer is retired.
   industry-valuation, and Screener adapters.
 - `src/stock_analyser/infrastructure/smtp/`: authenticated SMTP implementation
   of `MailerPort`, shared by report delivery and refresh-failure alerts.
+- `src/stock_analyser/infrastructure/gemini/` and
+  `src/stock_analyser/infrastructure/openai/`: canonical hosted-model adapters
+  responsible for provider request conversion, local-tool declarations,
+  response parsing, and transport-error normalization. Neither adapter enables
+  provider-hosted search, browsing, code execution, or file retrieval.
+- `src/stock_analyser/infrastructure/model_support.py`: shared local-data-only
+  provider instructions and provider-neutral tool-schema conversion helpers.
 - `agents/contracts.py`, `agents/policies.py`, and `agents/registry.py`: typed
   tool contracts, centralized effect-to-approval policy, validation, and
   controlled execution.
@@ -182,9 +189,9 @@ snapshot before this compatibility layer is retired.
   validation, and message construction. SMTP delivery is delegated through
   the infrastructure `MailerPort` adapter. The Streamlit UI supplies completed
   results and deployment-managed secrets; recipients are never persisted.
-- `services/assistant_provider.py`: Gemini Flash and OpenAI provider boundary
-  with a safe disabled provider, registered local-function declarations, no
-  external tools, and a shared local-data-only system instruction.
+- `services/assistant_provider.py`: temporary configuration and compatibility
+  facade that selects the canonical Gemini or OpenAI adapter, or a safe
+  disabled provider when credentials are unavailable.
 - `services/assistant_tools.py`, `services/assistant_context.py`,
   `services/assistant_explanations.py`, and `services/assistant_actions.py`:
   bounded local context, deterministic explanations, and confirmed scan or

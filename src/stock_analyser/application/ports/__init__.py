@@ -3,7 +3,12 @@
 from .fundamentals import FundamentalsPort, IndustryValuationPort, ScreenerFundamentalsPort
 from .mailer import MailerPort
 from .market_data import MarketDataPort
-from .model_provider import ModelProviderPort
+from .model_provider import (
+    ModelProviderError,
+    ModelProviderPort,
+    ModelProviderResponseError,
+    ModelProviderTransportError,
+)
 from .storage import StoragePort
 
 __all__ = [
@@ -11,7 +16,10 @@ __all__ = [
     "IndustryValuationPort",
     "MailerPort",
     "MarketDataPort",
+    "ModelProviderError",
     "ModelProviderPort",
+    "ModelProviderResponseError",
+    "ModelProviderTransportError",
     "ScreenerFundamentalsPort",
     "StoragePort",
 ]
