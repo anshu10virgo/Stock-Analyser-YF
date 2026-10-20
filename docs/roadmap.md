@@ -81,7 +81,8 @@ src/stock_analyser/
 ├── jobs/
 │   ├── market_refresh.py
 │   ├── screener_refresh.py
-│   └── storage_housekeeping.py
+│   ├── storage_housekeeping.py
+│   └── refresh_alert.py
 └── tests/
     ├── domain/
     ├── application/
@@ -107,11 +108,11 @@ src/stock_analyser/
 | Infrastructure Phase 2 | Complete | OpenAI and Gemini are canonical infrastructure adapters; the existing service path is now a configuration and compatibility facade. |
 | Packaged agents | Complete | Orchestration, execution context, contracts, registry, approvals, policies, audit, prompts, and focused tools are canonical under `src/stock_analyser/agents`. |
 | Packaged presentation | Complete | Setup, Strategy, Live Scan, Results, Backtester, Introduction, shared components, and the session adapter are canonical under `presentation/streamlit`; root `ui/` modules are compatibility aliases. |
-| Packaged jobs | Not started | Scheduled and operational entrypoints remain under root `scripts/`. |
+| Packaged jobs | Complete | Market refresh, Screener refresh, storage housekeeping, and failure alerts are canonical packaged entrypoints; GitHub Actions invokes them with `python -m`, while root scripts are compatibility launchers. |
 | Structured tests | Not started | Coverage exists and passes, but tests remain in one flat root directory. |
 | Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
 
-The structural migration is approximately 90% complete. This percentage
+The structural migration is approximately 94% complete. This percentage
 describes package placement and dependency direction, not product feature
 completion.
 
@@ -411,12 +412,14 @@ This sprint should be delivered as small sub-sprints, not one large move.
 
 ### Sprint H — Operational Jobs Migration
 
-**Status:** Planned after infrastructure and application workflows are stable.
+**Status:** Complete.
 
 #### Scope
 
 - Create `jobs/market_refresh.py`, `jobs/screener_refresh.py`, and
   `jobs/storage_housekeeping.py` as packaged operational entrypoints.
+- Package the scheduled refresh-failure notification as `jobs/refresh_alert.py`
+  over the SMTP mailer port.
 - Make jobs call application refresh workflows with injected infrastructure
   adapters.
 - Keep root scripts as thin command-line compatibility wrappers during rollout.
@@ -518,9 +521,8 @@ A legacy path can be deleted only when:
 
 ## Immediate Execution Order
 
-1. Sprint H — packaged operational jobs and GitHub Actions cutover.
-2. Sprint I — test-directory migration and architecture quality gates.
-3. Sprint J — compatibility retirement and final cleanup.
+1. Sprint I — test-directory migration and architecture quality gates.
+2. Sprint J — compatibility retirement and final cleanup.
 
 Product-feature work that materially touches these modules should either wait
 for the owning migration sprint or be implemented through the new canonical

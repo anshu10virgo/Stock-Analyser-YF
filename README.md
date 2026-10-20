@@ -95,7 +95,7 @@ For the R2-backed app, use this command to refresh the universe, synchronize
 its supporting market data, and publish a validated cloud snapshot:
 
 ```powershell
-python -u scripts/refresh_cloud_market_data.py --refresh-universe
+python -u -m stock_analyser.jobs.market_refresh --refresh-universe
 ```
 
 For local-only maintenance of a downloaded snapshot, use the command below.
@@ -140,7 +140,7 @@ For a manual daily refresh from the active R2 snapshot back to R2, after cloud
 Secrets are configured:
 
 ```powershell
-python -u scripts/refresh_cloud_market_data.py
+python -u -m stock_analyser.jobs.market_refresh
 ```
 
 This uses isolated local staging, retains the existing Screener and universe
@@ -167,8 +167,8 @@ Screener-derived history and long-term fundamentals use one separate,
 resumable refresh:
 
 ```powershell
-python scripts/refresh_screener_fundamentals.py --mode refresh
-python scripts/refresh_screener_fundamentals.py --mode validate
+python -m stock_analyser.jobs.screener_refresh --mode refresh
+python -m stock_analyser.jobs.screener_refresh --mode validate
 ```
 
 The refresh processes 10 stocks per batch and waits five seconds between

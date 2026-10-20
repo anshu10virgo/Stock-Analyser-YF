@@ -1,75 +1,18 @@
-"""Send a GitHub Actions market-data refresh failure notification."""
+"""Compatibility launcher for the packaged refresh-alert job."""
 
 from __future__ import annotations
 
-import os
-from email.message import EmailMessage
+import sys
+from pathlib import Path
 
-from stock_analyser.infrastructure.smtp.mailer import MailConfiguration, SmtpMailer
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-DEFAULT_RECIPIENT = "anshu10virgo@gmail.com"
-
-
-def build_message(environment: dict[str, str]) -> EmailMessage:
-    """Build a concise alert containing enough context to inspect the run."""
-    repository = environment.get("GITHUB_REPOSITORY", "Stock-Analyser-YF")
-    workflow = environment.get("GITHUB_WORKFLOW", "Refresh committed market data")
-    run_id = environment.get("GITHUB_RUN_ID", "unknown")
-    server_url = environment.get("GITHUB_SERVER_URL", "https://github.com")
-    run_url = f"{server_url}/{repository}/actions/runs/{run_id}"
-    recipient = environment.get("REFRESH_ALERT_RECIPIENT", DEFAULT_RECIPIENT)
-    sender = environment["REFRESH_SMTP_USERNAME"]
-    is_test = environment.get("REFRESH_ALERT_IS_TEST", "false").lower() == "true"
-    reference_run_url = environment.get("REFRESH_ALERT_REFERENCE_RUN_URL", "").strip()
-
-    message = EmailMessage()
-    message["Subject"] = (
-        f"Stock Analyser refresh alert test ({run_id})"
-        if is_test
-        else f"Stock Analyser market-data refresh failed ({run_id})"
-    )
-    message["From"] = sender
-    message["To"] = recipient
-    opening = (
-        "This is a test of the Stock Analyser market-data failure alert."
-        if is_test
-        else "The scheduled Stock Analyser market-data refresh failed."
-    )
-    reference = (
-        f"Referenced failed run: {reference_run_url}\n" if reference_run_url else ""
-    )
-    message.set_content(
-        f"{opening}\n\n"
-        f"Repository: {repository}\n"
-        f"Workflow: {workflow}\n"
-        f"Branch/ref: {environment.get('GITHUB_REF_NAME', 'unknown')}\n"
-        f"Commit: {environment.get('GITHUB_SHA', 'unknown')}\n"
-        f"Notification run: {run_url}\n"
-        f"{reference}\n"
-        "Open the run link to review the failed step and logs."
-    )
-    return message
-
-
-def send_failure_email(environment: dict[str, str] | None = None) -> bool:
-    """Send the alert, or report missing secrets without exposing credentials."""
-    if environment is None:
-        environment = dict(os.environ)
-    username = environment.get("REFRESH_SMTP_USERNAME")
-    password = environment.get("REFRESH_SMTP_APP_PASSWORD")
-    if not username or not password:
-        print(
-            "::warning::Refresh email was not sent because "
-            "REFRESH_SMTP_USERNAME or REFRESH_SMTP_APP_PASSWORD is not configured."
-        )
-        return False
-
-    message = build_message(environment)
-    SmtpMailer(MailConfiguration(username, password)).send([message])
-    print(f"Refresh failure email sent to {message['To']}.")
-    return True
+from stock_analyser.jobs import refresh_alert as _implementation
 
 
 if __name__ == "__main__":
-    if not send_failure_email():
-        raise SystemExit(1)
+    raise SystemExit(_implementation.main())
+else:
+    sys.modules[__name__] = _implementation

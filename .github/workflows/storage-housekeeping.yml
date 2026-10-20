@@ -41,7 +41,7 @@ jobs:
           if [ -n "$APPLY_PLAN_ID" ]; then
             OPTIONS+=(--apply-cloud-plan "$APPLY_PLAN_ID")
           fi
-          python -u scripts/storage_housekeeping.py --config-source github "${OPTIONS[@]}"
+          python -u -m stock_analyser.jobs.storage_housekeeping --config-source github "${OPTIONS[@]}"
       - name: Save housekeeping report
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -57,4 +57,4 @@ jobs:
           REFRESH_SMTP_USERNAME: anshu10virgo@gmail.com
           REFRESH_SMTP_APP_PASSWORD: ${{ secrets.REFRESH_SMTP_APP_PASSWORD }}
           REFRESH_ALERT_RECIPIENT: anshu10virgo@gmail.com
-        run: python scripts/send_refresh_failure_email.py
+        run: python -m stock_analyser.jobs.refresh_alert

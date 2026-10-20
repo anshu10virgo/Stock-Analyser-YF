@@ -53,13 +53,13 @@ jobs:
         env:
           REFRESH_MODE: ${{ github.event.inputs.mode || 'incremental' }}
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
-        run: python -u scripts/refresh_cloud_market_data.py --config-source github --mode "$REFRESH_MODE"
+        run: python -u -m stock_analyser.jobs.market_refresh --config-source github --mode "$REFRESH_MODE"
 
       - name: Report R2 storage usage
         if: ${{ github.event.inputs.mode != 'notification-test' }}
         env:
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
-        run: python scripts/storage_housekeeping.py --config-source github
+        run: python -m stock_analyser.jobs.storage_housekeeping --config-source github
 
       - name: Save refresh reports
         if: ${{ always() && github.event.inputs.mode != 'notification-test' }}
@@ -82,4 +82,4 @@ jobs:
           REFRESH_ALERT_RECIPIENT: anshu10virgo@gmail.com
           REFRESH_ALERT_IS_TEST: ${{ github.event.inputs.mode == 'notification-test' }}
           REFRESH_ALERT_REFERENCE_RUN_URL: ${{ github.event.inputs.reference_run_url }}
-        run: python scripts/send_refresh_failure_email.py
+        run: python -m stock_analyser.jobs.refresh_alert

@@ -64,8 +64,8 @@ python scripts/refresh_market_data.py --mode incremental
 python scripts/refresh_market_data.py --mode classifications
 python scripts/refresh_market_data.py --mode optimize
 python scripts/refresh_market_data.py --mode validate
-python scripts/refresh_screener_fundamentals.py --mode refresh
-python scripts/refresh_screener_fundamentals.py --mode validate
+python -m stock_analyser.jobs.screener_refresh --mode refresh
+python -m stock_analyser.jobs.screener_refresh --mode validate
 ```
 
 The GitHub Actions workflow runs incremental mode at 18:00 IST on weekdays and
