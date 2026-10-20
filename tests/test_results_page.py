@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 
 from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE
-from ui.results_page import _format_market_cap, _peg_ratio, _performance, prepare_results, _render_data_provenance
+from stock_analyser.presentation.streamlit.components.results import _format_market_cap, _peg_ratio, _performance, prepare_results, _render_data_provenance
 
 
 class ResultsPageTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class ResultsPageTests(unittest.TestCase):
             (SNAPSHOT_SOURCE, "local_snapshot", "Local snapshot only"),
             (LIVE_SOURCE, "cloud_snapshot", "Live Yahoo Finance"),
         ]:
-            with self.subTest(expected=expected), patch("ui.results_page.st") as streamlit:
+            with self.subTest(expected=expected), patch("stock_analyser.presentation.streamlit.components.results.st") as streamlit:
                 columns = [MagicMock() for _ in range(4)]
                 streamlit.columns.return_value = columns
                 _render_data_provenance({"market_data_source": source,

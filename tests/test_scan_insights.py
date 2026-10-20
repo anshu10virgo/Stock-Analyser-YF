@@ -4,8 +4,8 @@ import unittest
 
 import pandas as pd
 
-from ui.scan_insights import derive_scan_insights
-from ui.sidebar import DEFAULT_SCAN_SETTINGS, default_scan_settings
+from stock_analyser.presentation.streamlit.components.scan_insights import derive_scan_insights
+from stock_analyser.presentation.streamlit.components.strategy_configuration import DEFAULT_SCAN_SETTINGS, default_scan_settings
 
 
 class ScanInsightTests(unittest.TestCase):

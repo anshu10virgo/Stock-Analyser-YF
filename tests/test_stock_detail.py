@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from ui.stock_detail import build_stock_detail_figure
+from stock_analyser.presentation.streamlit.components.stock_detail import build_stock_detail_figure
 
 
 class StockDetailTests(unittest.TestCase):

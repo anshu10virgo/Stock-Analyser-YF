@@ -106,12 +106,12 @@ src/stock_analyser/
 | Infrastructure Phase 1 | Complete | Yahoo, Screener, local/R2 storage, repository providers, and SMTP are canonical infrastructure adapters. |
 | Infrastructure Phase 2 | Complete | OpenAI and Gemini are canonical infrastructure adapters; the existing service path is now a configuration and compatibility facade. |
 | Packaged agents | Complete | Orchestration, execution context, contracts, registry, approvals, policies, audit, prompts, and focused tools are canonical under `src/stock_analyser/agents`. |
-| Packaged presentation | Partial | The composition root is packaged; Streamlit pages and components remain under root `ui/`. |
+| Packaged presentation | Complete | Setup, Strategy, Live Scan, Results, Backtester, Introduction, shared components, and the session adapter are canonical under `presentation/streamlit`; root `ui/` modules are compatibility aliases. |
 | Packaged jobs | Not started | Scheduled and operational entrypoints remain under root `scripts/`. |
 | Structured tests | Not started | Coverage exists and passes, but tests remain in one flat root directory. |
 | Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
 
-The structural migration is approximately 85% complete. This percentage
+The structural migration is approximately 90% complete. This percentage
 describes package placement and dependency direction, not product feature
 completion.
 
@@ -381,7 +381,7 @@ This sprint should be delivered as small sub-sprints, not one large move.
 
 ### Sprint G — Streamlit Presentation Migration
 
-**Status:** Planned after application, agent, and domain boundaries are stable.
+**Status:** Complete.
 
 #### Scope
 
@@ -518,10 +518,9 @@ A legacy path can be deleted only when:
 
 ## Immediate Execution Order
 
-1. Sprint G — Streamlit presentation migration.
-2. Sprint H — packaged operational jobs and GitHub Actions cutover.
-3. Sprint I — test-directory migration and architecture quality gates.
-4. Sprint J — compatibility retirement and final cleanup.
+1. Sprint H — packaged operational jobs and GitHub Actions cutover.
+2. Sprint I — test-directory migration and architecture quality gates.
+3. Sprint J — compatibility retirement and final cleanup.
 
 Product-feature work that materially touches these modules should either wait
 for the owning migration sprint or be implemented through the new canonical

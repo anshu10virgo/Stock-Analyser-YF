@@ -118,6 +118,20 @@ class AppSessionStateTests(unittest.TestCase):
         ).click().run()
         self.assertEqual(app.session_state["scan_config_optional_sequence"], [])
 
+    def test_every_workflow_page_renders_without_starting_external_work(self):
+        app = self._run_local_app()
+
+        for section in (
+            "2. Strategy",
+            "3. Live Scan",
+            "4. Results",
+            "5. Backtester",
+            "1. Setup",
+        ):
+            with self.subTest(section=section):
+                app.radio[0].set_value(section).run()
+                self.assertEqual(len(app.exception), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
