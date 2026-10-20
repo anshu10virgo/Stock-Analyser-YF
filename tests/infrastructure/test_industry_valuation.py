@@ -3,8 +3,10 @@
 import unittest
 from unittest.mock import patch
 
-from providers.yahoo_finance import YahooFinanceIndustryProvider
-from services.industry_valuation import IndustryValuationService
+from stock_analyser.infrastructure.yahoo.industry_valuation import (
+    YahooIndustryValuationService as IndustryValuationService,
+)
+from stock_analyser.infrastructure.yahoo.providers import YahooFinanceIndustryProvider
 
 
 class FakeIndustryProvider:

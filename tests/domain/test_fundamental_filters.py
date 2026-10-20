@@ -2,7 +2,7 @@
 
 import unittest
 
-from models.optional_filter import (
+from stock_analyser.domain.scanning.models import (
     DEBT_TO_EQUITY,
     EPS_GROWTH,
     HISTORICAL_STOCK_PE,
@@ -13,8 +13,8 @@ from models.optional_filter import (
     RETURN_ON_EQUITY,
     OptionalFilterConfig,
 )
-from models.scan_config import ScanConfig
-from services.fundamental_filters import (
+from stock_analyser.domain.scanning.models import ScanConfig
+from stock_analyser.domain.scanning.optional_rules import (
     EvaluationStatus,
     FundamentalFilterEvaluator,
 )

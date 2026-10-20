@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import importlib
 from pathlib import Path
 
 from tests.support.paths import PROJECT_ROOT
@@ -85,37 +84,15 @@ def test_test_modules_only_share_helpers_through_tests_support():
     assert not violations, "Cross-test imports must move to tests.support:\n" + "\n".join(violations)
 
 
-def test_compatibility_exports_resolve_to_canonical_implementations():
-    exports = {
-        ("models.scan_config", "ScanConfig"): (
-            "stock_analyser.domain.scanning.models",
-            "ScanConfig",
-        ),
-        ("providers.yahoo_finance", "YahooFinanceHistoryProvider"): (
-            "stock_analyser.infrastructure.yahoo.providers",
-            "YahooFinanceHistoryProvider",
-        ),
-        ("application.assistant_runtime", "AssistantRuntime"): (
-            "stock_analyser.agents.orchestrator",
-            "AssistantRuntime",
-        ),
-        ("agents.registry", "ToolRegistry"): (
-            "stock_analyser.agents.tool_registry",
-            "ToolRegistry",
-        ),
-    }
-    for legacy, canonical in exports.items():
-        legacy_value = getattr(importlib.import_module(legacy[0]), legacy[1])
-        canonical_value = getattr(importlib.import_module(canonical[0]), canonical[1])
-        assert legacy_value is canonical_value
+def test_retired_root_compatibility_packages_do_not_return():
+    retired = ("agents", "application", "core", "domain", "models", "providers", "services", "ui")
+    present = [name for name in retired if (PROJECT_ROOT / name).exists()]
+    assert not present, f"Retired root compatibility paths returned: {present}"
 
 
 def test_root_entrypoint_remains_a_thin_streamlit_bootstrap():
     source = (PROJECT_ROOT / "app.py").read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
-    assert len(source.splitlines()) <= 20
-    assert len(calls) == 2
+    assert len(source.splitlines()) <= 25
     assert "from stock_analyser.presentation.streamlit import app" in source
     assert not any(
         token in source

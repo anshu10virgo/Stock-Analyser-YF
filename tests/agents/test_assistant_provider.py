@@ -6,22 +6,22 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import requests
 
-from models.assistant import AssistantMessage, AssistantRequest
-from services.assistant_actions import apply_action, propose_action
-from services.assistant_explanations import explain_stock_prompt
-from services.assistant_provider import (
+from stock_analyser.agents.actions import apply_action, propose_action
+from stock_analyser.agents.explanations import explain_stock_prompt
+from stock_analyser.agents.models import AssistantMessage, AssistantRequest
+from stock_analyser.agents.query_helpers import (
+    crossover_window,
+    market_condition_summary,
+    scan_summary,
+    stock_status,
+)
+from stock_analyser.agents.responses import local_response
+from stock_analyser.infrastructure.model_factory import (
     DisabledProvider,
     GeminiProvider,
     OpenAIProvider,
     build_provider,
     load_assistant_settings,
-)
-from services.assistant_responses import local_response
-from services.assistant_tools import (
-    crossover_window,
-    market_condition_summary,
-    scan_summary,
-    stock_status,
 )
 from stock_analyser.agents.execution_context import build_local_context
 from stock_analyser.agents.tools import build_local_tool_registry

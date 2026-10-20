@@ -11,18 +11,23 @@ from unittest.mock import patch
 import pandas as pd
 
 from stock_analyser.domain.markets import market_data_root, stock_key
-from models.scan_config import ScanConfig
-from services.backtest_service import BacktestService
-from services.data_source import SNAPSHOT_SOURCE, build_data_services
-from services.scan_service import ScanService
-from services.snapshot_publication import SnapshotPublisher, json_bytes, prepare_snapshot, retire_legacy_snapshot
-from services.storage_config import market_storage_prefix
-from scripts.refresh_cloud_market_data import stage_source_snapshot, run_daily_refresh
-from services.snapshot_storage import (
+from stock_analyser.application.backtesting_service import BacktestService
+from stock_analyser.application.scanning import ScanService
+from stock_analyser.domain.scanning.models import ScanConfig
+from stock_analyser.infrastructure.data_services import SNAPSHOT_SOURCE, build_data_services
+from stock_analyser.infrastructure.local.stock_universe import StockUniverse
+from stock_analyser.infrastructure.r2.config import market_storage_prefix
+from stock_analyser.infrastructure.r2.publication import (
+    SnapshotPublisher,
+    json_bytes,
+    prepare_snapshot,
+    retire_legacy_snapshot,
+)
+from stock_analyser.jobs.market_refresh import run_daily_refresh, stage_source_snapshot
+from stock_analyser.infrastructure.r2.storage import (
     CloudSnapshotStorage, LocalSnapshotStorage, ScopedSnapshotStorage,
     SnapshotStorageError, safe_relative_path,
 )
-from services.stock_universe import StockUniverse
 from tests.support.fake_storage import MemoryS3
 from tests.support.snapshot_fixtures import create_fixture, write_json
 
@@ -115,7 +120,10 @@ class CloudSnapshotTests(unittest.TestCase):
                 replacement.to_parquet(source_path, index=False)
             return read_parquet(path, *args, **kwargs)
 
-        with patch("services.snapshot_publication.pd.read_parquet", side_effect=concurrent_refresh):
+        with patch(
+            "stock_analyser.infrastructure.r2.publication.pd.read_parquet",
+            side_effect=concurrent_refresh,
+        ):
             _, catalog = prepare_snapshot(self.root, self.prepared)
         entries = catalog["files"]
         bulk = read_parquet(self.prepared / entries["market_data/prices.parquet"]["key"])
@@ -243,18 +251,21 @@ class CloudSnapshotTests(unittest.TestCase):
         configuration = {"bucket": "bucket", "prefix": "", "endpoint_url": "https://example.test"}
         before = dict(self.client.objects)
         command = Mock()
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", return_value=self.storage()), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client):
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", return_value=self.storage()), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client):
             result = run_daily_refresh(self.root, configuration, configuration, command)
         self.assertEqual(result["status"], "no_new_data")
         self.assertEqual(before, self.client.objects)
-        self.assertEqual([call.args[0][4] for call in command.call_args_list], ["incremental", "validate"])
+        self.assertEqual(
+            [call.args[0][call.args[0].index("--mode") + 1] for call in command.call_args_list],
+            ["incremental", "validate"],
+        )
 
     def test_daily_refresh_publishes_and_verifies_changed_snapshot(self):
         configuration = {"bucket": "bucket", "prefix": "", "endpoint_url": "https://example.test"}
 
         def execute(arguments, check):
-            if arguments[4] == "incremental":
+            if arguments[arguments.index("--mode") + 1] == "incremental":
                 path = Path(arguments[-1]) / "data/market_data/manifest.json"
                 value = json.loads(path.read_text())
                 value["generated_at"] = "new-refresh"
@@ -263,8 +274,8 @@ class CloudSnapshotTests(unittest.TestCase):
         def storage_for(settings, project_root):
             return self.storage(settings.get("snapshot_ids", {}).get("IN", ""))
 
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", side_effect=storage_for), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client):
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", side_effect=storage_for), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client):
             result = run_daily_refresh(self.root, configuration, configuration, execute)
         self.assertEqual(result["status"], "published")
         self.assertNotEqual(result["snapshot_id"], self.snapshot_id)
@@ -293,20 +304,24 @@ class CloudSnapshotTests(unittest.TestCase):
         configuration = {"bucket": "bucket", "prefix": "", "endpoint_url": "https://example.test"}
         before = dict(self.client.objects)
         command = Mock()
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", return_value=self.storage()), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client):
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", return_value=self.storage()), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client):
             result = run_daily_refresh(self.root, configuration, configuration, command, mode="validate")
         self.assertEqual(result["status"], "validated")
         self.assertEqual(before, self.client.objects)
-        self.assertEqual([call.args[0][4] for call in command.call_args_list], ["validate"])
+        self.assertEqual(
+            [call.args[0][call.args[0].index("--mode") + 1] for call in command.call_args_list],
+            ["validate"],
+        )
 
     def test_screener_refresh_updates_supporting_data_before_publication(self):
         configuration = {"bucket": "bucket", "prefix": "", "endpoint_url": "https://example.test"}
         operations = []
 
         def execute(arguments, check):
-            operations.append((Path(arguments[2]).name, arguments[4]))
-            if arguments[4] == "refresh":
+            mode = arguments[arguments.index("--mode") + 1]
+            operations.append((arguments[3], mode))
+            if mode == "refresh":
                 self.assertIn("--durable-checkpoint", arguments)
                 self.assertIn("--retry-failed", arguments)
                 self.assertEqual(arguments[arguments.index("--config-source") + 1], "github")
@@ -319,8 +334,8 @@ class CloudSnapshotTests(unittest.TestCase):
         def storage_for(settings, project_root):
             return self.storage(settings.get("snapshot_ids", {}).get("IN", ""))
 
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", side_effect=storage_for), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client):
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", side_effect=storage_for), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client):
             result = run_daily_refresh(self.root, configuration, configuration, execute,
                                        dataset="screener", config_source="github", retry_failed=True)
         self.assertEqual([mode for _, mode in operations], ["refresh", "validate", "fundamentals", "validate"])
@@ -330,8 +345,8 @@ class CloudSnapshotTests(unittest.TestCase):
     def test_empty_screener_refresh_cannot_publish(self):
         configuration = {"bucket": "bucket", "prefix": "", "endpoint_url": "https://example.test"}
         before = dict(self.client.objects)
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", return_value=self.storage()), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client), \
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", return_value=self.storage()), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client), \
              self.assertRaisesRegex(SnapshotStorageError, "coverage"):
             run_daily_refresh(self.root, configuration, configuration, lambda *args, **kwargs: None,
                               dataset="screener")
@@ -344,19 +359,19 @@ class CloudSnapshotTests(unittest.TestCase):
         def execute(arguments, check):
             staged = Path(arguments[-1])
             universe_path = staged / "data/stock_universe/manifest.json"
-            if arguments[2].endswith("refresh_stock_universe.py"):
+            if "stock_analyser.jobs.stock_universe_refresh" in arguments:
                 operations.append("universe")
                 universe = json.loads(universe_path.read_text())
                 universe["refreshed_at"] = "2026-10-17"
                 write_json(universe_path, universe)
             else:
-                operations.append(arguments[4])
+                operations.append(arguments[arguments.index("--mode") + 1])
 
         def storage_for(settings, project_root):
             return self.storage(settings.get("snapshot_ids", {}).get("IN", ""))
 
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", side_effect=storage_for), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client):
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", side_effect=storage_for), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client):
             result = run_daily_refresh(self.root, configuration, configuration, execute, refresh_universe=True)
         self.assertEqual(operations, ["universe", "incremental", "validate"])
         self.assertEqual(result["status"], "published")
@@ -368,8 +383,8 @@ class CloudSnapshotTests(unittest.TestCase):
 
         configuration = {"bucket": "bucket", "prefix": "", "endpoint_url": "https://example.test"}
         before = dict(self.client.objects)
-        with patch("scripts.refresh_cloud_market_data.configured_cloud_storage", return_value=self.storage()), \
-             patch("scripts.refresh_cloud_market_data.create_storage_client", return_value=self.client), \
+        with patch("stock_analyser.jobs.market_refresh.configured_cloud_storage", return_value=self.storage()), \
+             patch("stock_analyser.jobs.market_refresh.create_storage_client", return_value=self.client), \
              self.assertRaises(CalledProcessError):
             run_daily_refresh(self.root, configuration, configuration,
                               lambda *args, **kwargs: (_ for _ in ()).throw(CalledProcessError(1, "universe")),

@@ -9,7 +9,8 @@ calling Yahoo Finance. The application supports two explicit data sources:
 - **Cloud snapshot**: versioned R2 prices and fundamentals, without Yahoo fallback.
 - **Local snapshot**: an explicitly downloaded development copy, with Yahoo
   fallback when required local data is missing. Production datasets are ignored
-  by Git. Download them with `python scripts/cloud_snapshots.py download`.
+  by Git. Download them with
+  `python -m stock_analyser.jobs.maintenance.cloud_snapshots download`.
 
 Snapshot age does not trigger a live request. Its date is shown in the app and
 updated by scheduled maintenance.
@@ -59,11 +60,11 @@ by the selected-stock valuation chart.
 ## Commands
 
 ```powershell
-python scripts/refresh_market_data.py --mode full
-python scripts/refresh_market_data.py --mode incremental
-python scripts/refresh_market_data.py --mode classifications
-python scripts/refresh_market_data.py --mode optimize
-python scripts/refresh_market_data.py --mode validate
+python -m stock_analyser.jobs._market_snapshot_refresh --mode full
+python -m stock_analyser.jobs._market_snapshot_refresh --mode incremental
+python -m stock_analyser.jobs._market_snapshot_refresh --mode classifications
+python -m stock_analyser.jobs._market_snapshot_refresh --mode optimize
+python -m stock_analyser.jobs._market_snapshot_refresh --mode validate
 python -m stock_analyser.jobs.screener_refresh --mode refresh
 python -m stock_analyser.jobs.screener_refresh --mode validate
 ```

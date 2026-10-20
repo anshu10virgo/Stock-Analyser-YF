@@ -6,7 +6,7 @@ from copy import deepcopy
 
 import streamlit as st
 
-from models.optional_filter import (
+from stock_analyser.domain.scanning.models import (
     DEBT_TO_EQUITY,
     EPS_GROWTH,
     HISTORICAL_STOCK_PE,

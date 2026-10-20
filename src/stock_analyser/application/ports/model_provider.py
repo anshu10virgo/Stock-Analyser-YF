@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from models.assistant import AssistantRequest
+from stock_analyser.agents.models import AssistantRequest
 from stock_analyser.agents.contracts import ToolCall, ToolDefinition
 
 

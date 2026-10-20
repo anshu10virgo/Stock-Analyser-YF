@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from scripts import refresh_market_data
+from stock_analyser.jobs import _market_snapshot_refresh as refresh_market_data
 
 
 class FakeClassificationProvider:

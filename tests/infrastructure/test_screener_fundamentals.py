@@ -10,13 +10,13 @@ from unittest.mock import Mock
 
 import pandas as pd
 
-from providers.repository_data import RepositoryScreenerProvider
+from stock_analyser.infrastructure.r2.repository import RepositoryScreenerProvider
 from stock_analyser.infrastructure.screener.provider import (
     HISTORY_COLUMNS,
     ScreenerFundamentalsProvider,
     _cagr,
 )
-from scripts import refresh_screener_fundamentals
+from stock_analyser.jobs import screener_refresh as refresh_screener_fundamentals
 from stock_analyser.presentation.streamlit.components.stock_detail import build_pe_eps_figure, filter_valuation_history
 from tests.support.fake_screener import FakeProvider, InterruptingProvider
 

@@ -9,10 +9,9 @@ from types import SimpleNamespace
 
 import pandas as pd
 
-from models.assistant_action import AssistantAction
-from models.backtest import BacktestRun, BacktestSignal
-from models.scan_config import ScanConfig
-from models.scan_run import ScanRun
+from stock_analyser.agents.action_models import AssistantAction
+from stock_analyser.domain.backtesting import BacktestRun, BacktestSignal
+from stock_analyser.domain.scanning.models import ScanConfig, ScanRun
 from stock_analyser.application.commands.run_backtest import (
     RunBacktest,
     RunBacktestCommand,

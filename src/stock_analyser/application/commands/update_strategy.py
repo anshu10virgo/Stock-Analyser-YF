@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, MutableMapping
 from copy import deepcopy
 
-from models.assistant_action import AssistantAction
+from stock_analyser.agents.action_models import AssistantAction
 from stock_analyser.domain.scanning.models import ScanConfig
 
 

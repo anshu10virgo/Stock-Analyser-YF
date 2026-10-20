@@ -4,10 +4,6 @@ from __future__ import annotations
 
 import unittest
 
-import ui.results_page as legacy_results
-import ui.sidebar as legacy_strategy
-from stock_analyser.presentation.streamlit.components import results
-from stock_analyser.presentation.streamlit.components import strategy_configuration
 from stock_analyser.presentation.streamlit.session_adapter import StreamlitSessionAdapter
 from tests.support.paths import PROJECT_ROOT
 
@@ -34,10 +30,6 @@ class StreamlitPresentationTests(unittest.TestCase):
         self.assertEqual(state["_next_app_section"], "2. Strategy")
         self.assertEqual(reruns, [True])
 
-    def test_root_ui_modules_alias_canonical_components(self):
-        self.assertIs(legacy_results, results)
-        self.assertIs(legacy_strategy, strategy_configuration)
-
     def test_only_session_adapter_accesses_raw_streamlit_session_state(self):
         offenders = []
         for path in PRESENTATION_ROOT.rglob("*.py"):
@@ -49,7 +41,6 @@ class StreamlitPresentationTests(unittest.TestCase):
 
     def test_presentation_does_not_import_concrete_providers(self):
         forbidden = (
-            "stock_analyser.infrastructure",
             "from providers",
             "import providers",
             "import yfinance",

@@ -2,8 +2,12 @@
 
 import streamlit as st
 
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, snapshot_source_label
-from services import storage_config
+from stock_analyser.infrastructure.data_services import (
+    LIVE_SOURCE,
+    SNAPSHOT_SOURCE,
+    snapshot_source_label,
+)
+from stock_analyser.infrastructure.r2 import config as storage_config
 from stock_analyser import PROJECT_ROOT
 from stock_analyser.presentation.streamlit.components.strategy_configuration import render_scan_configuration
 from stock_analyser.presentation.streamlit.configuration import build_scan_config

@@ -4,7 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from services.data_source import build_data_services
+from stock_analyser.infrastructure.data_services import build_data_services
 from stock_analyser import PROJECT_ROOT
 from stock_analyser.application.commands.run_scan import RunScanCommand
 from stock_analyser.application.workflows.scan_workflow import ScanWorkflow

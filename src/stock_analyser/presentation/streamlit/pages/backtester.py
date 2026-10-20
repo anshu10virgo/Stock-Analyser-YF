@@ -6,10 +6,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from services.data_source import LIVE_SOURCE, build_data_services
-from services.stock_universe import StockUniverse
-from services.snapshot_storage import ScopedSnapshotStorage
-from services import storage_config
+from stock_analyser.infrastructure.data_services import LIVE_SOURCE, build_data_services
+from stock_analyser.infrastructure.local.stock_universe import StockUniverse
+from stock_analyser.infrastructure.r2 import config as storage_config
+from stock_analyser.infrastructure.r2.storage import ScopedSnapshotStorage
 from stock_analyser.application.commands.run_backtest import RunBacktestCommand
 from stock_analyser.application.workflows.backtest_workflow import BacktestWorkflow
 from stock_analyser.domain.backtesting import summarize_returns

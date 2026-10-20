@@ -3,9 +3,9 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from models.backtest import HORIZON_SESSIONS
-from models.scan_config import ScanConfig
-from services.backtest_service import BacktestService
+from stock_analyser.application.backtesting_service import BacktestService
+from stock_analyser.domain.backtesting import HORIZON_SESSIONS
+from stock_analyser.domain.scanning.models import ScanConfig
 
 
 class BacktestServiceTests(unittest.TestCase):

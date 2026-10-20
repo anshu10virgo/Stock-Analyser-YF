@@ -1,7 +1,7 @@
-"""Scheduled and manually invoked operational entrypoints.
+"""Scheduled, maintenance, migration, and diagnostic entrypoints.
 
-GitHub Actions invokes these modules with ``python -m``.  Root ``scripts/``
-launchers remain temporary compatibility paths for local operators.
+Production and operator commands are packaged and invoked with ``python -m``.
+Manual regression and smoke utilities live under ``tests/manual``.
 """
 
 __all__ = [
@@ -9,4 +9,5 @@ __all__ = [
     "screener_refresh",
     "storage_housekeeping",
     "refresh_alert",
+    "stock_universe_refresh",
 ]

@@ -8,12 +8,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from core.fundamentals import Fundamentals
-from providers.repository_data import RepositoryHistoryProvider as LegacyRepositoryHistory
-from providers.screener import ScreenerFundamentalsProvider as LegacyScreener
-from providers.yahoo_finance import YahooFinanceHistoryProvider as LegacyYahooHistory
-from services.industry_valuation import IndustryValuationService
-from services.snapshot_storage import LocalSnapshotStorage as LegacyLocalStorage
 from stock_analyser.application.commands.send_report import SendReport, SendReportCommand
 from stock_analyser.application.ports import (
     FundamentalsPort,
@@ -28,7 +22,6 @@ from stock_analyser.infrastructure.r2.repository import (
     RepositoryScreenerProvider,
 )
 from stock_analyser.infrastructure.r2.storage import LocalSnapshotStorage
-from stock_analyser.infrastructure.screener.provider import ScreenerFundamentalsProvider
 from stock_analyser.infrastructure.smtp.mailer import MailConfiguration, SmtpMailer
 from stock_analyser.infrastructure.yahoo.fundamentals import YahooFundamentalsProvider
 from stock_analyser.infrastructure.yahoo.industry_valuation import (
@@ -57,14 +50,6 @@ class InfrastructureAdapterTests(unittest.TestCase):
                 SmtpMailer(MailConfiguration("sender@example.com", "secret")),
                 MailerPort,
             )
-
-    def test_legacy_imports_reexport_canonical_adapters(self):
-        self.assertIs(LegacyYahooHistory, YahooFinanceHistoryProvider)
-        self.assertIs(LegacyRepositoryHistory, RepositoryHistoryProvider)
-        self.assertIs(LegacyScreener, ScreenerFundamentalsProvider)
-        self.assertIs(Fundamentals, YahooFundamentalsProvider)
-        self.assertIs(IndustryValuationService, YahooIndustryValuationService)
-        self.assertIs(LegacyLocalStorage, LocalSnapshotStorage)
 
     @patch("stock_analyser.infrastructure.smtp.mailer.smtplib.SMTP_SSL")
     def test_report_command_delivers_through_smtp_port(self, smtp_ssl):

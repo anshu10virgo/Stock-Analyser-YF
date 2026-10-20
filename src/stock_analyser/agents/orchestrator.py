@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from models.assistant import AssistantMessage, AssistantRequest
+from stock_analyser.agents.models import AssistantMessage, AssistantRequest
 from stock_analyser.agents.contracts import ToolCall, ToolResult, ToolStatus
 from stock_analyser.agents.execution_context import (
     ExecutionContext,

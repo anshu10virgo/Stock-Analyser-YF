@@ -7,9 +7,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from models.backtest import BacktestSignal as LegacyBacktestSignal
 from stock_analyser.domain.backtesting import (
-    BacktestSignal,
     forward_returns,
     summarize_returns,
     valuation_at,
@@ -28,9 +26,6 @@ from stock_analyser.domain.reporting import (
 
 
 class BacktestingDomainTests(unittest.TestCase):
-    def test_legacy_model_is_canonical_domain_model(self):
-        self.assertIs(LegacyBacktestSignal, BacktestSignal)
-
     def test_forward_returns_and_cross_age_preserve_existing_rules(self):
         history = pd.DataFrame(
             {"Close": [90.0, 100.0, 105.0, 106.0, 107.0, 108.0, 110.0]}

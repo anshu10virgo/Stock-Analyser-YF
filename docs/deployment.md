@@ -49,7 +49,7 @@ fixtures and verifies a clean checkout contains no production `data/` directory.
 | Workflow | Schedule (IST) | Destination |
 |---|---|---|
 | Refresh R2 market data | Weekdays 18:00 | R2, only when data changes |
-| Refresh R2 Screener fundamentals | Second day of each month 03:30 | R2 |
+| Refresh R2 Screener fundamentals | Days 1 and 2 monthly at 03:30 | R2 |
 | R2 storage housekeeping | Sundays 06:45 | Report only; scheduled runs never delete |
 
 Refresh and housekeeping jobs share `r2-data-refresh` concurrency and read-only
@@ -70,8 +70,8 @@ python -u -m stock_analyser.jobs.market_refresh --dataset screener --mode refres
 # Rebuild the stock universe and synchronize supporting market data.
 python -u -m stock_analyser.jobs.market_refresh --refresh-universe
 # Inspect physical R2 folders or verify the active snapshot.
-python scripts/cloud_snapshots.py inventory --market IN
-python scripts/cloud_snapshots.py verify --market IN
+python -m stock_analyser.jobs.maintenance.cloud_snapshots inventory --market IN
+python -m stock_analyser.jobs.maintenance.cloud_snapshots verify --market IN
 ```
 
 Refreshes start from the active R2 snapshot in isolated ignored staging. New
@@ -87,7 +87,7 @@ snapshot against that run's staging root, pinning the reported snapshot version
 if another refresh could complete concurrently:
 
 ```powershell
-python scripts/verify_cloud_results.py --data-root <run-staging-root> --snapshot-id <published-id> --app
+python tests/manual/regression/verify_cloud_results.py --data-root <run-staging-root> --snapshot-id <published-id> --app
 ```
 
 The comparison checks the complete universe and sampled prices, fundamentals,
@@ -227,7 +227,7 @@ latency. The preparation command reports the resulting package size.
 
 ## Publication and reading
 
-1. Refresh and validate local source data using the existing maintenance scripts.
+1. Refresh and validate local source data using the packaged maintenance jobs.
 2. Prepare the package locally and validate source file hashes. Windows line
    endings are normalized only if that reproduces the exact manifest hash.
 3. Upload new immutable objects, validating size/hash metadata before activation.
@@ -253,7 +253,7 @@ To activate a retained snapshot, verify it remotely and conditionally replace
 the active pointer using local publisher credentials:
 
 ```powershell
-python scripts/cloud_snapshots.py restore --market IN --snapshot-id <retained-id>
+python -m stock_analyser.jobs.maintenance.cloud_snapshots restore --market IN --snapshot-id <retained-id>
 ```
 
 Alternatively, pin `[storage.snapshot_ids]` with an `IN` or `US` snapshot ID in
@@ -265,7 +265,7 @@ For local development, download the complete current snapshot using read-only
 Streamlit Secrets before selecting `provider = "local"`:
 
 ```powershell
-python scripts/cloud_snapshots.py download
+python -m stock_analyser.jobs.maintenance.cloud_snapshots download
 ```
 
 Downloads verify hashes and refuse to overwrite differing local files unless
@@ -275,10 +275,10 @@ are ignored by Git.
 For deliberate publication of locally maintained India source data:
 
 ```powershell
-python scripts/cloud_snapshots.py prepare --market IN
-python scripts/cloud_snapshots.py publish --market IN --snapshot-id <prepared-id>
-python scripts/cloud_snapshots.py verify --market IN --snapshot-id <prepared-id>
-python scripts/verify_cloud_results.py --snapshot-id <prepared-id> --app
+python -m stock_analyser.jobs.maintenance.cloud_snapshots prepare --market IN
+python -m stock_analyser.jobs.maintenance.cloud_snapshots publish --market IN --snapshot-id <prepared-id>
+python -m stock_analyser.jobs.maintenance.cloud_snapshots verify --market IN --snapshot-id <prepared-id>
+python tests/manual/regression/verify_cloud_results.py --snapshot-id <prepared-id> --app
 ```
 
 Use the ID printed by `prepare`.

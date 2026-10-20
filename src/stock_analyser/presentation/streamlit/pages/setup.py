@@ -2,11 +2,19 @@
 
 import streamlit as st
 
-from core.data_loader import DataLoader
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services, snapshot_source_label
-from services.snapshot_storage import ScopedSnapshotStorage, SnapshotStorageError
-from services.stock_universe import StockUniverse
-from services import storage_config
+from stock_analyser.infrastructure.data_services import (
+    LIVE_SOURCE,
+    SNAPSHOT_SOURCE,
+    build_data_services,
+    snapshot_source_label,
+)
+from stock_analyser.infrastructure.local.data_loader import DataLoader
+from stock_analyser.infrastructure.local.stock_universe import StockUniverse
+from stock_analyser.infrastructure.r2 import config as storage_config
+from stock_analyser.infrastructure.r2.storage import (
+    ScopedSnapshotStorage,
+    SnapshotStorageError,
+)
 from stock_analyser import PROJECT_ROOT
 from stock_analyser.presentation.streamlit.navigation import (
     MARKET_DATA_SESSION_KEY,

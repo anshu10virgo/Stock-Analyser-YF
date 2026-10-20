@@ -2,25 +2,11 @@
 
 from __future__ import annotations
 
-import importlib
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from stock_analyser.jobs import market_refresh, storage_housekeeping
 from tests.support.paths import PROJECT_ROOT
-
-
-def test_legacy_job_modules_alias_canonical_implementations():
-    aliases = {
-        "scripts.refresh_cloud_market_data": "stock_analyser.jobs.market_refresh",
-        "scripts.refresh_market_data": "stock_analyser.jobs._market_snapshot_refresh",
-        "scripts.refresh_screener_fundamentals": "stock_analyser.jobs.screener_refresh",
-        "scripts.storage_housekeeping": "stock_analyser.jobs.storage_housekeeping",
-        "scripts.send_refresh_failure_email": "stock_analyser.jobs.refresh_alert",
-    }
-
-    for legacy_name, canonical_name in aliases.items():
-        assert importlib.import_module(legacy_name) is importlib.import_module(canonical_name)
 
 
 def test_github_actions_invoke_only_packaged_operational_jobs():
@@ -120,16 +106,5 @@ def test_housekeeping_dry_run_never_calls_mutating_adapters(tmp_path):
     write_report.assert_called_once()
 
 
-def test_legacy_launchers_remain_thin_compatibility_files():
-    names = (
-        "refresh_cloud_market_data.py",
-        "refresh_market_data.py",
-        "refresh_screener_fundamentals.py",
-        "storage_housekeeping.py",
-        "send_refresh_failure_email.py",
-    )
-
-    for name in names:
-        lines = (PROJECT_ROOT / "scripts" / name).read_text(encoding="utf-8").splitlines()
-        assert len(lines) <= 20
-        assert "stock_analyser.jobs" in "\n".join(lines)
+def test_root_scripts_directory_is_retired():
+    assert not (PROJECT_ROOT / "scripts").exists()

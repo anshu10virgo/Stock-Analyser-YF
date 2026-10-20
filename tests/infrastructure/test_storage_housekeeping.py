@@ -9,14 +9,20 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from services.cache_housekeeping import cache_cleanup_plan, apply_cache_cleanup
-from services.snapshot_publication import json_bytes
-from services.snapshot_storage import SnapshotStorageError, dataset_object_key
-from services.storage_housekeeping import retention_plan, apply_retention
-from services.storage_lease import StorageLease
+from stock_analyser.infrastructure.r2.cache_housekeeping import (
+    apply_cache_cleanup,
+    cache_cleanup_plan,
+)
+from stock_analyser.infrastructure.r2.housekeeping import apply_retention, retention_plan
+from stock_analyser.infrastructure.r2.lease import StorageLease
+from stock_analyser.infrastructure.r2.publication import json_bytes
+from stock_analyser.infrastructure.r2.storage import (
+    SnapshotStorageError,
+    dataset_object_key,
+)
 from tests.support.fake_storage import MemoryS3
 from tests.support.paths import PROJECT_ROOT
-from scripts.storage_housekeeping import workflow_write_audit
+from stock_analyser.jobs.storage_housekeeping import workflow_write_audit
 
 
 NOW = datetime(2026, 10, 17, tzinfo=timezone.utc)
@@ -249,6 +255,9 @@ class CacheCleanupTests(unittest.TestCase):
             cache_cleanup_plan(self.root, self.root.parent, self.catalog, self.policy, NOW)
 
     def test_linked_cache_root_is_refused(self):
-        with patch("services.cache_housekeeping._linked", return_value=True):
+        with patch(
+            "stock_analyser.infrastructure.r2.cache_housekeeping._linked",
+            return_value=True,
+        ):
             with self.assertRaisesRegex(SnapshotStorageError, "link or junction"):
                 self.plan()

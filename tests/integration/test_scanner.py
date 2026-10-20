@@ -10,16 +10,18 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from core.data_loader import DataLoader
-from core.golden_cross import GoldenCrossDetector
-from core.indicators import Indicators
-from core.scoring import ScoringEngine
-from models.optional_filter import OptionalFilterConfig, RETURN_ON_EQUITY
-from models.scan_config import ScanConfig
-from providers.yahoo_finance import YahooFinanceHistoryProvider
-from scripts.refresh_stock_universe import build_candidates, rank_by_market_cap
-from services.scan_service import ScanService
-from services.stock_universe import StockUniverse
+from stock_analyser.application.scanning import ScanService
+from stock_analyser.domain.scanning.indicators import GoldenCrossDetector, Indicators
+from stock_analyser.domain.scanning.models import (
+    RETURN_ON_EQUITY,
+    OptionalFilterConfig,
+    ScanConfig,
+)
+from stock_analyser.domain.scanning.scoring import ScoringEngine
+from stock_analyser.infrastructure.local.data_loader import DataLoader
+from stock_analyser.infrastructure.local.stock_universe import StockUniverse
+from stock_analyser.infrastructure.yahoo.providers import YahooFinanceHistoryProvider
+from stock_analyser.jobs.stock_universe_refresh import build_candidates, rank_by_market_cap
 
 
 class StaticFundamentals:
@@ -125,6 +127,7 @@ class StockScannerTests(unittest.TestCase):
         ):
             return ScanService(
                 self._config(**config_overrides),
+                data_provider=DataLoader,
                 fundamentals_provider=StaticFundamentals,
                 industry_valuation_service=StaticIndustryValuation(),
                 screener_provider=screener_provider,
@@ -379,7 +382,13 @@ class StockScannerTests(unittest.TestCase):
     def test_batch_download_failure_is_reported_for_every_symbol(self):
         """Provider outages must become visible structured failures."""
         with patch.object(DataLoader, "download_batch", side_effect=RuntimeError):
-            result = ScanService(self._config()).scan(["ONE.NS", "TWO.NS"])
+            result = ScanService(
+                self._config(),
+                DataLoader,
+                StaticFundamentals,
+                StaticIndustryValuation,
+                StaticScreener(),
+            ).scan(["ONE.NS", "TWO.NS"])
 
         frames = result.as_dataframes()
         self.assertTrue(frames["passed"].empty)

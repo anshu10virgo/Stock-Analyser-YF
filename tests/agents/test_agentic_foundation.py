@@ -7,10 +7,6 @@ from json import loads
 
 import pandas as pd
 
-from agents.audit import InMemoryAuditLog as LegacyAuditLog
-from agents.registry import ToolRegistry as LegacyToolRegistry
-from application.assistant_runtime import AssistantRuntime as LegacyAssistantRuntime
-from services.assistant_context import build_local_context as legacy_local_context
 from stock_analyser.agents.audit_log import InMemoryAuditLog, sanitized_arguments
 from stock_analyser.agents.contracts import (
     ApprovalLevel,
@@ -73,12 +69,6 @@ class AgenticFoundationTests(unittest.TestCase):
         self.assertNotIn("ticksy_pending_action", context.as_mapping())
         context.get("scan_results").loc[0, "symbol"] = "CHANGED.NS"
         self.assertEqual(self.state["scan_results"].loc[0, "symbol"], "TCS.NS")
-
-    def test_legacy_agent_paths_are_compatibility_exports(self):
-        self.assertIs(LegacyAuditLog, InMemoryAuditLog)
-        self.assertIs(LegacyToolRegistry, ToolRegistry)
-        self.assertIs(LegacyAssistantRuntime, AssistantRuntime)
-        self.assertIs(legacy_local_context, build_local_context)
 
     def test_provider_context_is_built_from_the_bounded_snapshot(self):
         content = build_local_context(self.state, "TCS")

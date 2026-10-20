@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from scripts.send_refresh_failure_email import build_message, send_failure_email
+from stock_analyser.jobs.refresh_alert import build_message, send_failure_email
 
 
 class RefreshFailureEmailTests(unittest.TestCase):

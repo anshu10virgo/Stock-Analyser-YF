@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.data_loader import DataLoader
+from stock_analyser.infrastructure.local.data_loader import DataLoader
 from stock_analyser.infrastructure.screener.provider import (
     HISTORY_COLUMNS,
     SUMMARY_COLUMNS,
@@ -22,9 +22,12 @@ from stock_analyser.infrastructure.screener.provider import (
     ScreenerUnavailableError,
     ScreenerFundamentalsProvider,
 )
-from services.stock_universe import StockUniverse
-from services.screener_checkpoint import ScreenerCheckpointStore, checkpoint_identity
-from services.refresh_config import load_refresh_configuration
+from stock_analyser.infrastructure.local.stock_universe import StockUniverse
+from stock_analyser.infrastructure.r2.refresh_config import load_refresh_configuration
+from stock_analyser.infrastructure.screener.checkpoint import (
+    ScreenerCheckpointStore,
+    checkpoint_identity,
+)
 from stock_analyser.infrastructure.r2.config import (
     create_storage_client,
     market_storage_prefix,
