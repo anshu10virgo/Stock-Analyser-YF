@@ -102,12 +102,12 @@ src/stock_analyser/
         pages/                      Setup, Strategy, Live Scan, Results, and Backtester
         components/                 Theme, filters, insights, charts, reports, and Ticksy
         session_adapter.py          Only raw Streamlit session-state boundary
-    jobs/                           Future packaged operational entrypoints
+    jobs/                           Packaged refresh, housekeeping, and alert entrypoints
 stock_analyser/                     Temporary source-checkout package shim
 application/, agents/               Temporary compatibility exports
 core/, models/                      Temporary compatibility imports
 providers/, services/, ui/         Compatibility exports and temporary orchestration
-scripts/                            Existing operational entrypoints
+scripts/                            Temporary job launchers and focused maintenance tools
 tests/                              Regression and boundary tests
 ```
 
@@ -123,6 +123,11 @@ tools. Root `agents/`, `application/assistant_runtime.py`, and
 Streamlit composition root now dispatches focused page controllers, reusable
 components, and a single session adapter; root `ui/` modules alias those
 canonical modules for temporary import compatibility.
+Scheduled market refresh, Screener refresh, storage housekeeping, and failure
+notification now run from `stock_analyser.jobs`. These entrypoints sequence work
+through the application refresh workflow and accept injected infrastructure
+collaborators. GitHub Actions uses `python -m stock_analyser.jobs...`; matching
+root scripts remain thin compatibility launchers during rollout.
 Market identity, currency, timezone, stock keys, and market-specific dataset
 locations are canonical under `stock_analyser.domain.markets`;
 `models/market.py` is now a compatibility export. Reusable fundamental
@@ -254,19 +259,34 @@ snapshot before this compatibility layer is retired.
   Backtester action proposals.
 - `models/assistant.py` and `models/assistant_action.py`: typed conversation,
   configuration, request, and proposed-action contracts.
-- `scripts/refresh_market_data.py`: full backfill, incremental append, universe
-  reconciliation, symbol-grouped Parquet optimization, semiannual
+- `src/stock_analyser/jobs/_market_snapshot_refresh.py`: full backfill,
+  incremental append, universe reconciliation, symbol-grouped Parquet
+  optimization, semiannual
   classifications, industry P/E calculation, coverage reporting, and atomic
   manifest updates. It calculates backend-only PEG from refreshed Yahoo P/E
   and committed Screener 3-year profit growth.
-- `.github/workflows/refresh-market-data.yml`: scheduled and manual snapshot
-  validation and auto-commit workflow, with failure email notification through
-  repository-managed Gmail SMTP secrets.
-- `scripts/refresh_screener_fundamentals.py`: one throttled, resumable,
+- `.github/workflows/refresh-market-data.yml`: scheduled and manual R2 snapshot
+  validation and atomic-publication workflow, with failure email notification
+  through repository-managed Gmail SMTP secrets.
+- `src/stock_analyser/jobs/screener_refresh.py`: one throttled, resumable,
   batch-checkpointed refresh for every Screener-derived field and chart
-  observation. It publishes versioned files through an atomic manifest.
+  observation. It publishes versioned files through an atomic manifest and can
+  restore the completed checkpoint for a failed-record-only next-day retry.
 - `.github/workflows/refresh-screener-fundamentals.yml`: monthly/manual
   Screener refresh, validation, commit, and failure-alert workflow.
+- `src/stock_analyser/jobs/market_refresh.py`: scheduled R2 staging,
+  validation, no-change detection, atomic publication, and post-publication
+  verification for market and Screener datasets.
+- `src/stock_analyser/jobs/storage_housekeeping.py`: plan-first R2 retention
+  and local-cache cleanup; applying a change still requires an exact reviewed
+  plan ID.
+- `src/stock_analyser/jobs/refresh_alert.py`: authenticated SMTP failure-alert
+  entrypoint with credentials supplied only by deployment secrets.
+- `scripts/refresh_cloud_market_data.py`, `scripts/refresh_market_data.py`,
+  `scripts/refresh_screener_fundamentals.py`,
+  `scripts/storage_housekeeping.py`, and
+  `scripts/send_refresh_failure_email.py`: thin compatibility launchers for
+  existing local commands; they contain no operational behavior.
 - `core/data_loader.py`: symbol-universe loading and batch price retrieval.
 - `core/scanner.py`: compatibility facade for legacy callers.
 - Technical-analysis modules: indicators, Golden Cross, Short/Long-MA

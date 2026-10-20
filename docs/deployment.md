@@ -64,11 +64,11 @@ maintenance using configured Secrets:
 
 ```powershell
 # Normal daily refresh: retain Screener and universe data.
-python -u scripts/refresh_cloud_market_data.py
+python -u -m stock_analyser.jobs.market_refresh
 # Refresh Screener and supporting fundamentals.
-python -u scripts/refresh_cloud_market_data.py --dataset screener --mode refresh
+python -u -m stock_analyser.jobs.market_refresh --dataset screener --mode refresh
 # Rebuild the stock universe and synchronize supporting market data.
-python -u scripts/refresh_cloud_market_data.py --refresh-universe
+python -u -m stock_analyser.jobs.market_refresh --refresh-universe
 # Inspect physical R2 folders or verify the active snapshot.
 python scripts/cloud_snapshots.py inventory --market IN
 python scripts/cloud_snapshots.py verify --market IN
@@ -103,11 +103,18 @@ checkpoint, skips completed batches, and continues pending stocks. Progress logs
 show separate processed, successful, and failed counts. An interrupted batch may
 be fetched again; a completed durable batch is reused.
 
+The scheduled primary run starts at `0 22 1 * *` UTC. A second run at
+`0 22 2 * *` UTC automatically enables failed-record retry. If the primary run
+stopped midway, the retry resumes its current durable checkpoint. If the primary
+run completed with individual record failures, the retry restores that completed
+checkpoint and requests only those failed symbols. Successful records are never
+re-fetched by the second run.
+
 To retry recorded failures as well as pending stocks while keeping successful
 records, dispatch with `retry_failed=true`, or run locally:
 
 ```powershell
-python -u scripts/refresh_cloud_market_data.py --dataset screener --mode refresh --retry-failed
+python -u -m stock_analyser.jobs.market_refresh --dataset screener --mode refresh --retry-failed
 ```
 
 Each symbol is attempted at most once per invocation. New attempts replace older
@@ -290,9 +297,9 @@ Review `.snapshot-cache/housekeeping-report.json` or the GitHub Actions artifact
 
 ```powershell
 # Preview only; this does not delete files.
-python scripts/storage_housekeeping.py
+python -m stock_analyser.jobs.storage_housekeeping
 # Apply only the exact cloud plan already reviewed.
-python scripts/storage_housekeeping.py --apply-cloud-plan <reviewed-cloud-plan-id>
+python -m stock_analyser.jobs.storage_housekeeping --apply-cloud-plan <reviewed-cloud-plan-id>
 ```
 
 Scheduled runs never delete data. Apply recomputes the plan under the same lease
@@ -304,7 +311,7 @@ For local cache cleanup, stop the local app and refresh processes, then apply
 the reviewed cache plan:
 
 ```powershell
-python scripts/storage_housekeeping.py --apply-cache-plan <reviewed-cache-plan-id> --offline
+python -m stock_analyser.jobs.storage_housekeeping --apply-cache-plan <reviewed-cache-plan-id> --offline
 ```
 
 Cleanup is restricted to eligible files within this project's `.snapshot-cache`;

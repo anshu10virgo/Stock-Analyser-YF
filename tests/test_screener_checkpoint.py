@@ -142,6 +142,88 @@ class DurableScreenerTests(unittest.TestCase):
             self.assertEqual(index["successful_symbol_count"], 3)
             self.assertEqual(index["failed_symbol_count"], 1)
 
+    def test_next_day_retry_restores_completed_run_and_fetches_only_failures(self):
+        client = MemoryS3()
+        symbols = ["A.NS", "B.NS", "C.NS"]
+        first_identity = checkpoint_identity(symbols, b"source-manifest")
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            provider = FakeProvider(failed={"B.NS"})
+            first = refresh(
+                symbols=symbols,
+                root=root,
+                provider=provider,
+                batch_size=1,
+                sleep_seconds=0,
+                checkpoint_store=ScreenerCheckpointStore(
+                    client, "bucket", "markets/IN", first_identity
+                ),
+            )
+            self.assertEqual(first["failed_symbol_count"], 1)
+            self.assertEqual(first["durable_checkpoint_id"], first_identity)
+
+            manifest_bytes = (root / "manifest.json").read_bytes()
+            next_identity = checkpoint_identity(symbols, manifest_bytes)
+            retry = FakeProvider()
+            second = refresh(
+                symbols=symbols,
+                root=root,
+                provider=retry,
+                batch_size=1,
+                sleep_seconds=0,
+                checkpoint_store=ScreenerCheckpointStore(
+                    client, "bucket", "markets/IN", next_identity
+                ),
+                fallback_checkpoint_store=ScreenerCheckpointStore(
+                    client, "bucket", "markets/IN", first_identity
+                ),
+                retry_failed=True,
+            )
+
+            self.assertEqual(retry.fetched, ["B.NS"])
+            self.assertEqual(second["successful_symbol_count"], 3)
+            self.assertEqual(second["failed_symbol_count"], 0)
+            self.assertEqual(second["durable_checkpoint_id"], first_identity)
+
+    def test_next_day_retry_is_noop_when_completed_run_has_no_failures(self):
+        client = MemoryS3()
+        symbols = ["A.NS", "B.NS"]
+        first_identity = checkpoint_identity(symbols, b"source-manifest")
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = refresh(
+                symbols=symbols,
+                root=root,
+                provider=FakeProvider(),
+                batch_size=1,
+                sleep_seconds=0,
+                checkpoint_store=ScreenerCheckpointStore(
+                    client, "bucket", "markets/IN", first_identity
+                ),
+            )
+            manifest_bytes = (root / "manifest.json").read_bytes()
+            next_identity = checkpoint_identity(symbols, manifest_bytes)
+            retry = FakeProvider()
+
+            second = refresh(
+                symbols=symbols,
+                root=root,
+                provider=retry,
+                batch_size=1,
+                sleep_seconds=0,
+                checkpoint_store=ScreenerCheckpointStore(
+                    client, "bucket", "markets/IN", next_identity
+                ),
+                fallback_checkpoint_store=ScreenerCheckpointStore(
+                    client, "bucket", "markets/IN", first_identity
+                ),
+                retry_failed=True,
+            )
+
+            self.assertEqual(retry.fetched, [])
+            self.assertEqual(second["generated_at"], first["generated_at"])
+            self.assertEqual((root / "manifest.json").read_bytes(), manifest_bytes)
+
     def test_interrupted_retry_keeps_recovered_successes_on_next_runner(self):
         client = MemoryS3()
         symbols = ["A.NS", "B.NS", "C.NS"]

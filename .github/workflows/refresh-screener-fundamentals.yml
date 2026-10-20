@@ -3,6 +3,7 @@ name: Refresh R2 Screener fundamentals
 on:
   schedule:
     - cron: "0 22 1 * *"
+    - cron: "0 22 2 * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -49,18 +50,22 @@ jobs:
         env:
           REFRESH_MODE: ${{ github.event.inputs.mode || 'refresh' }}
           RETRY_FAILED: ${{ github.event.inputs.retry_failed || 'false' }}
+          SCHEDULE_EXPRESSION: ${{ github.event.schedule }}
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
         run: |
           OPTIONS=()
+          if [ "$SCHEDULE_EXPRESSION" = "0 22 2 * *" ]; then
+            RETRY_FAILED=true
+          fi
           if [ "$RETRY_FAILED" = "true" ] && [ "$REFRESH_MODE" = "refresh" ]; then
             OPTIONS+=(--retry-failed)
           fi
-          python -u scripts/refresh_cloud_market_data.py --config-source github --dataset screener --mode "$REFRESH_MODE" "${OPTIONS[@]}"
+          python -u -m stock_analyser.jobs.market_refresh --config-source github --dataset screener --mode "$REFRESH_MODE" "${OPTIONS[@]}"
 
       - name: Report R2 storage usage
         env:
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
-        run: python scripts/storage_housekeeping.py --config-source github
+        run: python -m stock_analyser.jobs.storage_housekeeping --config-source github
 
       - name: Save refresh reports
         if: ${{ always() }}
@@ -82,4 +87,4 @@ jobs:
           REFRESH_SMTP_USERNAME: anshu10virgo@gmail.com
           REFRESH_SMTP_APP_PASSWORD: ${{ secrets.REFRESH_SMTP_APP_PASSWORD }}
           REFRESH_ALERT_RECIPIENT: anshu10virgo@gmail.com
-        run: python scripts/send_refresh_failure_email.py
+        run: python -m stock_analyser.jobs.refresh_alert
