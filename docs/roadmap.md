@@ -109,10 +109,10 @@ src/stock_analyser/
 | Packaged agents | Complete | Orchestration, execution context, contracts, registry, approvals, policies, audit, prompts, and focused tools are canonical under `src/stock_analyser/agents`. |
 | Packaged presentation | Complete | Setup, Strategy, Live Scan, Results, Backtester, Introduction, shared components, and the session adapter are canonical under `presentation/streamlit`; root `ui/` modules are compatibility aliases. |
 | Packaged jobs | Complete | Market refresh, Screener refresh, storage housekeeping, and failure alerts are canonical packaged entrypoints; GitHub Actions invokes them with `python -m`, while root scripts are compatibility launchers. |
-| Structured tests | Not started | Coverage exists and passes, but tests remain in one flat root directory. |
+| Structured tests | Complete | Tests mirror domain, application, agents, infrastructure, and integration boundaries; CI separates lint, unit, adapter, regression, presentation-smoke, and coverage gates. |
 | Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
 
-The structural migration is approximately 94% complete. This percentage
+The structural migration is approximately 97% complete. This percentage
 describes package placement and dependency direction, not product feature
 completion.
 
@@ -446,7 +446,7 @@ This sprint should be delivered as small sub-sprints, not one large move.
 
 ### Sprint I — Test Structure and Quality Gates
 
-**Status:** Planned once canonical package paths are stable.
+**Status:** Complete.
 
 #### Scope
 
@@ -460,6 +460,24 @@ This sprint should be delivered as small sub-sprints, not one large move.
 - Add coverage reporting and linting to CI with agreed thresholds.
 - Keep all CI tests deterministic and independent of live Yahoo, Screener,
   OpenAI, Gemini, SMTP, and R2 services.
+
+#### Delivered
+
+- Tests follow the package architecture, with reusable fixtures and fake
+  providers isolated under `tests/support` instead of imported between test
+  modules.
+- Executable architecture tests enforce domain, application, agent, thin-root,
+  and temporary compatibility-export boundaries.
+- GitHub Actions reports separate lint/boundary, unit, infrastructure,
+  scanner-regression, Streamlit-smoke, and full-suite coverage jobs.
+- Coverage is branch-aware and enforced at a conservative 70% package-wide
+  floor; Ruff checks syntax/import correctness and unused names.
+- The deterministic fixture regression runs on every pull request. The full
+  1,500-symbol immutable-snapshot parity command remains a deliberate local
+  release gate because production snapshots and credentials are excluded from
+  CI checkouts.
+- Local and hosted smoke-test procedures are documented in
+  `docs/testing.md`.
 
 #### Acceptance Criteria
 
@@ -523,8 +541,7 @@ A legacy path can be deleted only when:
 
 ## Immediate Execution Order
 
-1. Sprint I — test-directory migration and architecture quality gates.
-2. Sprint J — compatibility retirement and final cleanup.
+1. Sprint J — compatibility retirement and final cleanup.
 
 Product-feature work that materially touches these modules should either wait
 for the owning migration sprint or be implemented through the new canonical
@@ -903,12 +920,12 @@ measurement into optional trade and portfolio simulation.
 
 ## Partially delivered: Production Operations
 
-Delivered: offline test CI, refresh-failure email notifications, refresh/storage
-reports, guarded R2 publication, and documented snapshot rollback.
+Delivered: offline test CI, automated linting and coverage gates,
+refresh-failure email notifications, refresh/storage reports, guarded R2
+publication, and documented snapshot rollback.
 
 Remaining:
 
-- Add automated linting to CI.
 - Add ongoing deployment health checks and centralized error monitoring.
 - Standardize release tags, changelog entries, and application-code rollback.
 - Finish the R2 operational follow-up listed above.

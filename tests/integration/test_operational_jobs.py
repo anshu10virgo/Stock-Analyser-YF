@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import importlib
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from stock_analyser.jobs import market_refresh, storage_housekeeping
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from tests.support.paths import PROJECT_ROOT
 
 
 def test_legacy_job_modules_alias_canonical_implementations():

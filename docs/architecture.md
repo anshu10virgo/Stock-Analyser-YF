@@ -108,7 +108,13 @@ application/, agents/               Temporary compatibility exports
 core/, models/                      Temporary compatibility imports
 providers/, services/, ui/         Compatibility exports and temporary orchestration
 scripts/                            Temporary job launchers and focused maintenance tools
-tests/                              Regression and boundary tests
+tests/
+    domain/                         Pure rule and calculation tests
+    application/                    Command, query, workflow, and port tests
+    agents/                         Ticksy runtime and policy tests
+    infrastructure/                 Offline adapter and storage contracts
+    integration/                    Scanner, jobs, reporting, and Streamlit smoke tests
+    support/                        Shared deterministic fixtures and fakes
 ```
 
 The installable package uses the `src` layout declared in `pyproject.toml`.

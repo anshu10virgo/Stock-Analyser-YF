@@ -28,6 +28,10 @@ the downloaded copy. An existing differing local file is preserved unless
 `--overwrite` is explicitly supplied. Tests generate small temporary fixtures
 and require neither production data nor cloud credentials.
 
+For development and CI-equivalent test commands, coverage thresholds,
+1,500-symbol scanner parity, and the hosted release checklist, see
+[Testing and quality gates](docs/testing.md).
+
 ## Current capabilities
 
 - Guided desktop workflow with Setup, Strategy, Live Scan, Results, and
@@ -217,3 +221,4 @@ expansion never make a live Screener request.
 - [Committed market data](docs/market_data.md)
 - [Deployment and storage](docs/deployment.md): hosted setup, R2 structure,
   refreshes, recovery, and housekeeping.
+- [Testing and quality gates](docs/testing.md)

@@ -10,7 +10,8 @@ from streamlit.testing.v1 import AppTest
 from models.optional_filter import PEG_RATIO
 from services.data_source import SNAPSHOT_SOURCE
 from services.snapshot_storage import LocalSnapshotStorage
-from tests.snapshot_fixtures import create_fixture
+from tests.support.paths import PROJECT_ROOT
+from tests.support.snapshot_fixtures import create_fixture
 
 
 class AppSessionStateTests(unittest.TestCase):
@@ -32,7 +33,7 @@ class AppSessionStateTests(unittest.TestCase):
         storage = self.storage
         storage.cloud = True
         storage.snapshot_id = "test-snapshot"
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=20)
+        app = AppTest.from_file(str(PROJECT_ROOT / "app.py"), default_timeout=20)
         app.secrets["storage"] = {"provider": "r2"}
         app.secrets["GEMINI_API_KEY"] = ""
         app.secrets["OPENAI_API_KEY"] = ""
@@ -48,7 +49,7 @@ class AppSessionStateTests(unittest.TestCase):
 
     def _run_local_app(self):
         """Keep UI regressions independent of real cloud/model credentials."""
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=20)
+        app = AppTest.from_file(str(PROJECT_ROOT / "app.py"), default_timeout=20)
         app.secrets["storage"] = {"provider": "local"}
         app.secrets["GEMINI_API_KEY"] = ""
         app.secrets["OPENAI_API_KEY"] = ""
