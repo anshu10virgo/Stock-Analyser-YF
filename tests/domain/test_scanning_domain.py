@@ -7,38 +7,17 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from core.golden_cross import GoldenCrossDetector as LegacyGoldenCrossDetector
-from core.indicators import Indicators as LegacyIndicators
-from core.scoring import ScoringEngine as LegacyScoringEngine
-from core.slope_analyzer import SlopeAnalyzer as LegacySlopeAnalyzer
-from models.scan_config import ScanConfig as LegacyScanConfig
-from services.fundamental_filters import (
-    FundamentalFilterEvaluator as LegacyFilterEvaluator,
-)
 from stock_analyser.domain.scanning.impending_cross_rules import (
     evaluate_impending_cross,
 )
 from stock_analyser.domain.scanning.indicators import (
     GoldenCrossDetector,
-    Indicators,
-    SlopeAnalyzer,
 )
-from stock_analyser.domain.scanning.models import ScanConfig
-from stock_analyser.domain.scanning.optional_rules import FundamentalFilterEvaluator
 from stock_analyser.domain.scanning.post_cross_rules import evaluate_post_cross
 from stock_analyser.domain.scanning.reversal_rules import evaluate_long_ma_reversal
-from stock_analyser.domain.scanning.scoring import ScoringEngine
 
 
 class ScanningDomainTests(unittest.TestCase):
-    def test_legacy_imports_resolve_to_canonical_domain_types(self):
-        self.assertIs(LegacyScanConfig, ScanConfig)
-        self.assertIs(LegacyIndicators, Indicators)
-        self.assertIs(LegacySlopeAnalyzer, SlopeAnalyzer)
-        self.assertIs(LegacyGoldenCrossDetector, GoldenCrossDetector)
-        self.assertIs(LegacyScoringEngine, ScoringEngine)
-        self.assertIs(LegacyFilterEvaluator, FundamentalFilterEvaluator)
-
     def test_reversal_rule_returns_typed_high_trough_and_recovery(self):
         index = pd.bdate_range("2025-01-01", periods=12)
         history = pd.DataFrame(

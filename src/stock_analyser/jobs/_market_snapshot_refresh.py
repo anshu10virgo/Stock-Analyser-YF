@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.data_loader import DataLoader
+from stock_analyser.infrastructure.local.data_loader import DataLoader
 from stock_analyser.domain.fundamentals import (
     industry_valuation,
     peg_ratio,
@@ -21,7 +21,7 @@ from stock_analyser.infrastructure.yahoo.providers import (
     YahooFinanceHistoryProvider,
     YahooFinanceMarketCapProvider,
 )
-from services.stock_universe import StockUniverse
+from stock_analyser.infrastructure.local.stock_universe import StockUniverse
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
 
 

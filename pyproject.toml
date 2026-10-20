@@ -19,6 +19,7 @@ include = ["stock_analyser*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-ra --strict-markers"
 
 [tool.coverage.run]
@@ -39,4 +40,4 @@ extend-exclude = ["wireframe-work"]
 select = ["E4", "E7", "E9", "F"]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/*.py" = ["E402"]
+"tests/manual/**/*.py" = ["E402"]

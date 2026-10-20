@@ -3,7 +3,6 @@
 import unittest
 from pathlib import Path
 
-from models.market import MarketDefinition as LegacyMarketDefinition
 from stock_analyser.domain.fundamentals import (
     EvaluationStatus,
     FilterEvaluation,
@@ -17,7 +16,6 @@ from stock_analyser.domain.fundamentals import (
     price_to_earnings,
 )
 from stock_analyser.domain.markets import (
-    MarketDefinition,
     market_data_root,
     market_definition,
     stock_key,
@@ -29,9 +27,6 @@ from stock_analyser.domain.scanning.optional_rules import (
 
 
 class MarketDomainTests(unittest.TestCase):
-    def test_legacy_market_model_is_a_compatibility_export(self):
-        self.assertIs(LegacyMarketDefinition, MarketDefinition)
-
     def test_market_identity_and_dataset_roots_preserve_existing_contract(self):
         root = Path("project")
 

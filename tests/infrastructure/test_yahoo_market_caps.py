@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import patch
 
-from providers.yahoo_finance import YahooFinanceMarketCapProvider
+from stock_analyser.infrastructure.yahoo.providers import YahooFinanceMarketCapProvider
 from yfinance.exceptions import YFRateLimitError
 
 

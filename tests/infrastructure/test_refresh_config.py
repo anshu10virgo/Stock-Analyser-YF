@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from services.refresh_config import load_refresh_configuration
-from services.snapshot_storage import SnapshotStorageError
+from stock_analyser.infrastructure.r2.refresh_config import load_refresh_configuration
+from stock_analyser.infrastructure.r2.storage import SnapshotStorageError
 
 
 class RefreshConfigurationTests(unittest.TestCase):

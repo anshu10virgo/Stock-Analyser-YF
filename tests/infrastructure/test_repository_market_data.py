@@ -10,11 +10,11 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 
-from providers.repository_data import (
+from stock_analyser.infrastructure.r2.repository import (
     RepositoryFundamentalsProvider,
     RepositoryHistoryProvider,
 )
-from scripts import refresh_market_data
+from stock_analyser.jobs import _market_snapshot_refresh as refresh_market_data
 
 
 def price_rows(symbol="TEST.NS"):

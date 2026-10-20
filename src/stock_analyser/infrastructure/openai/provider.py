@@ -7,7 +7,7 @@ from collections.abc import Mapping
 
 import requests
 
-from models.assistant import AssistantRequest
+from stock_analyser.agents.models import AssistantRequest
 from stock_analyser.agents.contracts import ToolCall, ToolDefinition
 from stock_analyser.application.ports.model_provider import (
     ModelProviderResponseError,

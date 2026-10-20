@@ -6,17 +6,17 @@ import base64
 
 import streamlit as st
 
-from models.assistant import AssistantMessage
-from models.assistant_action import AssistantAction
-from services.assistant_actions import propose_action
+from stock_analyser.agents.action_models import AssistantAction
+from stock_analyser.agents.actions import propose_action
+from stock_analyser.agents.models import AssistantMessage
 from stock_analyser.application.commands.update_strategy import apply_action
-from services.assistant_explanations import explain_stock_prompt
-from services.assistant_provider import (
+from stock_analyser.agents.explanations import explain_stock_prompt
+from stock_analyser.infrastructure.model_factory import (
     DisabledProvider,
     build_provider,
     load_assistant_settings,
 )
-from services.assistant_responses import local_response
+from stock_analyser.agents.responses import local_response
 from stock_analyser import PROJECT_ROOT
 from stock_analyser.agents.orchestrator import AssistantAnswer, AssistantRuntime
 from stock_analyser.application.ports.model_provider import (

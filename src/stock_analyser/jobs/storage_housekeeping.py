@@ -12,15 +12,18 @@ import tomllib
 from pathlib import Path
 
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
-from services.cache_housekeeping import cache_cleanup_plan, apply_cache_cleanup
-from services.refresh_config import load_refresh_configuration
+from stock_analyser.infrastructure.r2.cache_housekeeping import (
+    apply_cache_cleanup,
+    cache_cleanup_plan,
+)
+from stock_analyser.infrastructure.r2.refresh_config import load_refresh_configuration
 from stock_analyser.infrastructure.r2.config import (
     configured_cloud_storage,
     create_storage_client,
     market_storage_prefix,
 )
 from stock_analyser.infrastructure.r2.storage import SnapshotStorageError, atomic_write
-from services.storage_housekeeping import retention_plan, apply_retention
+from stock_analyser.infrastructure.r2.housekeeping import apply_retention, retention_plan
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]

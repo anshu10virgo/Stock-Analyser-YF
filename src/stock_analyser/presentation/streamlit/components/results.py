@@ -7,18 +7,22 @@ import pandas as pd
 import streamlit as st
 
 from stock_analyser import PROJECT_ROOT
-from core.indicators import Indicators
+from stock_analyser.domain.scanning.indicators import Indicators
 from stock_analyser.application.errors import SnapshotUnavailableError
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE, build_data_services, snapshot_source_label
-from services.scan_report import (
-    ConfiguredSmtpMailer,
-    MailConfiguration,
+from stock_analyser.infrastructure.data_services import (
+    LIVE_SOURCE,
+    SNAPSHOT_SOURCE,
+    build_data_services,
+    snapshot_source_label,
+)
+from stock_analyser.infrastructure.reporting.scan_report import (
     build_chart_archives,
     build_messages,
     build_price_chart_png,
     build_workbook,
-    parse_recipients,
 )
+from stock_analyser.domain.reporting import parse_recipients
+from stock_analyser.infrastructure.smtp.mailer import ConfiguredSmtpMailer, MailConfiguration
 from stock_analyser.application.commands.send_report import (
     SendReport,
     SendReportCommand,

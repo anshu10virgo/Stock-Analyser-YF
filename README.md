@@ -13,14 +13,15 @@ python -m streamlit run app.py
 `pyproject.toml` defines the installable `src/stock_analyser` package and reads
 the existing `requirements.txt` dependency list. Root `app.py` remains the
 Streamlit Cloud entrypoint but delegates rendering to the packaged presentation
-module. Legacy imports remain available temporarily while migration continues.
+module. The previous root compatibility packages have been retired; maintained
+Python code now resolves from `src/stock_analyser`.
 
 Production datasets are stored in R2 and are not included in Git checkouts.
 Configure the read-only `[storage]` section in Streamlit Secrets before starting.
 For offline development, download a complete pinned snapshot first:
 
 ```powershell
-python scripts/cloud_snapshots.py download
+python -m stock_analyser.jobs.maintenance.cloud_snapshots download
 ```
 
 Local `data/` files are ignored by Git. Set `[storage].provider = "local"` to use
@@ -108,7 +109,7 @@ The app does not refresh its stock list automatically. Approximately every six
 months, run the following maintenance command locally:
 
 ```powershell
-python scripts/refresh_stock_universe.py
+python -m stock_analyser.jobs.stock_universe_refresh
 ```
 
 The command downloads NSE's official listed-equities source, keeps the selected
@@ -137,7 +138,7 @@ the production universe accidentally.
 For a local ten-year rebuild after downloading the universe:
 
 ```powershell
-python scripts/refresh_market_data.py --mode full
+python -m stock_analyser.jobs._market_snapshot_refresh --mode full
 ```
 
 For a manual daily refresh from the active R2 snapshot back to R2, after cloud

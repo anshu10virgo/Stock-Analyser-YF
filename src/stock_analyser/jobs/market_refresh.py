@@ -13,7 +13,11 @@ from pathlib import Path
 import pandas as pd
 
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
-from services.snapshot_publication import SnapshotPublisher, _references, prepare_snapshot
+from stock_analyser.infrastructure.r2.publication import (
+    SnapshotPublisher,
+    _references,
+    prepare_snapshot,
+)
 from stock_analyser.infrastructure.r2.config import (
     configured_cloud_storage,
     create_storage_client,
@@ -24,7 +28,7 @@ from stock_analyser.infrastructure.r2.storage import (
     SnapshotStorageError,
     atomic_write,
 )
-from services.refresh_config import load_refresh_configuration
+from stock_analyser.infrastructure.r2.refresh_config import load_refresh_configuration
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -96,7 +100,7 @@ def run_daily_refresh(
     old_universe = json.loads(universe_before)
     old_symbols = set(pd.read_csv(universe_root / old_universe["active_universe"])["Symbol"])
     if refresh_universe:
-        run_command([sys.executable, "-u", str(project_root / "scripts/refresh_stock_universe.py"),
+        run_command([sys.executable, "-u", "-m", "stock_analyser.jobs.stock_universe_refresh",
                      "--data-root", str(staging)], check=True)
         print("Universe validated; synchronizing price history and supporting data", flush=True)
     if dataset == "screener":
@@ -105,7 +109,7 @@ def run_daily_refresh(
                                     if screener_mode == "refresh" else [])
             if screener_mode == "refresh" and retry_failed:
                 checkpoint_arguments.append("--retry-failed")
-            run_command([sys.executable, "-u", str(project_root / "scripts/refresh_screener_fundamentals.py"),
+            run_command([sys.executable, "-u", "-m", "stock_analyser.jobs.screener_refresh",
                          "--mode", screener_mode, "--data-root", str(staging), *checkpoint_arguments], check=True)
         if mode != "validate":
             previous = json.loads(screener_before).get("successful_symbol_count", 0)
@@ -115,7 +119,7 @@ def run_daily_refresh(
     market_modes = (("validate",) if mode == "validate" else
                     (("fundamentals", "validate") if dataset == "screener" else (mode, "validate")))
     for market_mode in market_modes:
-        run_command([sys.executable, "-u", str(project_root / "scripts/refresh_market_data.py"),
+        run_command([sys.executable, "-u", "-m", "stock_analyser.jobs._market_snapshot_refresh",
                      "--mode", market_mode, "--data-root", str(staging)], check=True)
     manifest = json.loads(manifest_path.read_bytes())
     result = {"source_snapshot_id": source.snapshot_id, "dataset": dataset, "mode": mode,

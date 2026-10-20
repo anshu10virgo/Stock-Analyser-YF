@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE
+from stock_analyser.infrastructure.data_services import LIVE_SOURCE, SNAPSHOT_SOURCE
 from stock_analyser.presentation.streamlit.session_adapter import current_session
 
 

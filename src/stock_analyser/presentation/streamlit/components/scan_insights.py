@@ -7,7 +7,7 @@ from collections import Counter
 import pandas as pd
 import streamlit as st
 
-from services.rejection_reasons import friendly_rejection
+from stock_analyser.application.queries.explain_failure import friendly_rejection
 
 
 def derive_scan_insights(

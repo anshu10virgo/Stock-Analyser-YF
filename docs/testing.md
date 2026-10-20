@@ -15,8 +15,16 @@ tests/
 |-- integration/
 |   |-- presentation/           Streamlit AppTest smoke coverage
 |   `-- test_*.py               Scanner, Backtester, report, job, and boundary tests
+|-- manual/
+|   |-- regression/             Snapshot parity and cloud-result verification
+|   `-- smoke/                  Explicit live-provider smoke commands
 `-- support/                    Shared deterministic fixtures and fakes
 ```
+
+Files under `tests/manual` do not use the `test_*.py` naming convention and
+are not collected by normal offline pytest runs. Run them deliberately only
+when their required local snapshot, cloud credentials, or live provider access
+is available.
 
 ## Local commands
 
@@ -30,7 +38,7 @@ python -m pip install -r requirements-dev.txt
 Run the same gates used in GitHub Actions:
 
 ```powershell
-python -m ruff check src/stock_analyser tests scripts
+python -m ruff check src/stock_analyser tests
 python -m pytest tests/domain tests/application tests/agents
 python -m pytest tests/infrastructure tests/integration/test_operational_jobs.py
 python -m pytest tests/integration/test_scanner.py tests/integration/test_backtest_service.py tests/integration/test_scan_report.py
@@ -51,14 +59,24 @@ pre-refactor scanner using the same ranked symbols, configuration, and pinned
 local snapshot. Download a complete snapshot first, then run:
 
 ```powershell
-python scripts/cloud_snapshots.py download
-python scripts/compare_scan_refactor.py --stock-count 1500
+python -m stock_analyser.jobs.maintenance.cloud_snapshots download
+python tests/manual/regression/compare_scan_refactor.py --stock-count 1500
 ```
 
 This is a deliberate release regression rather than a normal CI test because
 the production snapshot and R2 credentials are intentionally absent from pull
 request checkouts. Run it whenever scanner rules, fundamentals, market-data
 composition, or provider composition could affect scan output.
+
+Additional manual release checks are:
+
+```powershell
+python tests/manual/regression/verify_cloud_results.py --snapshot-id <snapshot-id> --app
+python tests/manual/smoke/smoke_yahoo_foundation.py
+```
+
+The first requires configured R2 access and the second intentionally calls
+live Yahoo Finance. Neither command runs in CI.
 
 ## Hosted Streamlit smoke test
 

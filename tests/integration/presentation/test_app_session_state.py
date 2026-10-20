@@ -7,9 +7,9 @@ from tempfile import TemporaryDirectory
 
 from streamlit.testing.v1 import AppTest
 
-from models.optional_filter import PEG_RATIO
-from services.data_source import SNAPSHOT_SOURCE
-from services.snapshot_storage import LocalSnapshotStorage
+from stock_analyser.domain.scanning.models import PEG_RATIO
+from stock_analyser.infrastructure.data_services import SNAPSHOT_SOURCE
+from stock_analyser.infrastructure.r2.storage import LocalSnapshotStorage
 from tests.support.paths import PROJECT_ROOT
 from tests.support.snapshot_fixtures import create_fixture
 
@@ -22,7 +22,7 @@ class AppSessionStateTests(unittest.TestCase):
         create_fixture(self.fixture_root)
         self.storage = LocalSnapshotStorage(self.fixture_root)
         for name in (
-            "services.storage_config.application_snapshot_storage",
+            "stock_analyser.infrastructure.r2.config.application_snapshot_storage",
             "stock_analyser.infrastructure.data_services.application_snapshot_storage",
         ):
             patched = patch(name, return_value=self.storage)
@@ -37,12 +37,8 @@ class AppSessionStateTests(unittest.TestCase):
         app.secrets["storage"] = {"provider": "r2"}
         app.secrets["GEMINI_API_KEY"] = ""
         app.secrets["OPENAI_API_KEY"] = ""
-        with patch(
-            "stock_analyser.infrastructure.data_services.application_snapshot_storage",
-            return_value=storage,
-        ):
-            app.run()
-            app.radio[0].set_value("2. Strategy").run()
+        app.run()
+        app.radio[0].set_value("2. Strategy").run()
         self.assertEqual(len(app.exception), 0)
         source = next(metric for metric in app.metric if metric.label == "Data source")
         self.assertEqual(source.value, "Cloud snapshot")

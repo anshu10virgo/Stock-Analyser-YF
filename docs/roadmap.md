@@ -1,6 +1,6 @@
 # Roadmap
 
-Reviewed against the current implementation on October 19, 2026. Remaining work
+Reviewed against the current implementation on October 20, 2026. Remaining work
 is proposed; release dates are not committed. Operational instructions live in
 the [deployment and storage guide](deployment.md).
 
@@ -96,23 +96,23 @@ src/stock_analyser/
 | Target area | Status | Current position |
 | --- | --- | --- |
 | `domain/scanning` | Complete | Canonical pure models, indicators, Post-Cross, Impending, reversal, optional rules, and scoring are packaged. |
-| `domain/markets` | Complete | Market identity, currency, timezone, stock keys, and dataset-root rules are canonical; `models/market.py` is a compatibility export. |
+| `domain/markets` | Complete | Market identity, currency, timezone, stock keys, and dataset-root rules are canonical. |
 | `domain/fundamentals` | Complete | Typed comparison and industry-valuation outcomes plus reusable CAGR, P/E, PEG, debt-to-equity, classification, and valuation calculations are canonical. |
-| `domain/backtesting` | Complete | Replay models, fixed horizons, qualification, valuation selection, forward returns, and aggregate metrics are canonical; `services/backtest_service.py` and `models/backtest.py` are compatibility facades. |
+| `domain/backtesting` | Complete | Replay models, fixed horizons, qualification, valuation selection, forward returns, and aggregate metrics are canonical. |
 | `domain/reporting` | Complete | Recipient validation, filters-first workbook data, chart specifications, attachment batching, and message content are canonical; rendering and transport remain outside the domain. |
 | `application/commands` | Complete | Scan, Backtest, strategy update, and report delivery use cases exist. |
 | `application/queries` | Complete | Stock status, failure explanation, scan summary, calculation trace, and data health exist. |
 | `application/workflows` | Complete | Scan, Backtest, and refresh workflow boundaries exist. |
 | `application/ports` | Complete | Market data, fundamentals, storage, mail, and model-provider contracts exist. |
 | Infrastructure Phase 1 | Complete | Yahoo, Screener, local/R2 storage, repository providers, and SMTP are canonical infrastructure adapters. |
-| Infrastructure Phase 2 | Complete | OpenAI and Gemini are canonical infrastructure adapters; the existing service path is now a configuration and compatibility facade. |
+| Infrastructure Phase 2 | Complete | OpenAI and Gemini are canonical infrastructure adapters, with model selection in the infrastructure composition layer. |
 | Packaged agents | Complete | Orchestration, execution context, contracts, registry, approvals, policies, audit, prompts, and focused tools are canonical under `src/stock_analyser/agents`. |
-| Packaged presentation | Complete | Setup, Strategy, Live Scan, Results, Backtester, Introduction, shared components, and the session adapter are canonical under `presentation/streamlit`; root `ui/` modules are compatibility aliases. |
-| Packaged jobs | Complete | Market refresh, Screener refresh, storage housekeeping, and failure alerts are canonical packaged entrypoints; GitHub Actions invokes them with `python -m`, while root scripts are compatibility launchers. |
+| Packaged presentation | Complete | Setup, Strategy, Live Scan, Results, Backtester, Introduction, shared components, and the session adapter are canonical under `presentation/streamlit`. |
+| Packaged jobs | Complete | Market refresh, Screener refresh, storage housekeeping, and failure alerts are canonical packaged entrypoints; GitHub Actions and job-to-job calls invoke them with `python -m`. |
 | Structured tests | Complete | Tests mirror domain, application, agents, infrastructure, and integration boundaries; CI separates lint, unit, adapter, regression, presentation-smoke, and coverage gates. |
-| Compatibility retirement | Not started | Root compatibility packages remain required by active callers. |
+| Compatibility retirement | Complete | Implementations formerly under root `core`, `models`, `providers`, `services`, `application`, `agents`, and `ui` paths are canonical under `src/stock_analyser`; obsolete facades, job wrappers, and the source shim are retired. |
 
-The structural migration is approximately 97% complete. This percentage
+The structural migration is 100% complete. This percentage
 describes package placement and dependency direction, not product feature
 completion.
 
@@ -490,7 +490,7 @@ This sprint should be delivered as small sub-sprints, not one large move.
 
 ### Sprint J — Compatibility Retirement and Final Cleanup
 
-**Status:** Final architecture sprint.
+**Status:** Complete.
 
 #### Scope
 
@@ -521,6 +521,22 @@ A legacy path can be deleted only when:
 6. The deletion does not remove local user artifacts, snapshots, secrets, or
    deployment state.
 
+#### Delivered
+
+- Moved the remaining behavior-owning scan, backtest, reporting, agent-model,
+  local-data, stock-universe, R2 publication/retention, Screener checkpoint,
+  and model-composition modules into their canonical package layers.
+- Migrated application, presentation, agents, jobs, tests, maintenance tools,
+  and GitHub Actions to canonical imports and packaged job entrypoints.
+- Removed obsolete root compatibility packages, source-checkout shim, and job
+  launchers after their callers were migrated.
+- Packaged recurring, maintenance, migration, and diagnostic commands under
+  `stock_analyser.jobs`; placed explicit regression and smoke utilities under
+  `tests/manual` and removed the root `scripts/` directory.
+- Replaced compatibility assertions with architecture tests that prevent
+  retired root package paths from returning.
+- Updated README and architecture, market-data, testing, deployment, business-
+  rule, and roadmap references to the canonical package structure.
 ### Final Definition of Done
 
 - The target package tree is populated by real modules rather than empty
@@ -539,13 +555,11 @@ A legacy path can be deleted only when:
 - The full suite, hosted smoke tests, operational workflow tests, and scanner
   parity checks pass on the release candidate.
 
-## Immediate Execution Order
+## Architecture Migration Outcome
 
-1. Sprint J — compatibility retirement and final cleanup.
-
-Product-feature work that materially touches these modules should either wait
-for the owning migration sprint or be implemented through the new canonical
-boundary so it does not create additional legacy dependencies.
+Sprints A through J are complete. New product work must use the canonical
+package boundaries and keep the dependency and regression gates above; retired
+root compatibility paths must not be recreated.
 
 ## Delivered Feature History and Product Roadmap
 

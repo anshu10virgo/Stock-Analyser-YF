@@ -8,10 +8,17 @@ from unittest.mock import Mock
 
 import requests
 
-from providers.screener import ScreenerDataError, ScreenerUnavailableError, ScreenerFundamentalsProvider
-from scripts.refresh_screener_fundamentals import refresh
-from services.screener_checkpoint import ScreenerCheckpointStore, checkpoint_identity
-from services.snapshot_storage import SnapshotStorageError
+from stock_analyser.infrastructure.screener.provider import (
+    ScreenerDataError,
+    ScreenerFundamentalsProvider,
+    ScreenerUnavailableError,
+)
+from stock_analyser.jobs.screener_refresh import refresh
+from stock_analyser.infrastructure.r2.storage import SnapshotStorageError
+from stock_analyser.infrastructure.screener.checkpoint import (
+    ScreenerCheckpointStore,
+    checkpoint_identity,
+)
 from tests.support.fake_screener import FakeProvider, InterruptingProvider
 from tests.support.fake_storage import MemoryS3
 

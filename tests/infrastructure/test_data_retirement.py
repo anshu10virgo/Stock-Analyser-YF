@@ -7,9 +7,16 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from services.data_retirement import archive_git_data, export_cloud_snapshot, restore_git_archive
-from services.snapshot_publication import SnapshotPublisher, prepare_snapshot
-from services.snapshot_storage import CloudSnapshotStorage, SnapshotStorageError
+from stock_analyser.infrastructure.r2.data_retirement import (
+    archive_git_data,
+    export_cloud_snapshot,
+    restore_git_archive,
+)
+from stock_analyser.infrastructure.r2.publication import SnapshotPublisher, prepare_snapshot
+from stock_analyser.infrastructure.r2.storage import (
+    CloudSnapshotStorage,
+    SnapshotStorageError,
+)
 from tests.support.fake_storage import MemoryS3
 from tests.support.snapshot_fixtures import create_fixture
 
@@ -20,7 +27,10 @@ class GitArchiveTests(unittest.TestCase):
         client.objects["markets/IN/current.json"] = b"unchanged"
         files = {"data/market_data/test.csv": b"Symbol\nTEST.NS\n",
                  "data/stock_universe/old.csv": b"historical-universe"}
-        with patch("services.data_retirement.collect_git_data", return_value=("a" * 40, files)):
+        with patch(
+            "stock_analyser.infrastructure.r2.data_retirement.collect_git_data",
+            return_value=("a" * 40, files),
+        ):
             record = archive_git_data(Path("unused"), client, "bucket", "markets/IN", "b" * 64)
         prefix = record["archive_prefix"]
         manifest = client.objects[prefix + "/manifest.json"]
@@ -38,7 +48,10 @@ class GitArchiveTests(unittest.TestCase):
     def test_corrupted_archive_is_rejected_before_restore_writes(self):
         client = MemoryS3()
         files = {"data/market_data/test.csv": b"committed"}
-        with patch("services.data_retirement.collect_git_data", return_value=("a" * 40, files)):
+        with patch(
+            "stock_analyser.infrastructure.r2.data_retirement.collect_git_data",
+            return_value=("a" * 40, files),
+        ):
             record = archive_git_data(Path("unused"), client, "bucket", "markets/IN", "b" * 64)
         client.objects[record["archive_prefix"] + "/files/data/market_data/test.csv"] = b"changed"
         with TemporaryDirectory() as temporary:
@@ -49,7 +62,10 @@ class GitArchiveTests(unittest.TestCase):
     def test_failed_upload_never_creates_a_verified_manifest(self):
         client = MemoryS3()
         client.fail_upload = True
-        with patch("services.data_retirement.collect_git_data", return_value=("a" * 40, {"data/market_data/test.csv": b"data"})):
+        with patch(
+            "stock_analyser.infrastructure.r2.data_retirement.collect_git_data",
+            return_value=("a" * 40, {"data/market_data/test.csv": b"data"}),
+        ):
             with self.assertRaises(SnapshotStorageError):
                 archive_git_data(Path("unused"), client, "bucket", "markets/IN", "b" * 64)
         self.assertFalse(any(key.endswith("/manifest.json") for key in client.objects))

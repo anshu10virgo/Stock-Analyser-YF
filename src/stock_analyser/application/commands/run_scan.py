@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
-from services.scan_service import ScanService
+from stock_analyser.application.scanning import ScanService
 from stock_analyser.domain.scanning.models import ScanConfig, ScanRun
 
 

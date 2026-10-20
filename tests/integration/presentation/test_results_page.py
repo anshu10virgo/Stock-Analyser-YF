@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
-from services.data_source import LIVE_SOURCE, SNAPSHOT_SOURCE
+from stock_analyser.infrastructure.data_services import LIVE_SOURCE, SNAPSHOT_SOURCE
 from stock_analyser.presentation.streamlit.components.results import _format_market_cap, _peg_ratio, _performance, prepare_results, _render_data_provenance
 
 

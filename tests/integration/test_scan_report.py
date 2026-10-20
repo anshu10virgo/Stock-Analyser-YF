@@ -10,16 +10,16 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from services.scan_report import (
-    MailConfiguration,
+from stock_analyser.infrastructure.reporting.scan_report import (
     build_chart_archives,
     build_messages,
     build_price_chart_png,
     build_workbook,
-    parse_recipients,
     send_messages,
     filter_rows,
 )
+from stock_analyser.domain.reporting import parse_recipients
+from stock_analyser.infrastructure.smtp.mailer import MailConfiguration
 
 
 class ScanReportTests(unittest.TestCase):
