@@ -10,12 +10,10 @@ from stock_analyser.infrastructure.r2.storage import LocalSnapshotStorage
 
 import pandas as pd
 
+from stock_analyser.application.errors import SnapshotUnavailableError
+
 
 PRICE_COLUMNS = ("Open", "High", "Low", "Close", "Adj Close", "Volume")
-
-
-class SnapshotUnavailableError(RuntimeError):
-    """Raised when the committed snapshot cannot satisfy a request."""
 
 
 def _clean_record(record: dict) -> dict:

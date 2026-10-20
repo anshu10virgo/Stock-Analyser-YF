@@ -20,7 +20,7 @@ from stock_analyser.infrastructure.screener.provider import (
     _cagr,
 )
 from scripts import refresh_screener_fundamentals
-from ui.stock_detail import build_pe_eps_figure, filter_valuation_history
+from stock_analyser.presentation.streamlit.components.stock_detail import build_pe_eps_figure, filter_valuation_history
 
 
 ANNUAL_HEADERS = "".join(

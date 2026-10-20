@@ -97,12 +97,16 @@ src/stock_analyser/
     application/                    Commands, queries, workflows, context, and ports
     agents/                         Canonical orchestrator, policy, audit, and tools
     infrastructure/                 Yahoo, Screener, R2/local, SMTP, and model adapters
-    presentation/streamlit/app.py   Current packaged Streamlit composition root
+    presentation/streamlit/
+        app.py                      Packaged Streamlit composition root
+        pages/                      Setup, Strategy, Live Scan, Results, and Backtester
+        components/                 Theme, filters, insights, charts, reports, and Ticksy
+        session_adapter.py          Only raw Streamlit session-state boundary
     jobs/                           Future packaged operational entrypoints
 stock_analyser/                     Temporary source-checkout package shim
 application/, agents/               Temporary compatibility exports
 core/, models/                      Temporary compatibility imports
-providers/, services/, ui/         Compatibility exports, orchestration, and UI modules
+providers/, services/, ui/         Compatibility exports and temporary orchestration
 scripts/                            Existing operational entrypoints
 tests/                              Regression and boundary tests
 ```
@@ -115,7 +119,10 @@ Ticksy tools invoke packaged application queries instead of service helpers.
 The packaged agent runtime owns orchestration, execution context, contracts,
 approval decisions, policy, audit, provider-neutral prompts, and focused local
 tools. Root `agents/`, `application/assistant_runtime.py`, and
-`services/assistant_context.py` retain compatibility exports only.
+`services/assistant_context.py` retain compatibility exports only. The packaged
+Streamlit composition root now dispatches focused page controllers, reusable
+components, and a single session adapter; root `ui/` modules alias those
+canonical modules for temporary import compatibility.
 Market identity, currency, timezone, stock keys, and market-specific dataset
 locations are canonical under `stock_analyser.domain.markets`;
 `models/market.py` is now a compatibility export. Reusable fundamental
@@ -139,13 +146,18 @@ snapshot before this compatibility layer is retired.
 
 ## Current Components
 
-- `ui/`: Streamlit pages, session-only scan presets, live scan insights,
-  shared visual styling, formatted results, interactive charts, Backtester,
-  and the Ticksy launcher.
-- `ui/backtester_page.py`: selected-stock historical Golden Cross Backtester
-  page with fixed return horizons and chart exploration.
-- `ui/ticksy.py`: session-only Ticksy conversation UI, local explanations,
-  action confirmation, and provider-disabled state.
+- `src/stock_analyser/presentation/streamlit/app.py`: composition root for page
+  configuration, workflow navigation, and canonical page dispatch.
+- `src/stock_analyser/presentation/streamlit/pages/`: Setup, Strategy, Live
+  Scan, Results, Backtester, and Introduction page controllers.
+- `src/stock_analyser/presentation/streamlit/components/`: shared theme,
+  session-only strategy controls, local insights, stock charts, result/report
+  components, and the Ticksy launcher.
+- `src/stock_analyser/presentation/streamlit/session_adapter.py`: the only
+  presentation module that reads or writes raw `st.session_state`; page and
+  component code uses its mutable mapping boundary.
+- `ui/`: temporary module aliases preserving established imports while hosted
+  and test callers use canonical packaged presentation paths.
 - `src/stock_analyser/application/context.py`: canonical allow-listed, copied
   application state for agent tools and hosted-provider context construction.
   The root `application/context.py` is a temporary compatibility export.
