@@ -10,8 +10,8 @@ from unittest.mock import patch
 from services.data_retirement import archive_git_data, export_cloud_snapshot, restore_git_archive
 from services.snapshot_publication import SnapshotPublisher, prepare_snapshot
 from services.snapshot_storage import CloudSnapshotStorage, SnapshotStorageError
-from tests.snapshot_fixtures import create_fixture
-from tests.test_cloud_snapshots import MemoryS3
+from tests.support.fake_storage import MemoryS3
+from tests.support.snapshot_fixtures import create_fixture
 
 
 class GitArchiveTests(unittest.TestCase):

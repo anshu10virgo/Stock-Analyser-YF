@@ -14,9 +14,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-
 from core.data_loader import DataLoader
 from stock_analyser.infrastructure.screener.provider import (
     HISTORY_COLUMNS,
@@ -33,6 +30,9 @@ from stock_analyser.infrastructure.r2.config import (
     market_storage_prefix,
 )
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 SCREENER_ROOT = PROJECT_ROOT / "data" / "market_data" / "screener"

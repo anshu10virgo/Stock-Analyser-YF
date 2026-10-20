@@ -10,9 +10,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-
 from core.data_loader import DataLoader
 from stock_analyser.domain.fundamentals import (
     industry_valuation,
@@ -26,6 +23,9 @@ from stock_analyser.infrastructure.yahoo.providers import (
 )
 from services.stock_universe import StockUniverse
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 MARKET_ROOT = PROJECT_ROOT / "data" / "market_data"

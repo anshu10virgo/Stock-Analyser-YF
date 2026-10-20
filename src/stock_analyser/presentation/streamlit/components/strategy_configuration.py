@@ -20,7 +20,7 @@ from models.optional_filter import (
 from stock_analyser.application.commands.update_strategy import (
     DEFAULT_SCAN_SETTINGS,
     OPTIONAL_SEQUENCE_KEY,
-    default_scan_settings,
+    default_scan_settings as default_scan_settings,
 )
 from stock_analyser.presentation.streamlit.session_adapter import current_session
 

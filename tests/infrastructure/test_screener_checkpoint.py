@@ -12,8 +12,8 @@ from providers.screener import ScreenerDataError, ScreenerUnavailableError, Scre
 from scripts.refresh_screener_fundamentals import refresh
 from services.screener_checkpoint import ScreenerCheckpointStore, checkpoint_identity
 from services.snapshot_storage import SnapshotStorageError
-from tests.test_cloud_snapshots import MemoryS3
-from tests.test_screener_fundamentals import FakeProvider, InterruptingProvider
+from tests.support.fake_screener import FakeProvider, InterruptingProvider
+from tests.support.fake_storage import MemoryS3
 
 
 class DurableScreenerTests(unittest.TestCase):

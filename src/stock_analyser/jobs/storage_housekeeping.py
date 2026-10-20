@@ -11,8 +11,6 @@ import sys
 import tomllib
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
 from services.cache_housekeeping import cache_cleanup_plan, apply_cache_cleanup
 from services.refresh_config import load_refresh_configuration
@@ -23,6 +21,9 @@ from stock_analyser.infrastructure.r2.config import (
 )
 from stock_analyser.infrastructure.r2.storage import SnapshotStorageError, atomic_write
 from services.storage_housekeeping import retention_plan, apply_retention
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def git_data_audit(root, cloud_plan, policy):
@@ -59,7 +60,7 @@ def workflow_write_audit(root):
                 ("refresh_cloud_market_data.py", "storage_housekeeping.py",
                  "stock_analyser.jobs.market_refresh",
                  "stock_analyser.jobs.storage_housekeeping")) else
-                "No data publication" if "python -m unittest discover -s tests" in source else "review required")})
+                "No data publication" if path.name == "tests.yml" else "review required")})
     return reports
 
 

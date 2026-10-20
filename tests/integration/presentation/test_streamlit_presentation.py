@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
 import ui.results_page as legacy_results
 import ui.sidebar as legacy_strategy
 from stock_analyser.presentation.streamlit.components import results
 from stock_analyser.presentation.streamlit.components import strategy_configuration
 from stock_analyser.presentation.streamlit.session_adapter import StreamlitSessionAdapter
+from tests.support.paths import PROJECT_ROOT
 
 
 PRESENTATION_ROOT = (
-    Path(__file__).resolve().parents[1]
+    PROJECT_ROOT
     / "src"
     / "stock_analyser"
     / "presentation"

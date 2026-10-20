@@ -12,8 +12,6 @@ from pathlib import Path
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-
 from stock_analyser.application.workflows.refresh_workflow import RefreshStep, RefreshWorkflow
 from services.snapshot_publication import SnapshotPublisher, _references, prepare_snapshot
 from stock_analyser.infrastructure.r2.config import (
@@ -27,6 +25,9 @@ from stock_analyser.infrastructure.r2.storage import (
     atomic_write,
 )
 from services.refresh_config import load_refresh_configuration
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def stage_source_snapshot(storage, staging):
