@@ -270,7 +270,8 @@ snapshot before this compatibility layer is retired.
   through repository-managed Gmail SMTP secrets.
 - `src/stock_analyser/jobs/screener_refresh.py`: one throttled, resumable,
   batch-checkpointed refresh for every Screener-derived field and chart
-  observation. It publishes versioned files through an atomic manifest.
+  observation. It publishes versioned files through an atomic manifest and can
+  restore the completed checkpoint for a failed-record-only next-day retry.
 - `.github/workflows/refresh-screener-fundamentals.yml`: monthly/manual
   Screener refresh, validation, commit, and failure-alert workflow.
 - `src/stock_analyser/jobs/market_refresh.py`: scheduled R2 staging,

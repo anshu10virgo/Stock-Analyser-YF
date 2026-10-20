@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import logging
+import re
 import shutil
 import time
 from datetime import datetime, timezone
@@ -221,6 +222,7 @@ def _activate_snapshot(
     generated_at: str,
     batch_size: int,
     sleep_seconds: float,
+    durable_checkpoint_id: str | None = None,
 ) -> dict:
     snapshots = root / "snapshots"
     snapshots.mkdir(parents=True, exist_ok=True)
@@ -274,6 +276,8 @@ def _activate_snapshot(
         "metric_coverage": coverage,
         "provider_metrics": provider_metrics,
     }
+    if durable_checkpoint_id:
+        manifest["durable_checkpoint_id"] = durable_checkpoint_id
     _atomic_json(root / "manifest.json", manifest)
 
     active = {summary_file.resolve(), history_file.resolve(), failures_file.resolve()}
@@ -322,6 +326,7 @@ def refresh(
     restart: bool = False,
     sleep=time.sleep,
     checkpoint_store=None,
+    fallback_checkpoint_store=None,
     retry_failed=False,
 ) -> dict:
     """Run one resumable refresh for every Screener-derived metric."""
@@ -343,9 +348,18 @@ def refresh(
     if restart and staging.exists():
         shutil.rmtree(staging)
     checkpoint_file = _checkpoint_file(root)
+    restored_from_fallback = False
     if checkpoint_store is not None:
         if checkpoint_store.restore(staging):
             logger.info("Restored verified Screener batches from R2")
+        elif (
+            retry_failed
+            and fallback_checkpoint_store is not None
+            and fallback_checkpoint_store.restore(staging)
+        ):
+            checkpoint_store = fallback_checkpoint_store
+            restored_from_fallback = True
+            logger.info("Restored completed Screener run for failed-symbol retry")
     if checkpoint_file.is_file():
         checkpoint = json.loads(checkpoint_file.read_text(encoding="utf-8"))
         if (
@@ -380,6 +394,11 @@ def refresh(
     logger.info("Retry failed records: %s", len(failed_symbols) if retry_failed else 0)
     logger.info("Resume state: processed=%s/%s, successful=%s, failed=%s, pending=%s",
                 len(completed), len(symbols), success_count, failure_count, len(pending))
+
+    if retry_failed and restored_from_fallback and not pending:
+        logger.info("Prior Screener run has no failed records; retry is a no-op")
+        shutil.rmtree(staging)
+        return validate_snapshot(root)
 
     for start in range(0, len(pending), batch_size):
         batch = pending[start : start + batch_size]
@@ -449,6 +468,7 @@ def refresh(
         generated_at,
         batch_size,
         sleep_seconds,
+        durable_checkpoint_id=getattr(checkpoint_store, "identity", None),
     )
     validate_snapshot(root)
     shutil.rmtree(staging)
@@ -480,19 +500,41 @@ def main():
             )
             return result
         checkpoint_store = None
+        fallback_checkpoint_store = None
         if arguments.durable_checkpoint:
             _, publisher = load_refresh_configuration(PROJECT_ROOT, arguments.config_source)
             _, symbols = active_universe()
-            identity = checkpoint_identity(symbols, (SCREENER_ROOT / "manifest.json").read_bytes())
+            manifest_bytes = (SCREENER_ROOT / "manifest.json").read_bytes()
+            identity = checkpoint_identity(symbols, manifest_bytes)
             checkpoint_store = ScreenerCheckpointStore(create_storage_client(publisher),
                 publisher["bucket"], market_storage_prefix(publisher), identity)
             logger.info("Durable checkpoint: markets/IN/maintenance/screener/%s", identity)
+            if arguments.retry_failed:
+                previous_identity = json.loads(manifest_bytes).get(
+                    "durable_checkpoint_id"
+                )
+                if previous_identity and not re.fullmatch(
+                    r"[a-f0-9]{64}", previous_identity
+                ):
+                    raise ValueError("Screener durable checkpoint identity is invalid")
+                if previous_identity and previous_identity != identity:
+                    fallback_checkpoint_store = ScreenerCheckpointStore(
+                        checkpoint_store.client,
+                        publisher["bucket"],
+                        market_storage_prefix(publisher),
+                        previous_identity,
+                    )
+                    logger.info(
+                        "Failed-symbol retry fallback: markets/IN/maintenance/screener/%s",
+                        previous_identity,
+                    )
         return refresh(
             root=SCREENER_ROOT,
             batch_size=arguments.batch_size,
             sleep_seconds=arguments.sleep_seconds,
             restart=arguments.restart,
             checkpoint_store=checkpoint_store,
+            fallback_checkpoint_store=fallback_checkpoint_store,
             retry_failed=arguments.retry_failed,
         )
 

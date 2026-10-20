@@ -3,6 +3,7 @@ name: Refresh R2 Screener fundamentals
 on:
   schedule:
     - cron: "0 22 1 * *"
+    - cron: "0 22 2 * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -49,9 +50,13 @@ jobs:
         env:
           REFRESH_MODE: ${{ github.event.inputs.mode || 'refresh' }}
           RETRY_FAILED: ${{ github.event.inputs.retry_failed || 'false' }}
+          SCHEDULE_EXPRESSION: ${{ github.event.schedule }}
           R2_PUBLISHER_CONFIG: ${{ secrets.R2_PUBLISHER_CONFIG }}
         run: |
           OPTIONS=()
+          if [ "$SCHEDULE_EXPRESSION" = "0 22 2 * *" ]; then
+            RETRY_FAILED=true
+          fi
           if [ "$RETRY_FAILED" = "true" ] && [ "$REFRESH_MODE" = "refresh" ]; then
             OPTIONS+=(--retry-failed)
           fi

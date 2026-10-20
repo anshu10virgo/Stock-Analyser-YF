@@ -103,6 +103,13 @@ checkpoint, skips completed batches, and continues pending stocks. Progress logs
 show separate processed, successful, and failed counts. An interrupted batch may
 be fetched again; a completed durable batch is reused.
 
+The scheduled primary run starts at `0 22 1 * *` UTC. A second run at
+`0 22 2 * *` UTC automatically enables failed-record retry. If the primary run
+stopped midway, the retry resumes its current durable checkpoint. If the primary
+run completed with individual record failures, the retry restores that completed
+checkpoint and requests only those failed symbols. Successful records are never
+re-fetched by the second run.
+
 To retry recorded failures as well as pending stocks while keeping successful
 records, dispatch with `retry_failed=true`, or run locally:
 

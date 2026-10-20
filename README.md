@@ -158,8 +158,11 @@ automatically preserved and refreshed every 180 days. See
 Both scheduled workflows require the `R2_PUBLISHER_CONFIG` GitHub Actions Secret.
 It contains the publisher configuration as JSON; no credential file is written
 to the runner checkout. The deployed app uses separate read-only Streamlit Secrets.
-The monthly Screener workflow also refreshes dependent fundamentals/PEG data
-before publishing. Neither workflow commits generated data to Git.
+The monthly Screener workflow performs its primary run at 22:00 UTC on day 1
+and an automatic failed-record retry at 22:00 UTC on day 2. The retry restores
+the durable checkpoint, keeps successful records, and requests only failed or
+still-pending symbols. It also refreshes dependent fundamentals/PEG data before
+publishing. Neither workflow commits generated data to Git.
 
 ## Screener fundamentals refresh
 

@@ -425,6 +425,8 @@ This sprint should be delivered as small sub-sprints, not one large move.
 - Keep root scripts as thin command-line compatibility wrappers during rollout.
 - Preserve refresh replay, checkpointing, validation, manifest publication,
   atomic pointer updates, leases, retention, and failure-alert behaviour.
+- Schedule a second monthly Screener run that restores durable progress and
+  retries only failed or still-pending symbols.
 - Update GitHub Actions to invoke packaged jobs only after local and manual
   workflow verification succeeds.
 - Retain auxiliary archive, restore, verification, parity, and export commands

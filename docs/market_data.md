@@ -72,12 +72,15 @@ The GitHub Actions workflow runs incremental mode at 18:00 IST on weekdays and
 can be manually started in incremental, classification, or validation-only
 mode. A closed-market run produces no data commit.
 
-The separate Screener workflow runs monthly and can also be started manually.
-It uses one unified refresh for all Screener fields. The default batch contains
-10 stocks, followed by a five-second pause. Completed batches are checkpointed
-under an ignored staging directory, so an interrupted run resumes without
-requesting completed symbols again. Versioned output files are activated only
-after schema and coverage validation and an atomic manifest replacement.
+The separate Screener workflow runs its primary monthly refresh at 22:00 UTC on
+day 1 and an automatic failed-record retry at 22:00 UTC on day 2; it can also be
+started manually. It uses one unified refresh for all Screener fields. The
+default batch contains 10 stocks, followed by a five-second pause. Completed
+batches are stored in a durable R2 checkpoint, so an interrupted run resumes
+without requesting completed symbols again. The day-2 run also reuses a completed
+checkpoint to request only recorded failures. Versioned output files are
+activated only after schema and coverage validation and an atomic manifest
+replacement.
 Both data workflows share one concurrency group, so Yahoo and Screener
 refreshes cannot commit simultaneously. The Yahoo workflow stages only its
 parent manifest, prices, fundamentals, and symbol-coverage file; the Screener

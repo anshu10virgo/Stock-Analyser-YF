@@ -40,6 +40,18 @@ def test_github_actions_invoke_only_packaged_operational_jobs():
     assert "python scripts/send_refresh_failure_email.py" not in workflow_sources
 
 
+def test_screener_workflow_has_automatic_next_day_failed_record_retry():
+    source = (
+        PROJECT_ROOT / ".github/workflows/refresh-screener-fundamentals.yml"
+    ).read_text(encoding="utf-8")
+
+    assert 'cron: "0 22 1 * *"' in source
+    assert 'cron: "0 22 2 * *"' in source
+    assert 'SCHEDULE_EXPRESSION: ${{ github.event.schedule }}' in source
+    assert 'if [ "$SCHEDULE_EXPRESSION" = "0 22 2 * *" ]; then' in source
+    assert "OPTIONS+=(--retry-failed)" in source
+
+
 def test_market_job_executes_through_refresh_workflow():
     expected = {"status": "no_new_data", "snapshot_id": "snapshot"}
     with patch.object(market_refresh, "run_daily_refresh", return_value=expected) as refresh:

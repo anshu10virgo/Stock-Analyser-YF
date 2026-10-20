@@ -12,6 +12,7 @@ class ScreenerCheckpointStore:
 
     def __init__(self, client, bucket, market_prefix, identity):
         self.client, self.bucket = client, bucket
+        self.identity = identity
         self.prefix = f"{safe_relative_path(market_prefix)}/maintenance/screener/{identity}"
         self.key = f"{self.prefix}/checkpoint.json"
         self.etag = None
